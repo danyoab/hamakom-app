@@ -1,12 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey  = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseKey) {
-  console.warn('Supabase env vars not set — running in offline mode with seed data.')
+let supabase = null
+
+try {
+  if (supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey)
+  }
+} catch (e) {
+  console.error('Supabase init failed:', e)
 }
 
-export const supabase = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey)
-  : null
+export { supabase }

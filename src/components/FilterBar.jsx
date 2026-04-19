@@ -1,5 +1,13 @@
 import { CATEGORIES, CITIES, OCCASION_KEYS, CATEGORY_EMOJI, DATE_STAGE_BADGE } from '../lib/constants'
 
+const MOODS = [
+  { key: 'chill',    category: 'Parks & Outdoors' },
+  { key: 'coffee',   category: 'Cafés & Restaurants' },
+  { key: 'romantic', category: 'Hotels & Lounges' },
+  { key: 'active',   category: 'Activities & Experiences' },
+  { key: 'cultural', category: 'Museums & Culture' },
+]
+
 export default function FilterBar({ tx, filters, setFilters }) {
   const { cityFilter, categoryFilter, occasionFilter, priceFilter, dateFilter } = filters
 
@@ -7,6 +15,34 @@ export default function FilterBar({ tx, filters, setFilters }) {
 
   return (
     <div>
+      {/* Vibe/Mood row */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 10, letterSpacing: '0.2em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 8 }}>
+          {tx.vibeFilter}
+        </div>
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+          {MOODS.map(mood => {
+            const isActive = categoryFilter === mood.category
+            return (
+              <button
+                key={mood.key}
+                onClick={() => set('categoryFilter', isActive ? 'All' : mood.category)}
+                style={{
+                  background:   isActive ? '#C9A84C' : '#161B27',
+                  color:        isActive ? '#0D1117' : '#9CA3AF',
+                  border:       '1px solid ' + (isActive ? '#C9A84C' : '#2A2F3E'),
+                  borderRadius: 20, padding: '6px 13px', cursor: 'pointer',
+                  fontSize: 12, fontFamily: 'inherit', whiteSpace: 'nowrap',
+                  fontWeight: isActive ? 600 : 400,
+                }}
+              >
+                {tx.moods[mood.key]}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Date stage */}
       <div style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
         <div style={{ fontSize: 10, letterSpacing: '0.2em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 8 }}>

@@ -27,6 +27,7 @@ export const t = {
     importantNote: 'Important Note',
     openMaps: 'Open in Maps →',
     whatsapp: 'Share on WhatsApp',
+    inviteToDate: 'Invite to Date 💌',
     kashrus: 'Kashrus',
     kashrusNote:
       'Always verify kashrus certification independently before going. Hours and availability may change — call ahead.',
@@ -76,6 +77,10 @@ export const t = {
       3: '₪₪₪ Pricier',
       4: '₪₪₪₪ Splurge',
     },
+    // Suggest form
+    tonightsPicks: "✨ Tonight's Picks",
+    vibeFilter: 'Vibe',
+    moods: { chill: '🌿 Chill', coffee: '☕ Coffee', romantic: '💫 Romantic', active: '🎯 Active', cultural: '🏛 Cultural' },
     // Suggest form
     suggestTitle: 'Suggest a Place',
     suggestSubtitle: "Know a great date spot we're missing? Tell us about it.",
@@ -129,6 +134,7 @@ export const t = {
     importantNote: 'הערה חשובה',
     openMaps: 'פתח במפות ←',
     whatsapp: 'שתף בוואטסאפ',
+    inviteToDate: 'הזמן לדייט 💌',
     kashrus: 'כשרות',
     kashrusNote:
       'יש לבדוק כשרות באופן עצמאי לפני הביקור. שעות הפעילות עשויות להשתנות — מומלץ לאמת מראש.',
@@ -173,6 +179,9 @@ export const t = {
       '4': '₪₪₪₪ יוקרה',
     },
     priceLabels: { 1: '₪ חינם–זול', 2: '₪₪ בינוני', 3: '₪₪₪ יקר', 4: '₪₪₪₪ יוקרה' },
+    tonightsPicks: '✨ הצעות לערב',
+    vibeFilter: 'וייב',
+    moods: { chill: '🌿 ריגיעה', coffee: '☕ קפה', romantic: '💫 רומנטי', active: '🎯 אקטיבי', cultural: '🏛 תרבות' },
     suggestTitle: 'הצע מקום',
     suggestSubtitle: 'מכיר מקום נהדר לדייט שחסר כאן? ספר לנו עליו.',
     suggestName: 'שם המקום',

@@ -1,12 +1,13 @@
-import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getMapsUrl, getWhatsAppUrl } from '../lib/constants'
+import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getMapsUrl, getWhatsAppUrl, getInviteUrl } from '../lib/constants'
 
 export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack }) {
   const name   = lang === 'he' ? (loc.name_he  || loc.name)  : loc.name
   const city   = lang === 'he' ? (loc.city_he  || loc.city)  : loc.city
   const desc   = lang === 'he' ? (loc.description_he || loc.description) : loc.description
   const stages = Array.isArray(loc.date_stage) ? loc.date_stage : [loc.date_stage]
-  const mapsUrl = getMapsUrl(loc.maps_query)
-  const waUrl   = getWhatsAppUrl(name, city, lang)
+  const mapsUrl   = getMapsUrl(loc.maps_query)
+  const waUrl     = getWhatsAppUrl(name, city, lang)
+  const inviteUrl = getInviteUrl(name, city, lang)
 
   return (
     <div dir={tx.dir} style={{ minHeight: '100vh', background: '#0D1117', color: '#E8DCC8', fontFamily: font }}>
@@ -100,6 +101,20 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
             }}
           >
             <span>💬 {tx.whatsapp}</span>
+            <span style={{ fontSize: 18 }}>→</span>
+          </a>
+          <a
+            href={inviteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: '#1A0D26', border: '1px solid #4A1D6E', borderRadius: 10,
+              padding: '13px 16px', textDecoration: 'none', color: '#C084FC',
+              fontSize: 14, fontFamily: font,
+            }}
+          >
+            <span>💌 {tx.inviteToDate}</span>
             <span style={{ fontSize: 18 }}>→</span>
           </a>
         </div>

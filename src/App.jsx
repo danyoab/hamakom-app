@@ -2,12 +2,29 @@ import { useState, useMemo } from 'react'
 import { t } from './lib/translations'
 import { useLocations } from './hooks/useLocations'
 import { useLocalStorage } from './hooks/useLocalStorage'
-import { ADMIN_PIN } from './lib/constants'
+import { ADMIN_PIN, CATEGORY_EMOJI, getCategoryColor } from './lib/constants'
 import FilterBar from './components/FilterBar'
 import Card from './components/Card'
 import DetailView from './components/DetailView'
 import SuggestView from './components/SuggestView'
 import AdminView from './components/AdminView'
+
+function getTonightsPicks(locations) {
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000)
+  const featured  = locations.filter(l => l.featured)
+  const others    = locations.filter(l => !l.featured)
+  const picks   = []
+  const usedIds = new Set()
+  for (let i = 0; picks.length < 3 && i < featured.length; i++) {
+    const loc = featured[(dayOfYear + i) % featured.length]
+    if (!usedIds.has(loc.id)) { picks.push(loc); usedIds.add(loc.id) }
+  }
+  for (let i = 0; picks.length < 3 && i < others.length; i++) {
+    const loc = others[(dayOfYear + i * 37) % others.length]
+    if (!usedIds.has(loc.id)) { picks.push(loc); usedIds.add(loc.id) }
+  }
+  return picks
+}
 
 const INITIAL_FILTERS = {
   cityFilter:     'All Cities',
@@ -48,6 +65,8 @@ export default function App() {
       return true
     })
   }, [locations, search, filters, lang])
+
+  const tonightsPicks = useMemo(() => getTonightsPicks(locations), [locations])
 
   const saved = locations.filter(l => savedIds.includes(l.id))
   const toggleSave = (id) =>
@@ -161,6 +180,7 @@ export default function App() {
               </button>
             </div>
 
+            <TonightsPicks picks={tonightsPicks} lang={lang} tx={tx} onOpen={openDetail} />
             <FilterBar tx={tx} filters={filters} setFilters={setFilters} />
 
             {locError && (
@@ -217,6 +237,40 @@ function EmptyWithSuggest({ tx, onSuggest, lang }) {
       >
         ➕ {lang === 'he' ? 'הצע מקום חדש' : 'Suggest a Place'}
       </button>
+    </div>
+  )
+}
+
+function TonightsPicks({ picks, lang, tx, onOpen }) {
+  if (!picks.length) return null
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 11, letterSpacing: '0.15em', color: '#C9A84C', textTransform: 'uppercase', marginBottom: 10 }}>
+        {tx.tonightsPicks}
+      </div>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+        {picks.map(pick => {
+          const name = lang === 'he' ? (pick.name_he || pick.name) : pick.name
+          const city = lang === 'he' ? (pick.city_he || pick.city) : pick.city
+          return (
+            <div
+              key={pick.id}
+              onClick={() => onOpen(pick)}
+              style={{
+                flex: '1 1 0', minWidth: 110, background: '#161B27',
+                border: '1px solid #2A2F3E', borderRadius: 10, padding: '12px 10px',
+                cursor: 'pointer',
+                borderLeft:  lang === 'en' ? `3px solid ${getCategoryColor(pick.category)}` : undefined,
+                borderRight: lang === 'he' ? `3px solid ${getCategoryColor(pick.category)}` : undefined,
+              }}
+            >
+              <div style={{ fontSize: 20, marginBottom: 6 }}>{CATEGORY_EMOJI[pick.category]}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#E8DCC8', marginBottom: 2, textAlign: lang === 'he' ? 'right' : 'left' }}>{name}</div>
+              <div style={{ fontSize: 11, color: '#C9A84C', textAlign: lang === 'he' ? 'right' : 'left' }}>{city}</div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

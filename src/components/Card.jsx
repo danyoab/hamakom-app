@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor } from '../lib/constants'
 
 export default function Card({ loc, lang, tx, saved, onToggleSave, onClick }) {
+  const [hovered, setHovered] = useState(false)
   const name   = lang === 'he' ? (loc.name_he  || loc.name)  : loc.name
   const city   = lang === 'he' ? (loc.city_he  || loc.city)  : loc.city
   const desc   = lang === 'he' ? (loc.description_he || loc.description) : loc.description
@@ -9,12 +11,22 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick }) {
   return (
     <div
       onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 10,
-        padding: '13px 15px', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', gap: 10,
+        background: hovered ? '#1A2035' : '#161B27',
+        border: `1px solid ${hovered ? '#3A4055' : '#2A2F3E'}`,
+        borderRadius: 10,
+        padding: '13px 15px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
         borderLeft:  lang === 'en' ? `3px solid ${getCategoryColor(loc.category)}` : undefined,
         borderRight: lang === 'he' ? `3px solid ${getCategoryColor(loc.category)}` : undefined,
+        transform: hovered ? 'translateY(-1px)' : 'none',
+        transition: 'background 0.15s, border-color 0.15s, transform 0.15s',
+        boxShadow: hovered ? '0 4px 12px rgba(0,0,0,0.3)' : 'none',
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -46,7 +58,7 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick }) {
 
         {/* Meta row */}
         <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 3 }}>
-          {CATEGORY_EMOJI[loc.category]} {tx.categories[loc.category]} · {tx.priceLabels[loc.price]}
+          {CATEGORY_EMOJI[loc.category]} {tx.categories[loc.category] || loc.category} · {tx.priceLabels[loc.price]}
           {loc.kashrus && <span style={{ marginLeft: 6, color: '#4ADE80', fontSize: 10 }}>✓ {loc.kashrus}</span>}
         </div>
 
@@ -57,7 +69,13 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick }) {
       {/* Heart */}
       <button
         onClick={e => { e.stopPropagation(); onToggleSave() }}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: 4, flexShrink: 0 }}
+        aria-label={saved ? 'Remove from saved' : 'Save this place'}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontSize: 18, padding: 4, flexShrink: 0,
+          transition: 'transform 0.1s',
+          transform: saved ? 'scale(1.15)' : 'scale(1)',
+        }}
       >
         {saved ? '❤️' : '🤍'}
       </button>

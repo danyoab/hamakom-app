@@ -6,7 +6,25 @@ export default function AdminView({ lang, font, onBack, totalLocations }) {
   const [unlocked, setUnlocked] = useState(false)
   const [pin, setPin]           = useState('')
   const [adminTab, setAdminTab] = useState('pending')
+  const [toast, setToast]       = useState(null)
   const { pending, approved, loading, approveSub, rejectSub } = usePending()
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const handleApprove = async (sub) => {
+    if (!window.confirm(`Approve "${sub.name}"?`)) return
+    await approveSub(sub)
+    showToast(`✓ "${sub.name}" approved and added to locations`)
+  }
+
+  const handleReject = async (id, name) => {
+    if (!window.confirm(`Reject "${name}"?`)) return
+    await rejectSub(id)
+    showToast(`"${name}" rejected`, 'error')
+  }
 
   if (!unlocked) return (
     <div style={{ minHeight:'100vh', background:'#0D1117', color:'#E8DCC8', fontFamily:font, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40 }}>
@@ -38,6 +56,11 @@ export default function AdminView({ lang, font, onBack, totalLocations }) {
 
   return (
     <div style={{ minHeight:'100vh', background:'#0D1117', color:'#E8DCC8', fontFamily:font }}>
+      {toast && (
+        <div style={{ position:'fixed', bottom:24, left:'50%', transform:'translateX(-50%)', background: toast.type==='error' ? '#7F1D1D' : '#14532D', color: toast.type==='error' ? '#FCA5A5' : '#86EFAC', border:`1px solid ${toast.type==='error'?'#DC2626':'#16A34A'}`, borderRadius:10, padding:'12px 20px', fontSize:13, fontWeight:500, zIndex:9999, whiteSpace:'nowrap', boxShadow:'0 4px 16px rgba(0,0,0,0.4)' }}>
+          {toast.msg}
+        </div>
+      )}
       {/* Header */}
       <div style={{ background:'#161B27', borderBottom:'1px solid #2A2F3E', padding:'16px 20px', display:'flex', alignItems:'center', gap:16 }}>
         <button onClick={onBack} style={{ background:'none',border:'none',color:'#C9A84C',cursor:'pointer',fontSize:13,fontFamily:'inherit',padding:0 }}>← Back</button>
@@ -99,8 +122,8 @@ export default function AdminView({ lang, font, onBack, totalLocations }) {
                       {sub.why     && <div style={{ fontSize:13, color:'#9CA3AF', fontStyle:'italic', marginBottom:10 }}>"{sub.why}"</div>}
                       {sub.whatsapp && <div style={{ fontSize:12, color:'#6B7280', marginBottom:12 }}>📱 {sub.whatsapp}</div>}
                       <div style={{ display:'flex', gap:8 }}>
-                        <button onClick={() => approveSub(sub)} style={{ background:'#4ADE80', color:'#0D1117', border:'none', borderRadius:8, padding:'7px 18px', cursor:'pointer', fontSize:12, fontFamily:'inherit', fontWeight:600 }}>✓ Approve</button>
-                        <button onClick={() => rejectSub(sub.id)} style={{ background:'#F87171', color:'#0D1117', border:'none', borderRadius:8, padding:'7px 18px', cursor:'pointer', fontSize:12, fontFamily:'inherit', fontWeight:600 }}>✗ Reject</button>
+                        <button onClick={() => handleApprove(sub)} style={{ background:'#4ADE80', color:'#0D1117', border:'none', borderRadius:8, padding:'7px 18px', cursor:'pointer', fontSize:12, fontFamily:'inherit', fontWeight:600 }}>✓ Approve</button>
+                        <button onClick={() => handleReject(sub.id, sub.name)} style={{ background:'#F87171', color:'#0D1117', border:'none', borderRadius:8, padding:'7px 18px', cursor:'pointer', fontSize:12, fontFamily:'inherit', fontWeight:600 }}>✗ Reject</button>
                       </div>
                     </div>
                   ))}

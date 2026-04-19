@@ -29,7 +29,7 @@ export default function App() {
     ? "'David','Frank Ruhl Libre',Georgia,serif"
     : "'Palatino Linotype',Palatino,Georgia,serif"
 
-  const { locations, loading } = useLocations()
+  const { locations, loading, error: locError } = useLocations()
 
   const filtered = useMemo(() => {
     const { cityFilter, categoryFilter, occasionFilter, priceFilter, dateFilter } = filters
@@ -162,6 +162,12 @@ export default function App() {
             </div>
 
             <FilterBar tx={tx} filters={filters} setFilters={setFilters} />
+
+            {locError && (
+              <div style={{ background:'#1A1010', border:'1px solid #5A2020', borderRadius:8, padding:'10px 14px', marginBottom:12, fontSize:12, color:'#F87171' }}>
+                ⚠️ {lang === 'he' ? 'לא ניתן להתחבר לשרת — מציג נתוני גיבוי' : 'Could not reach server — showing cached data'}
+              </div>
+            )}
 
             <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 12 }}>{tx.found(filtered.length)}</div>
 

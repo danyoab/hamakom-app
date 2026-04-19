@@ -3,37 +3,29 @@ import { supabase } from '../lib/supabase'
 import { SEED_LOCATIONS } from '../data/locations'
 
 export function useLocations() {
-  const [locations, setLocations] = useState([])
-  const [loading, setLoading]     = useState(true)
+  const [locations, setLocations] = useState(SEED_LOCATIONS)
+  const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState(null)
 
   useEffect(() => {
-    async function fetch() {
-      // No Supabase configured — use seed data
-      if (!supabase) {
-        setLocations(SEED_LOCATIONS)
+    if (!supabase) return
+
+    setLoading(true)
+    supabase
+      .from('locations')
+      .select('*')
+      .eq('status', 'approved')
+      .order('featured', { ascending: false })
+      .order('name')
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Supabase fetch error:', error)
+          setError(error.message)
+        } else if (data && data.length > 0) {
+          setLocations(data)
+        }
         setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('locations')
-        .select('*')
-        .eq('status', 'approved')
-        .order('featured', { ascending: false })
-        .order('name')
-
-      if (error) {
-        console.error('Supabase fetch error:', error)
-        setError(error.message)
-        // Fall back to seed data so the app still works
-        setLocations(SEED_LOCATIONS)
-      } else {
-        setLocations(data || [])
-      }
-      setLoading(false)
-    }
-    fetch()
+      })
   }, [])
 
   return { locations, loading, error }

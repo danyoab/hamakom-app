@@ -8,6 +8,7 @@ import Card from './components/Card'
 import DetailView from './components/DetailView'
 import SuggestView from './components/SuggestView'
 import AdminView from './components/AdminView'
+import MapView from './components/MapView'
 
 function getTonightsPicks(locations) {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000)
@@ -39,7 +40,7 @@ export default function App() {
   const [search, setSearch]     = useState('')
   const [filters, setFilters]   = useState(INITIAL_FILTERS)
   const [savedIds, setSavedIds] = useLocalStorage('hamakom-saved', [])
-  const [view, setView]         = useState('browse') // browse | saved | suggest | detail | admin
+  const [view, setView]         = useState('browse') // browse | saved | suggest | detail | admin | map
   const [selected, setSelected] = useState(null)
   const tx   = t[lang]
   const font = lang === 'he'
@@ -86,6 +87,8 @@ export default function App() {
     return <SuggestView lang={lang} tx={tx} font={font} onBack={() => setView('browse')} />
   if (view === 'admin')
     return <AdminView lang={lang} font={font} onBack={() => setView('browse')} totalLocations={locations.length} />
+  if (view === 'map')
+    return <MapView locations={locations} lang={lang} tx={tx} font={font} onBack={() => setView('browse')} onOpenDetail={openDetail} />
 
   return (
     <div dir={tx.dir} style={{ minHeight: '100vh', background: '#0D1117', color: '#E8DCC8', fontFamily: font }}>
@@ -117,7 +120,7 @@ export default function App() {
 
           {/* Nav tabs */}
           <div style={{ display: 'flex', gap: 2 }}>
-            {[['browse', tx.browse], ['saved', `${tx.saved} (${savedIds.length})`], ['suggest', `➕ ${tx.suggest}`]].map(([v, label]) => (
+            {[['browse', tx.browse], ['saved', `${tx.saved} (${savedIds.length})`], ['suggest', `➕ ${tx.suggest}`], ['map', `🗺 ${tx.map}`]].map(([v, label]) => (
               <button
                 key={v}
                 onClick={() => setView(v)}

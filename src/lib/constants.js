@@ -54,6 +54,32 @@ export const DATE_STAGE_BADGE = {
 
 export const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || '1234'
 
+export const CITY_COORDS = {
+  'Jerusalem':          [31.7683, 35.2137],
+  'Tel Aviv':           [32.0853, 34.7818],
+  'Beit Shemesh':       [31.7458, 34.9942],
+  'Ramat Beit Shemesh': [31.7208, 35.0056],
+  "Modi'in":            [31.8969, 35.0095],
+  'Herzliya':           [32.1663, 34.8437],
+  'Netanya':            [32.3215, 34.8532],
+  "Ra'anana":           [32.1840, 34.8709],
+  'Ashdod':             [31.8044, 34.6553],
+  'Holon':              [32.0108, 34.7732],
+  'Ein Gedi':           [31.4581, 35.3862],
+  'Petach Tikva':       [32.0870, 34.8878],
+  'Ramat Gan':          [32.0701, 34.8238],
+  'Mitzpe Yericho':     [31.8483, 35.3893],
+  'Kfar Daniel':        [31.9369, 34.9356],
+  'Latrun':             [31.8383, 34.9786],
+  'Kibbutz Tzuba':      [31.7791, 35.1064],
+  'Mevaseret':          [31.7967, 35.1543],
+  'Gush Etzion':        [31.6500, 35.1167],
+  'Beit Nekofa':        [31.7800, 35.1083],
+  'Beit Zayit':         [31.7992, 35.1139],
+  'Eshtaol':            [31.7817, 34.9783],
+  'Moshav Uriyah':      [31.7706, 34.9544],
+}
+
 export function getCategoryColor(cat) {
   return (
     {

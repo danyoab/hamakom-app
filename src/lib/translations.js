@@ -34,6 +34,7 @@ export const t = {
     noSaved: "No saved places yet. Browse and tap the heart.",
     noResults: 'No results. Try adjusting your filters.',
     back: '← Back',
+    map: 'Map',
     loading: 'Loading...',
     dateLabels: { '1': '1st Date', '2': '2nd Date', '3': '3rd Date+' },
     dateDesc: {
@@ -141,6 +142,7 @@ export const t = {
     noSaved: 'אין מקומות שמורים עדיין. עיין ולחץ על הלב.',
     noResults: 'אין תוצאות. נסה לשנות את הפילטרים.',
     back: '→ חזרה',
+    map: 'מפה',
     loading: 'טוען...',
     dateLabels: { '1': 'דייט ראשון', '2': 'דייט שני', '3': 'דייט שלישי+' },
     dateDesc: {

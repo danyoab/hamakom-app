@@ -226,11 +226,11 @@ export default function App() {
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '20px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <img src="/logo.svg" alt="HaMakom" style={{ height: 52, width: 'auto', flexShrink: 0 }} />
+              <img src="/logo-icon.svg" alt="" style={{ height: 54, width: 'auto', flexShrink: 0 }} />
               <div>
-                <h1 style={{ fontSize: 26, fontWeight: 400, margin: 0, lineHeight: 1, letterSpacing: lang === 'he' ? 0 : '-0.02em' }}>
-                  {tx.appName}
-                  <span style={{ fontSize: 13, color: '#6B7280', fontStyle: 'italic', marginLeft: 8 }}>{tx.appSub}</span>
+                <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, lineHeight: 1.1, letterSpacing: '-0.5px', color: '#E8DCC8' }}>
+                  HaMakom
+                  <span style={{ fontSize: 15, fontWeight: 500, color: '#9CA3AF', marginLeft: 10 }}>המקום</span>
                 </h1>
                 <div style={{ fontSize: 11, color: '#6B7280', marginTop: 3 }}>{tx.tagline}</div>
               </div>

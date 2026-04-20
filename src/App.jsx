@@ -225,12 +225,15 @@ export default function App() {
       <div style={{ background: 'linear-gradient(135deg,#0D1117 0%,#1A1F2E 100%)', borderBottom: '1px solid #2A2F3E', padding: '0 20px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '20px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div>
-              <h1 style={{ fontSize: 32, fontWeight: 400, margin: 0, lineHeight: 1, letterSpacing: lang === 'he' ? 0 : '-0.02em' }}>
-                {tx.appName}
-                <span style={{ fontSize: 14, color: '#6B7280', fontStyle: 'italic', marginLeft: 10 }}>{tx.appSub}</span>
-              </h1>
-              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>{tx.tagline}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <img src="/logo.svg" alt="HaMakom" style={{ height: 52, width: 'auto', flexShrink: 0 }} />
+              <div>
+                <h1 style={{ fontSize: 26, fontWeight: 400, margin: 0, lineHeight: 1, letterSpacing: lang === 'he' ? 0 : '-0.02em' }}>
+                  {tx.appName}
+                  <span style={{ fontSize: 13, color: '#6B7280', fontStyle: 'italic', marginLeft: 8 }}>{tx.appSub}</span>
+                </h1>
+                <div style={{ fontSize: 11, color: '#6B7280', marginTop: 3 }}>{tx.tagline}</div>
+              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ textAlign: 'center' }}>

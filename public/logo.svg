@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 200">
+  <defs>
+    <linearGradient id="a" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F28070"/>
+      <stop offset="100%" stop-color="#E85A4E"/>
+    </linearGradient>
+    <linearGradient id="b" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#F9A888"/>
+      <stop offset="100%" stop-color="#F07868"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Right pin (behind, lighter) -->
+  <path d="M 105 185 C 78 163 93 122 93 70 A 42 42 0 0 1 177 70 C 177 122 138 163 105 185 Z" fill="url(#b)"/>
+
+  <!-- Left pin (front, darker) -->
+  <path d="M 105 185 C 132 163 117 122 117 70 A 42 42 0 0 0 33 70 C 33 122 72 163 105 185 Z" fill="url(#a)"/>
+
+  <!-- White circle (top centre) -->
+  <circle cx="105" cy="46" r="13" fill="white" opacity="0.92"/>
+
+  <!-- White diagonal stripes -->
+  <line x1="98"  y1="83" x2="78"  y2="168" stroke="white" stroke-width="7.5" stroke-linecap="round" opacity="0.88"/>
+  <line x1="112" y1="83" x2="132" y2="168" stroke="white" stroke-width="7.5" stroke-linecap="round" opacity="0.88"/>
+</svg>

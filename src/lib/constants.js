@@ -5,6 +5,7 @@ export const CATEGORIES = [
   'Museums & Culture',
   'Activities & Experiences',
   'Cafés & Restaurants',
+  'Wineries',
 ]
 
 export const CITIES = [
@@ -19,6 +20,9 @@ export const CITIES = [
   'Ashdod',
   'Holon',
   'Ein Gedi',
+  'Beit Zayit',
+  'Kibbutz Tzuba',
+  'Eshtaol',
   'Various',
 ]
 
@@ -36,6 +40,8 @@ export const OCCASION_KEYS = [
   'creative',
   'adventurous',
   'evening',
+  'scenic',
+  'winery',
 ]
 
 export const CATEGORY_EMOJI = {
@@ -44,6 +50,7 @@ export const CATEGORY_EMOJI = {
   'Museums & Culture': '🏛',
   'Activities & Experiences': '🎯',
   'Cafés & Restaurants': '☕',
+  'Wineries': '🍷',
 }
 
 export const DATE_STAGE_BADGE = {
@@ -88,6 +95,7 @@ export function getCategoryColor(cat) {
       'Museums & Culture': '#7B6FBF',
       'Activities & Experiences': '#C25B3A',
       'Cafés & Restaurants': '#4A90D9',
+      'Wineries': '#8B1E3F',
     }[cat] || '#6B7280'
   )
 }

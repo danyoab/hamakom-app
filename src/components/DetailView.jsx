@@ -1,27 +1,52 @@
+import { useState } from 'react'
 import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getMapsUrl, getWhatsAppUrl, getInviteUrl } from '../lib/constants'
 
 export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack }) {
+  const [imgFailed, setImgFailed] = useState(false)
   const name   = lang === 'he' ? (loc.name_he  || loc.name)  : loc.name
   const city   = lang === 'he' ? (loc.city_he  || loc.city)  : loc.city
   const desc   = lang === 'he' ? (loc.description_he || loc.description) : loc.description
   const stages = Array.isArray(loc.date_stage) ? loc.date_stage : [loc.date_stage]
+  const color  = getCategoryColor(loc.category)
   const mapsUrl   = getMapsUrl(loc.maps_query)
   const waUrl     = getWhatsAppUrl(name, city, lang)
   const inviteUrl = getInviteUrl(name, city, lang)
+  const showImg   = loc.image_url && !imgFailed
 
   return (
     <div dir={tx.dir} style={{ minHeight: '100vh', background: '#0D1117', color: '#E8DCC8', fontFamily: font }}>
-      {/* Header */}
-      <div style={{ background: '#161B27', borderBottom: '1px solid #2A2F3E', padding: '16px 20px' }}>
+
+      {/* ── Hero image ─── */}
+      <div style={{ position: 'relative', height: 220, background: showImg ? '#000' : `${color}22`, overflow: 'hidden' }}>
+        {showImg
+          ? <img
+              src={loc.image_url}
+              alt={name}
+              onError={() => setImgFailed(true)}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }}
+            />
+          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 72, opacity: 0.3 }}>
+              {CATEGORY_EMOJI[loc.category]}
+            </div>
+        }
+        {/* Gradient overlay so text on top is readable */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(13,17,23,0.55) 0%, rgba(13,17,23,0.1) 40%, rgba(13,17,23,0.8) 100%)' }} />
+        {/* Back button floated over image */}
         <button
           onClick={onBack}
-          style={{ background: 'none', border: 'none', color: '#C9A84C', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}
+          style={{
+            position: 'absolute', top: 14, [lang === 'he' ? 'right' : 'left']: 16,
+            background: 'rgba(13,17,23,0.65)', border: '1px solid #2A2F3E',
+            borderRadius: 8, color: '#C9A84C', cursor: 'pointer',
+            fontSize: 13, fontFamily: 'inherit', padding: '6px 12px',
+            backdropFilter: 'blur(4px)',
+          }}
         >
           {tx.back}
         </button>
       </div>
 
-      <div style={{ maxWidth: 560, margin: '0 auto', padding: '28px 20px' }}>
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 20px' }}>
         {/* Category */}
         <div style={{ marginBottom: 6, fontSize: 11, color: getCategoryColor(loc.category), letterSpacing: '0.15em', textTransform: 'uppercase' }}>
           {CATEGORY_EMOJI[loc.category]} {tx.categories[loc.category]}

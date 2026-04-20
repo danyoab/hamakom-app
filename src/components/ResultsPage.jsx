@@ -83,13 +83,15 @@ export default function ResultsPage({ lang, font, results, answers, personalityT
 }
 
 function ResultCard({ loc, rank, lang, isHe, answers }) {
-  const [copied, setCopied] = useState(false)
+  const [copied,    setCopied]    = useState(false)
+  const [imgFailed, setImgFailed] = useState(false)
 
   const name = isHe ? (loc.name_he || loc.name) : loc.name
   const city = isHe ? (loc.city_he || loc.city) : loc.city
   const desc = isHe ? (loc.description_he || loc.description) : loc.description
-  const reasons = getMatchReasons(loc, answers, lang)
-  const color   = getCategoryColor(loc.category)
+  const reasons  = getMatchReasons(loc, answers, lang)
+  const color    = getCategoryColor(loc.category)
+  const showImg  = loc.image_url && !imgFailed
 
   const handleShare = async () => {
     const text = isHe
@@ -110,36 +112,45 @@ function ResultCard({ loc, rank, lang, isHe, answers }) {
     <div style={{
       background: '#161B27',
       border: `1px solid #2A2F3E`,
-      borderTop: `3px solid ${color}`,
       borderRadius: 14,
-      padding: '16px',
       marginBottom: 12,
+      overflow: 'hidden',
       position: 'relative',
     }}>
-      {/* Rank badge */}
-      <div style={{
-        position: 'absolute',
-        top: 14,
-        [isHe ? 'left' : 'right']: 14,
-        background: color,
-        color: '#0D1117',
-        fontSize: 11,
-        fontWeight: 700,
-        borderRadius: 20,
-        padding: '2px 8px',
-        letterSpacing: '0.05em',
-      }}>
-        #{rank}
+      {/* Image or colour band */}
+      <div style={{ height: 160, background: showImg ? '#000' : `${color}22`, overflow: 'hidden', position: 'relative' }}>
+        {showImg
+          ? <img src={loc.image_url} alt={name} onError={() => setImgFailed(true)}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.88 }} />
+          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, opacity: 0.25 }}>
+              {CATEGORY_EMOJI[loc.category]}
+            </div>
+        }
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(22,27,39,0.95) 100%)' }} />
+        {/* Rank badge */}
+        <div style={{
+          position: 'absolute', top: 10, [isHe ? 'left' : 'right']: 10,
+          background: color, color: '#0D1117',
+          fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '3px 9px',
+        }}>
+          #{rank}
+        </div>
+        {/* Name pinned to bottom of image */}
+        <div style={{ position: 'absolute', bottom: 10, [isHe ? 'right' : 'left']: 14, paddingInlineEnd: 50 }}>
+          <div style={{ fontSize: 17, fontWeight: 600, color: '#E8DCC8', lineHeight: 1.2 }}>{name}</div>
+          <div style={{ fontSize: 12, color: '#C9A84C', marginTop: 2 }}>{city}</div>
+        </div>
       </div>
 
-      {/* Name & city */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8, paddingInlineEnd: 44 }}>
+      <div style={{ padding: '12px 16px 16px' }}>
+      {/* Name & city (shown only when no image) */}
+      {!showImg && <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
         <span style={{ fontSize: 26, lineHeight: 1, flexShrink: 0 }}>{CATEGORY_EMOJI[loc.category] || '📍'}</span>
         <div>
           <div style={{ fontSize: 17, fontWeight: 600, color: '#E8DCC8', lineHeight: 1.2 }}>{name}</div>
           <div style={{ fontSize: 12, color: '#C9A84C', marginTop: 2 }}>{city}</div>
         </div>
-      </div>
+      </div>}
 
       {/* Description */}
       {desc && (
@@ -207,6 +218,7 @@ function ResultCard({ loc, rank, lang, isHe, answers }) {
             : (isHe ? '📤 שתף' : '📤 Share')}
         </button>
       </div>
+      </div>{/* end card body */}
     </div>
   )
 }

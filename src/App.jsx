@@ -86,7 +86,7 @@ export default function App() {
   if (view === 'suggest')
     return <SuggestView lang={lang} tx={tx} font={font} onBack={() => setView('browse')} />
   if (view === 'admin')
-    return <AdminView lang={lang} font={font} onBack={() => setView('browse')} totalLocations={locations.length} />
+    return <AdminView lang={lang} font={font} onBack={() => setView('browse')} totalLocations={locations.length} locations={locations} />
   if (view === 'map')
     return <MapView locations={locations} lang={lang} tx={tx} font={font} onBack={() => setView('browse')} onOpenDetail={openDetail} />
 

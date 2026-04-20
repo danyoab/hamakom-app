@@ -24,6 +24,7 @@ create table if not exists locations (
   slug        text,
   region      text,
   needs_verification boolean default false,
+  image_url   text,
   created_at  timestamptz default now()
 );
 
@@ -82,5 +83,8 @@ do $$ begin
   end if;
   if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='needs_verification') then
     alter table locations add column needs_verification boolean default false;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='image_url') then
+    alter table locations add column image_url text;
   end if;
 end $$;

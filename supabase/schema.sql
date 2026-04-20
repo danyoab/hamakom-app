@@ -38,6 +38,21 @@ create table if not exists pending_submissions (
   submitted_at timestamptz default now()
 );
 
+-- Stores quiz answers per authenticated user (one row per quiz attempt)
+create table if not exists user_quiz_results (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid references auth.users(id) on delete cascade,
+  answers    jsonb not null,
+  created_at timestamptz default now()
+);
+
+alter table user_quiz_results enable row level security;
+
+create policy "users_own_quiz_results"
+  on user_quiz_results for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
 -- ── Row-Level Security ────────────────────────
 
 alter table locations          enable row level security;

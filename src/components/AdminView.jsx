@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ADMIN_PIN } from '../lib/constants'
 import { usePending } from '../hooks/usePending'
+import { supabase } from '../lib/supabase'
+import { SEED_LOCATIONS } from '../data/locations'
 
 export default function AdminView({ lang, font, onBack, totalLocations }) {
   const [unlocked, setUnlocked] = useState(false)
@@ -8,6 +10,52 @@ export default function AdminView({ lang, font, onBack, totalLocations }) {
   const [adminTab, setAdminTab] = useState('pending')
   const [toast, setToast]       = useState(null)
   const { pending, approved, loading, approveSub, rejectSub } = usePending()
+
+  // ── Images tab state ────────────────────────────────────────────────
+  const [imgLocs, setImgLocs]       = useState([])
+  const [imgLoading, setImgLoading] = useState(false)
+  const [uploading, setUploading]   = useState({})
+  const [imgSearch, setImgSearch]   = useState('')
+  const fileRefs = useRef({})
+
+  useEffect(() => {
+    if (adminTab !== 'images') return
+    if (imgLocs.length > 0) return
+    setImgLoading(true)
+    if (supabase) {
+      supabase.from('locations')
+        .select('id, name, city, category, image_url')
+        .order('name')
+        .then(({ data }) => {
+          setImgLocs(data || SEED_LOCATIONS)
+          setImgLoading(false)
+        })
+    } else {
+      setImgLocs(SEED_LOCATIONS)
+      setImgLoading(false)
+    }
+  }, [adminTab])
+
+  async function handleUpload(loc, file) {
+    if (!supabase) return showToast('Supabase not connected — images tab requires live DB', 'error')
+    setUploading(u => ({ ...u, [loc.id]: true }))
+    try {
+      const ext  = file.name.split('.').pop().toLowerCase() || 'jpg'
+      const path = `${loc.id}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('location-images')
+        .upload(path, file, { upsert: true, contentType: file.type })
+      if (upErr) throw upErr
+      const { data: { publicUrl } } = supabase.storage.from('location-images').getPublicUrl(path)
+      const { error: dbErr } = await supabase.from('locations').update({ image_url: publicUrl }).eq('id', loc.id)
+      if (dbErr) throw dbErr
+      setImgLocs(prev => prev.map(l => l.id === loc.id ? { ...l, image_url: publicUrl } : l))
+      showToast(`✓ Photo saved for "${loc.name}"`)
+    } catch (e) {
+      showToast(e.message || 'Upload failed', 'error')
+    }
+    setUploading(u => ({ ...u, [loc.id]: false }))
+  }
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
@@ -88,8 +136,8 @@ export default function AdminView({ lang, font, onBack, totalLocations }) {
         </div>
 
         {/* Tabs */}
-        <div style={{ display:'flex', gap:4, marginBottom:20 }}>
-          {[['pending',`Pending (${pending.length})`],['approved',`Approved (${approved.length})`],['sql','Supabase SQL']].map(([tab, label]) => (
+        <div style={{ display:'flex', gap:4, marginBottom:20, flexWrap:'wrap' }}>
+          {[['pending',`Pending (${pending.length})`],['approved',`Approved (${approved.length})`],['images','📷 Images'],['sql','Supabase SQL']].map(([tab, label]) => (
             <button
               key={tab}
               onClick={() => setAdminTab(tab)}
@@ -147,6 +195,65 @@ export default function AdminView({ lang, font, onBack, totalLocations }) {
               </div>
         )}
 
+        {/* Images */}
+        {adminTab === 'images' && (
+          <div>
+            <p style={{ fontSize:12, color:'#6B7280', marginBottom:14, lineHeight:1.6 }}>
+              Upload a photo for each location. Images are stored in Supabase Storage (<code style={{ color:'#C9A84C' }}>location-images</code> bucket) and the URL is saved to the database.
+            </p>
+            <input
+              value={imgSearch}
+              onChange={e => setImgSearch(e.target.value)}
+              placeholder="Filter locations…"
+              style={{ width:'100%', background:'#161B27', border:'1px solid #2A2F3E', borderRadius:8, padding:'9px 14px', color:'#E8DCC8', fontSize:13, fontFamily:'inherit', marginBottom:16, boxSizing:'border-box', outline:'none' }}
+            />
+            {imgLoading
+              ? <div style={{ color:'#6B7280', textAlign:'center', padding:'40px 0' }}>Loading locations…</div>
+              : <div style={{ display:'grid', gap:8 }}>
+                  {imgLocs
+                    .filter(l => !imgSearch || l.name.toLowerCase().includes(imgSearch.toLowerCase()) || l.city.toLowerCase().includes(imgSearch.toLowerCase()))
+                    .map(loc => (
+                    <div key={loc.id} style={{ background:'#161B27', border:'1px solid #2A2F3E', borderRadius:10, padding:12, display:'flex', alignItems:'center', gap:12 }}>
+                      {/* Thumbnail */}
+                      <div style={{ width:64, height:48, borderRadius:6, overflow:'hidden', flexShrink:0, background:'#0D1117', border:'1px solid #2A2F3E', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        {loc.image_url
+                          ? <img src={loc.image_url} alt={loc.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { e.target.style.display='none' }} />
+                          : <span style={{ fontSize:20, opacity:0.3 }}>📷</span>
+                        }
+                      </div>
+                      {/* Name */}
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:500, color:'#E8DCC8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{loc.name}</div>
+                        <div style={{ fontSize:11, color:'#6B7280' }}>{loc.city}</div>
+                      </div>
+                      {/* Upload button */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display:'none' }}
+                        ref={el => fileRefs.current[loc.id] = el}
+                        onChange={e => { if (e.target.files[0]) handleUpload(loc, e.target.files[0]); e.target.value = '' }}
+                      />
+                      <button
+                        onClick={() => fileRefs.current[loc.id]?.click()}
+                        disabled={uploading[loc.id]}
+                        style={{
+                          background: loc.image_url ? '#1F2937' : '#1A2A1A',
+                          border: `1px solid ${loc.image_url ? '#374151' : '#2D6A4F'}`,
+                          borderRadius:8, padding:'6px 14px', cursor:'pointer',
+                          fontSize:12, color: loc.image_url ? '#9CA3AF' : '#4ADE80',
+                          fontFamily:'inherit', flexShrink:0, whiteSpace:'nowrap',
+                        }}
+                      >
+                        {uploading[loc.id] ? '⏳ Uploading…' : loc.image_url ? '🔄 Replace' : '📷 Add Photo'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+            }
+          </div>
+        )}
+
         {/* SQL */}
         {adminTab === 'sql' && (
           <div style={{ background:'#0A0E1A', border:'1px solid #2A2F3E', borderRadius:10, padding:20 }}>
@@ -161,7 +268,20 @@ export default function AdminView({ lang, font, onBack, totalLocations }) {
   )
 }
 
-const SQL = `-- 1. Locations table
+const SQL = `-- 0. Storage bucket for location images
+-- Run in Supabase Dashboard → Storage → New bucket:
+--   Name: location-images   Public: YES
+-- Then add this RLS policy in SQL editor:
+insert into storage.buckets (id, name, public) values ('location-images', 'location-images', true)
+  on conflict (id) do nothing;
+create policy "Public read location images"
+  on storage.objects for select using (bucket_id = 'location-images');
+create policy "Admin upload location images"
+  on storage.objects for insert with check (bucket_id = 'location-images');
+create policy "Admin update location images"
+  on storage.objects for update using (bucket_id = 'location-images');
+
+-- 1. Locations table
 create table locations (
   id            bigint generated always as identity primary key,
   name          text not null,

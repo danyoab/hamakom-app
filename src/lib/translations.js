@@ -49,6 +49,7 @@ export const t = {
       'Museums & Culture': 'Museums & Culture',
       'Activities & Experiences': 'Activities & Experiences',
       'Cafés & Restaurants': 'Cafés & Restaurants',
+      Wineries: 'Wineries',
     },
     occasions: {
       All: 'All Occasions',
@@ -64,6 +65,8 @@ export const t = {
       creative: 'Creative',
       adventurous: 'Adventurous',
       evening: 'Evening',
+      scenic: 'Scenic',
+      winery: 'Winery',
     },
     prices: {
       all: 'Any Price',
@@ -161,6 +164,7 @@ export const t = {
       'Museums & Culture': 'מוזיאונים ותרבות',
       'Activities & Experiences': 'פעילויות וחוויות',
       'Cafés & Restaurants': 'בתי קפה ומסעדות',
+      Wineries: 'יקבים',
     },
     occasions: {
       All: 'כל הסגנונות',
@@ -176,6 +180,8 @@ export const t = {
       creative: 'יצירתי',
       adventurous: 'הרפתקני',
       evening: 'ערב',
+      scenic: 'נופי',
+      winery: 'יקב',
     },
     prices: {
       all: 'כל המחירים',

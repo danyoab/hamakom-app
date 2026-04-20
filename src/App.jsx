@@ -292,7 +292,7 @@ export default function App() {
         {view === 'browse' && (
           <>
             {/* Search + Surprise */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -323,7 +323,7 @@ export default function App() {
               </div>
             )}
 
-            <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 12 }}>{tx.found(filtered.length)}</div>
+            <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 8 }}>{tx.found(filtered.length)}</div>
 
             {loading
               ? <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280', fontStyle: 'italic' }}>{tx.loading}</div>
@@ -358,24 +358,24 @@ function QuizCTA({ lang, tx, onStart }) {
     <button
       onClick={onStart}
       style={{
-        width: '100%', marginBottom: 20,
-        background: 'linear-gradient(135deg, #131A10 0%, #1C2A14 100%)',
-        border: '1.5px solid #C9A84C44',
-        borderRadius: 14, padding: '16px 20px',
+        width: '100%', marginBottom: 12,
+        background: '#111A10',
+        border: '1px solid #C9A84C33',
+        borderRadius: 10, padding: '12px 16px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         cursor: 'pointer', fontFamily: 'inherit', textAlign: isHe ? 'right' : 'left',
         boxSizing: 'border-box',
       }}
     >
       <div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#C9A84C', marginBottom: 3 }}>
-          {tx.quizCta}
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#C9A84C' }}>
+          ✦ {tx.quizCta}
         </div>
-        <div style={{ fontSize: 12, color: '#6B7280' }}>
+        <div style={{ fontSize: 11, color: '#6B7280', marginTop: 1 }}>
           {tx.quizCtaSub}
         </div>
       </div>
-      <div style={{ fontSize: 28, flexShrink: 0, marginInlineStart: 12 }}>🎯</div>
+      <div style={{ fontSize: 20, flexShrink: 0, marginInlineStart: 12 }}>🎯</div>
     </button>
   )
 }
@@ -407,29 +407,31 @@ function EmptyWithSuggest({ tx, onSuggest, lang }) {
 function TonightsPicks({ picks, lang, tx, onOpen }) {
   if (!picks.length) return null
   return (
-    <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 11, letterSpacing: '0.15em', color: '#C9A84C', textTransform: 'uppercase', marginBottom: 10 }}>
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 10, letterSpacing: '0.15em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 8 }}>
         {tx.tonightsPicks}
       </div>
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
         {picks.map(pick => {
           const name = lang === 'he' ? (pick.name_he || pick.name) : pick.name
           const city = lang === 'he' ? (pick.city_he || pick.city) : pick.city
+          const color = getCategoryColor(pick.category)
           return (
             <div
               key={pick.id}
               onClick={() => onOpen(pick)}
               style={{
-                flex: '1 1 0', minWidth: 110, background: '#161B27',
-                border: '1px solid #2A2F3E', borderRadius: 10, padding: '12px 10px',
+                flex: '1 1 0', minWidth: 100,
+                background: '#161B27',
+                border: `1px solid #2A2F3E`,
+                borderTop: `2px solid ${color}`,
+                borderRadius: 8, padding: '10px 10px 8px',
                 cursor: 'pointer',
-                borderLeft:  lang === 'en' ? `3px solid ${getCategoryColor(pick.category)}` : undefined,
-                borderRight: lang === 'he' ? `3px solid ${getCategoryColor(pick.category)}` : undefined,
               }}
             >
-              <div style={{ fontSize: 20, marginBottom: 6 }}>{CATEGORY_EMOJI[pick.category]}</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#E8DCC8', marginBottom: 2, textAlign: lang === 'he' ? 'right' : 'left' }}>{name}</div>
-              <div style={{ fontSize: 11, color: '#C9A84C', textAlign: lang === 'he' ? 'right' : 'left' }}>{city}</div>
+              <div style={{ fontSize: 16, marginBottom: 4 }}>{CATEGORY_EMOJI[pick.category]}</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#E8DCC8', marginBottom: 1 }}>{name}</div>
+              <div style={{ fontSize: 10, color: '#C9A84C' }}>{city}</div>
             </div>
           )
         })}

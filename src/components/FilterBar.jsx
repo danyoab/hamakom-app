@@ -1,68 +1,39 @@
-import { CATEGORIES, CITIES, OCCASION_KEYS, CATEGORY_EMOJI, DATE_STAGE_BADGE } from '../lib/constants'
-
-const MOODS = [
-  { key: 'chill',    category: 'Parks & Outdoors' },
-  { key: 'coffee',   category: 'Cafés & Restaurants' },
-  { key: 'romantic', category: 'Hotels & Lounges' },
-  { key: 'active',   category: 'Activities & Experiences' },
-  { key: 'cultural', category: 'Museums & Culture' },
-]
+import { CATEGORIES, CITIES, OCCASION_KEYS, CATEGORY_EMOJI } from '../lib/constants'
 
 export default function FilterBar({ tx, filters, setFilters }) {
   const { cityFilter, categoryFilter, occasionFilter, priceFilter, dateFilter } = filters
-
   const set = (key, val) => setFilters(prev => ({ ...prev, [key]: val }))
 
+  const dateOptions = [
+    { val: 'all', label: tx.allDates },
+    { val: '1',   label: `💬 ${tx.date1}` },
+    { val: '2',   label: `😊 ${tx.date2}` },
+    { val: '3',   label: `🔥 ${tx.date3}` },
+  ]
+
   return (
-    <div>
-      {/* Vibe/Mood row */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 10, letterSpacing: '0.2em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 8 }}>
-          {tx.vibeFilter}
-        </div>
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-          {MOODS.map(mood => {
-            const isActive = categoryFilter === mood.category
-            return (
-              <button
-                key={mood.key}
-                onClick={() => set('categoryFilter', isActive ? 'All' : mood.category)}
-                style={{
-                  background:   isActive ? '#C9A84C' : '#161B27',
-                  color:        isActive ? '#0D1117' : '#9CA3AF',
-                  border:       '1px solid ' + (isActive ? '#C9A84C' : '#2A2F3E'),
-                  borderRadius: 20, padding: '6px 13px', cursor: 'pointer',
-                  fontSize: 12, fontFamily: 'inherit', whiteSpace: 'nowrap',
-                  fontWeight: isActive ? 600 : 400,
-                }}
-              >
-                {tx.moods[mood.key]}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+    <div style={{ marginBottom: 12 }}>
+      {/* Row 1: Date stage pills + dropdowns */}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 8, alignItems: 'center' }}>
+        {dateOptions.map(({ val, label }) => (
+          <button
+            key={val}
+            onClick={() => set('dateFilter', val)}
+            style={{
+              background:   dateFilter === val ? '#C9A84C' : '#161B27',
+              color:        dateFilter === val ? '#0D1117' : '#9CA3AF',
+              border:       '1px solid ' + (dateFilter === val ? '#C9A84C' : '#2A2F3E'),
+              borderRadius: 20, padding: '6px 13px', cursor: 'pointer',
+              fontSize: 11, fontFamily: 'inherit', whiteSpace: 'nowrap',
+              fontWeight: dateFilter === val ? 600 : 400, flexShrink: 0,
+            }}
+          >
+            {label}
+          </button>
+        ))}
 
-      {/* Date stage */}
-      <div style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
-        <div style={{ fontSize: 10, letterSpacing: '0.2em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 8 }}>
-          {tx.dateStage}
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          <StageBtn active={dateFilter === 'all'} gold onClick={() => set('dateFilter', 'all')}>{tx.allDates}</StageBtn>
-          {[['1','💬'], ['2','😊'], ['3','🔥']].map(([s, emoji]) => (
-            <StageBtn key={s} active={dateFilter === s} stage={Number(s)} onClick={() => set('dateFilter', s)}>
-              {emoji} {tx[`date${s}`]}
-              {dateFilter === s && (
-                <span style={{ fontSize: 10, marginLeft: 5, opacity: 0.75 }}>— {tx.dateDesc[s]}</span>
-              )}
-            </StageBtn>
-          ))}
-        </div>
-      </div>
+        <div style={{ width: 1, height: 18, background: '#2A2F3E', flexShrink: 0, margin: '0 2px' }} />
 
-      {/* Dropdowns */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         <FilterSelect
           value={cityFilter}
           onChange={v => set('cityFilter', v)}
@@ -86,18 +57,18 @@ export default function FilterBar({ tx, filters, setFilters }) {
         />
       </div>
 
-      {/* Category chips */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 12, paddingBottom: 4 }}>
+      {/* Row 2: Category chips */}
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
         {CATEGORIES.map(cat => (
           <button
             key={cat}
-            onClick={() => set('categoryFilter', cat)}
+            onClick={() => set('categoryFilter', categoryFilter === cat ? 'All' : cat)}
             style={{
-              background: categoryFilter === cat ? '#C9A84C' : '#161B27',
-              color: categoryFilter === cat ? '#0D1117' : '#9CA3AF',
-              border: '1px solid ' + (categoryFilter === cat ? '#C9A84C' : '#2A2F3E'),
-              borderRadius: 20, padding: '5px 12px', cursor: 'pointer', fontSize: 11,
-              fontFamily: 'inherit', whiteSpace: 'nowrap',
+              background:   categoryFilter === cat ? '#C9A84C' : '#161B27',
+              color:        categoryFilter === cat ? '#0D1117' : '#9CA3AF',
+              border:       '1px solid ' + (categoryFilter === cat ? '#C9A84C' : '#2A2F3E'),
+              borderRadius: 20, padding: '5px 12px', cursor: 'pointer',
+              fontSize: 11, fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
             }}
           >
             {cat === 'All' ? tx.allCategories : (CATEGORY_EMOJI[cat] + ' ' + tx.categories[cat]?.split(' & ')[0])}
@@ -108,25 +79,6 @@ export default function FilterBar({ tx, filters, setFilters }) {
   )
 }
 
-function StageBtn({ children, active, stage, gold, onClick }) {
-  const c = stage ? DATE_STAGE_BADGE[stage] : null
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        background: active ? (gold ? '#C9A84C' : c.bg) : '#1F2937',
-        color: active ? (gold ? '#0D1117' : c.text) : '#9CA3AF',
-        border: '1px solid ' + (active ? (gold ? '#C9A84C' : c.text) : '#374151'),
-        borderRadius: 8, padding: '7px 14px', cursor: 'pointer',
-        fontSize: 12, fontFamily: 'inherit', fontWeight: 500,
-        display: 'flex', alignItems: 'center', gap: 4,
-      }}
-    >
-      {children}
-    </button>
-  )
-}
-
 function FilterSelect({ value, onChange, options, labels = {}, dir }) {
   return (
     <select
@@ -134,8 +86,9 @@ function FilterSelect({ value, onChange, options, labels = {}, dir }) {
       onChange={e => onChange(e.target.value)}
       style={{
         background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 8,
-        padding: '7px 10px', color: '#E8DCC8', fontSize: 11,
-        fontFamily: 'inherit', cursor: 'pointer', outline: 'none', direction: dir,
+        padding: '6px 10px', color: '#E8DCC8', fontSize: 11,
+        fontFamily: 'inherit', cursor: 'pointer', outline: 'none',
+        direction: dir, flexShrink: 0,
       }}
     >
       {options.map(opt => (

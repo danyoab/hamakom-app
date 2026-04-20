@@ -5,6 +5,7 @@ export const CATEGORIES = [
   'Museums & Culture',
   'Activities & Experiences',
   'Cafés & Restaurants',
+  'Wineries',
 ]
 
 export const CITIES = [
@@ -29,6 +30,17 @@ export const CITIES = [
   'Dead Sea',
   'Beer Sheva',
   'Rehovot',
+  'Eshtaol',
+  'Tzora',
+  'Nes Harim',
+  'Netiv HaLamed-Heh',
+  'Mata',
+  'Zekharia',
+  'Yad HaShmona',
+  'Yiron',
+  'Ein Zivan',
+  'Mitzpe Netofa',
+  'Kibbutz Tzuba',
   'Various',
 ]
 
@@ -54,6 +66,7 @@ export const CATEGORY_EMOJI = {
   'Museums & Culture': '🏛',
   'Activities & Experiences': '🎯',
   'Cafés & Restaurants': '☕',
+  'Wineries': '🍷',
 }
 
 export const DATE_STAGE_BADGE = {
@@ -105,6 +118,15 @@ export const CITY_COORDS = {
   'Sataf':              [31.7767, 35.1367],
   'Ein Hemed':          [31.7944, 35.1061],
   'Banias':             [33.2480, 35.6950],
+  'Tzora':              [31.7800, 34.9833],
+  'Nes Harim':          [31.7417, 35.0750],
+  'Netiv HaLamed-Heh':  [31.6778, 34.9583],
+  'Mata':               [31.7583, 35.0583],
+  'Zekharia':           [31.6639, 34.9556],
+  'Yad HaShmona':       [31.7917, 35.1083],
+  'Yiron':              [33.0583, 35.4167],
+  'Ein Zivan':          [32.9833, 35.7667],
+  'Mitzpe Netofa':      [32.7583, 35.3833],
 }
 
 export function getCategoryColor(cat) {
@@ -115,6 +137,7 @@ export function getCategoryColor(cat) {
       'Museums & Culture': '#7B6FBF',
       'Activities & Experiences': '#C25B3A',
       'Cafés & Restaurants': '#4A90D9',
+      'Wineries': '#722F37',
     }[cat] || '#6B7280'
   )
 }

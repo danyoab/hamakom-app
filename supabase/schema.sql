@@ -21,6 +21,9 @@ create table if not exists locations (
   kashrus     text,
   featured    boolean   default false,
   status      text      default 'approved',
+  slug        text,
+  region      text,
+  needs_verification boolean default false,
   created_at  timestamptz default now()
 );
 
@@ -68,3 +71,16 @@ create policy "anon_read_submissions"
 create policy "anon_update_submissions"
   on pending_submissions for update
   using (true);
+
+-- ── Migrations (safe to run on existing DB) ────
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='slug') then
+    alter table locations add column slug text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='region') then
+    alter table locations add column region text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='needs_verification') then
+    alter table locations add column needs_verification boolean default false;
+  end if;
+end $$;

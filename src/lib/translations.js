@@ -105,6 +105,10 @@ export const t = {
     suggestAnother: 'Suggest Another Place',
     suggestRequired: 'Please fill in name, city and category.',
     suggestError: 'Something went wrong. Please try again.',
+    // Quiz flow
+    quizCta:      '✨ Find My Perfect Date',
+    quizCtaSub:   '6 questions · Personalized results',
+    quiz:         'Quiz',
   },
 
   he: {
@@ -206,5 +210,9 @@ export const t = {
     suggestAnother: 'הצע מקום נוסף',
     suggestRequired: 'נא למלא שם, עיר וקטגוריה.',
     suggestError: 'משהו השתבש. אנא נסה שוב.',
+    // Quiz flow
+    quizCta:      '✨ מצא לי את הדייט המושלם',
+    quizCtaSub:   '6 שאלות · תוצאות אישיות',
+    quiz:         'בוחן',
   },
 }

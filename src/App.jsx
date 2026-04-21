@@ -1,14 +1,23 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { t } from './lib/translations'
 import { useLocations } from './hooks/useLocations'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { ADMIN_PIN, CATEGORY_EMOJI, getCategoryColor } from './lib/constants'
-import FilterBar from './components/FilterBar'
-import Card from './components/Card'
-import DetailView from './components/DetailView'
-import SuggestView from './components/SuggestView'
-import AdminView from './components/AdminView'
-import MapView from './components/MapView'
+import { supabase } from './lib/supabase'
+import {
+  getPersonalizedResults, buildPersonalityTags,
+  saveAnswersToSession, loadAnswersFromSession, clearAnswersFromSession,
+} from './lib/quiz'
+import FilterBar       from './components/FilterBar'
+import Card            from './components/Card'
+import DetailView      from './components/DetailView'
+import SuggestView     from './components/SuggestView'
+import AdminView       from './components/AdminView'
+import MapView         from './components/MapView'
+import QuizStepper     from './components/QuizStepper'
+import LoadingScreen   from './components/LoadingScreen'
+import ResultsGateModal from './components/ResultsGateModal'
+import ResultsPage     from './components/ResultsPage'
 
 function getTonightsPicks(locations) {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000)
@@ -40,14 +49,77 @@ export default function App() {
   const [search, setSearch]     = useState('')
   const [filters, setFilters]   = useState(INITIAL_FILTERS)
   const [savedIds, setSavedIds] = useLocalStorage('hamakom-saved', [])
-  const [view, setView]         = useState('browse') // browse | saved | suggest | detail | admin | map
+  const [view, setView]         = useState('browse') // browse | saved | suggest | detail | admin | map | quiz | quiz-loading | quiz-gate | quiz-results
   const [selected, setSelected] = useState(null)
+
+  // Quiz state
+  const [quizAnswers,  setQuizAnswers]  = useState(null)
+  const [quizResults,  setQuizResults]  = useState([])
+  const [personalTags, setPersonalTags] = useState({ en: [], he: [] })
+  const [authUser,     setAuthUser]     = useState(null)
+
+  // viewRef lets auth callback read current view without stale closure
+  const viewRef = useRef('browse')
+  const setViewSync = (v) => { viewRef.current = v; setView(v) }
+
   const tx   = t[lang]
   const font = lang === 'he'
     ? "'David','Frank Ruhl Libre',Georgia,serif"
     : "'Palatino Linotype',Palatino,Georgia,serif"
 
   const { locations, loading, error: locError } = useLocations()
+
+  // ── Auth listener + OAuth redirect recovery ──────────────────────────
+  useEffect(() => {
+    if (!supabase) return
+
+    // Check for existing session (handles OAuth redirect back to app)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setAuthUser(session.user)
+        const pending = loadAnswersFromSession()
+        if (pending) {
+          setQuizAnswers(pending)
+          setPersonalTags(buildPersonalityTags(pending))
+          clearAnswersFromSession()
+          // Will set quiz-results once locations load (handled in separate effect)
+          setViewSync('quiz-results')
+        }
+      }
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user ?? null
+      setAuthUser(user)
+      if (user && _event === 'SIGNED_IN') {
+        const pending = loadAnswersFromSession()
+        if (pending) {
+          setQuizAnswers(pending)
+          setPersonalTags(buildPersonalityTags(pending))
+          clearAnswersFromSession()
+        }
+        // If currently in gate, advance to results
+        setView(prev => prev === 'quiz-gate' ? 'quiz-results' : prev)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Persist quiz results to Supabase after auth ───────────────────────
+  useEffect(() => {
+    if (!authUser || !quizAnswers || !supabase) return
+    supabase.from('user_quiz_results')
+      .insert({ user_id: authUser.id, answers: quizAnswers })
+      .then(({ error }) => { if (error) console.warn('quiz save:', error.message) })
+  }, [authUser, quizAnswers])
+
+  // ── Recompute quiz results once locations arrive ───────────────────────
+  useEffect(() => {
+    if (quizAnswers && locations.length > 0 && quizResults.length === 0) {
+      setQuizResults(getPersonalizedResults(locations, quizAnswers, 5))
+    }
+  }, [quizAnswers, locations]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(() => {
     const { cityFilter, categoryFilter, occasionFilter, priceFilter, dateFilter } = filters
@@ -76,19 +148,75 @@ export default function App() {
     const pool = filtered.length > 0 ? filtered : locations
     if (!pool.length) return
     setSelected(pool[Math.floor(Math.random() * pool.length)])
-    setView('detail')
+    setViewSync('detail')
   }
-  const openDetail = (loc) => { setSelected(loc); setView('detail') }
+  const openDetail = (loc) => { setSelected(loc); setViewSync('detail') }
 
-  // Routed views
+  // ── Quiz handlers ─────────────────────────────────────────────────────
+  const handleQuizComplete = (answers) => {
+    const results = getPersonalizedResults(locations, answers, 5)
+    const tags    = buildPersonalityTags(answers)
+    setQuizAnswers(answers)
+    setQuizResults(results)
+    setPersonalTags(tags)
+    saveAnswersToSession(answers) // survives OAuth redirect
+    setViewSync('quiz-loading')
+  }
+
+  const handleLoadingDone = () => {
+    setViewSync(authUser ? 'quiz-results' : 'quiz-gate')
+  }
+
+  const handleGateSkip = () => {
+    setViewSync('quiz-results')
+  }
+
+  const handleRetakeQuiz = () => {
+    setQuizAnswers(null)
+    setQuizResults([])
+    setPersonalTags({ en: [], he: [] })
+    setViewSync('quiz')
+  }
+
+  // ── Routed views ──────────────────────────────────────────────────────
+  if (view === 'quiz')
+    return <QuizStepper lang={lang} font={font} onComplete={handleQuizComplete} onBack={() => setViewSync('browse')} />
+
+  if (view === 'quiz-loading')
+    return <LoadingScreen lang={lang} font={font} onComplete={handleLoadingDone} />
+
+  if (view === 'quiz-gate')
+    return (
+      <ResultsGateModal
+        lang={lang}
+        font={font}
+        results={quizResults}
+        personalityTags={personalTags}
+        onSkip={handleGateSkip}
+      />
+    )
+
+  if (view === 'quiz-results')
+    return (
+      <ResultsPage
+        lang={lang}
+        font={font}
+        results={quizResults}
+        answers={quizAnswers || {}}
+        personalityTags={personalTags}
+        onBrowseAll={() => setViewSync('browse')}
+        onRetakeQuiz={handleRetakeQuiz}
+      />
+    )
+
   if (view === 'detail' && selected)
-    return <DetailView loc={selected} lang={lang} tx={tx} font={font} saved={savedIds.includes(selected.id)} onToggleSave={() => toggleSave(selected.id)} onBack={() => { setView('browse'); setSelected(null) }} />
+    return <DetailView loc={selected} lang={lang} tx={tx} font={font} saved={savedIds.includes(selected.id)} onToggleSave={() => toggleSave(selected.id)} onBack={() => { setViewSync('browse'); setSelected(null) }} />
   if (view === 'suggest')
-    return <SuggestView lang={lang} tx={tx} font={font} onBack={() => setView('browse')} />
+    return <SuggestView lang={lang} tx={tx} font={font} onBack={() => setViewSync('browse')} />
   if (view === 'admin')
-    return <AdminView lang={lang} font={font} onBack={() => setView('browse')} totalLocations={locations.length} locations={locations} />
+    return <AdminView lang={lang} font={font} onBack={() => setViewSync('browse')} totalLocations={locations.length} locations={locations} />
   if (view === 'map')
-    return <MapView locations={locations} lang={lang} tx={tx} font={font} onBack={() => setView('browse')} onOpenDetail={openDetail} />
+    return <MapView locations={locations} lang={lang} tx={tx} font={font} onBack={() => setViewSync('browse')} onOpenDetail={openDetail} />
 
   return (
     <div dir={tx.dir} style={{ minHeight: '100vh', background: '#0D1117', color: '#E8DCC8', fontFamily: font }}>
@@ -97,12 +225,15 @@ export default function App() {
       <div style={{ background: 'linear-gradient(135deg,#0D1117 0%,#1A1F2E 100%)', borderBottom: '1px solid #2A2F3E', padding: '0 20px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '20px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div>
-              <h1 style={{ fontSize: 32, fontWeight: 400, margin: 0, lineHeight: 1, letterSpacing: lang === 'he' ? 0 : '-0.02em' }}>
-                {tx.appName}
-                <span style={{ fontSize: 14, color: '#6B7280', fontStyle: 'italic', marginLeft: 10 }}>{tx.appSub}</span>
-              </h1>
-              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>{tx.tagline}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <img src="/logo-icon.svg" alt="" style={{ height: 54, width: 'auto', flexShrink: 0 }} />
+              <div>
+                <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, lineHeight: 1.1, letterSpacing: '-0.5px', color: '#E8DCC8' }}>
+                  HaMakom
+                  <span style={{ fontSize: 15, fontWeight: 500, color: '#9CA3AF', marginLeft: 10 }}>המקום</span>
+                </h1>
+                <div style={{ fontSize: 11, color: '#6B7280', marginTop: 3 }}>{tx.tagline}</div>
+              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ textAlign: 'center' }}>
@@ -123,7 +254,7 @@ export default function App() {
             {[['browse', tx.browse], ['saved', `${tx.saved} (${savedIds.length})`], ['suggest', `➕ ${tx.suggest}`], ['map', `🗺 ${tx.map}`]].map(([v, label]) => (
               <button
                 key={v}
-                onClick={() => setView(v)}
+                onClick={() => setViewSync(v)}
                 style={{
                   background: view === v ? '#C9A84C' : 'transparent',
                   color: view === v ? '#0D1117' : '#9CA3AF',
@@ -136,7 +267,7 @@ export default function App() {
             ))}
             {/* Hidden admin dot */}
             <button
-              onClick={() => setView('admin')}
+              onClick={() => setViewSync('admin')}
               style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#2A2F3E', fontSize: 10, padding: '0 8px', alignSelf: 'center' }}
               title="Admin"
             >
@@ -164,7 +295,7 @@ export default function App() {
         {view === 'browse' && (
           <>
             {/* Search + Surprise */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -183,6 +314,9 @@ export default function App() {
               </button>
             </div>
 
+            {/* ── Quiz CTA ────────────────────────────────────────────────── */}
+            <QuizCTA lang={lang} tx={tx} font={font} onStart={() => setViewSync('quiz')} />
+
             <TonightsPicks picks={tonightsPicks} lang={lang} tx={tx} onOpen={openDetail} />
             <FilterBar tx={tx} filters={filters} setFilters={setFilters} />
 
@@ -192,12 +326,12 @@ export default function App() {
               </div>
             )}
 
-            <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 12 }}>{tx.found(filtered.length)}</div>
+            <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 8 }}>{tx.found(filtered.length)}</div>
 
             {loading
               ? <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280', fontStyle: 'italic' }}>{tx.loading}</div>
               : filtered.length === 0
-                ? <EmptyWithSuggest tx={tx} onSuggest={() => setView('suggest')} lang={lang} />
+                ? <EmptyWithSuggest tx={tx} onSuggest={() => setViewSync('suggest')} lang={lang} />
                 : <div style={{ display: 'grid', gap: 8 }}>
                     {filtered.map(loc => (
                       <Card key={loc.id} loc={loc} lang={lang} tx={tx} saved={savedIds.includes(loc.id)} onToggleSave={() => toggleSave(loc.id)} onClick={() => openDetail(loc)} />
@@ -217,6 +351,35 @@ export default function App() {
         <a href="https://hamakom.app" style={{ color: '#C9A84C', textDecoration: 'none' }}>hamakom.app</a>
       </div>
     </div>
+  )
+}
+
+// ── Quiz CTA banner ──────────────────────────────────────────────────────────
+function QuizCTA({ lang, tx, onStart }) {
+  const isHe = lang === 'he'
+  return (
+    <button
+      onClick={onStart}
+      style={{
+        width: '100%', marginBottom: 12,
+        background: '#111A10',
+        border: '1px solid #C9A84C33',
+        borderRadius: 10, padding: '12px 16px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        cursor: 'pointer', fontFamily: 'inherit', textAlign: isHe ? 'right' : 'left',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#C9A84C' }}>
+          ✦ {tx.quizCta}
+        </div>
+        <div style={{ fontSize: 11, color: '#6B7280', marginTop: 1 }}>
+          {tx.quizCtaSub}
+        </div>
+      </div>
+      <div style={{ fontSize: 20, flexShrink: 0, marginInlineStart: 12 }}>🎯</div>
+    </button>
   )
 }
 
@@ -247,29 +410,31 @@ function EmptyWithSuggest({ tx, onSuggest, lang }) {
 function TonightsPicks({ picks, lang, tx, onOpen }) {
   if (!picks.length) return null
   return (
-    <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 11, letterSpacing: '0.15em', color: '#C9A84C', textTransform: 'uppercase', marginBottom: 10 }}>
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 10, letterSpacing: '0.15em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 8 }}>
         {tx.tonightsPicks}
       </div>
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
         {picks.map(pick => {
           const name = lang === 'he' ? (pick.name_he || pick.name) : pick.name
           const city = lang === 'he' ? (pick.city_he || pick.city) : pick.city
+          const color = getCategoryColor(pick.category)
           return (
             <div
               key={pick.id}
               onClick={() => onOpen(pick)}
               style={{
-                flex: '1 1 0', minWidth: 110, background: '#161B27',
-                border: '1px solid #2A2F3E', borderRadius: 10, padding: '12px 10px',
+                flex: '1 1 0', minWidth: 100,
+                background: '#161B27',
+                border: `1px solid #2A2F3E`,
+                borderTop: `2px solid ${color}`,
+                borderRadius: 8, padding: '10px 10px 8px',
                 cursor: 'pointer',
-                borderLeft:  lang === 'en' ? `3px solid ${getCategoryColor(pick.category)}` : undefined,
-                borderRight: lang === 'he' ? `3px solid ${getCategoryColor(pick.category)}` : undefined,
               }}
             >
-              <div style={{ fontSize: 20, marginBottom: 6 }}>{CATEGORY_EMOJI[pick.category]}</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#E8DCC8', marginBottom: 2, textAlign: lang === 'he' ? 'right' : 'left' }}>{name}</div>
-              <div style={{ fontSize: 11, color: '#C9A84C', textAlign: lang === 'he' ? 'right' : 'left' }}>{city}</div>
+              <div style={{ fontSize: 16, marginBottom: 4 }}>{CATEGORY_EMOJI[pick.category]}</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#E8DCC8', marginBottom: 1 }}>{name}</div>
+              <div style={{ fontSize: 10, color: '#C9A84C' }}>{city}</div>
             </div>
           )
         })}

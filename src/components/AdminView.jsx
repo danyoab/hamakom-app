@@ -1,21 +1,63 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ADMIN_PIN } from '../lib/constants'
 import { supabase } from '../lib/supabase'
 import { usePending } from '../hooks/usePending'
 import { SEED_LOCATIONS } from '../data/locations'
 
 export default function AdminView({ lang, font, onBack, totalLocations, locations = [] }) {
-  const [unlocked, setUnlocked]   = useState(false)
-  const [pin, setPin]             = useState('')
-  const [adminTab, setAdminTab]   = useState('pending')
-  const [toast, setToast]         = useState(null)
-  const [syncing, setSyncing]     = useState(false)
-  const [imgSearch, setImgSearch] = useState('')
-  const [imgLoc, setImgLoc]       = useState(null)
-  const [imgUrl, setImgUrl]       = useState('')
-  const [imgSaving, setImgSaving] = useState(false)
+  const [unlocked, setUnlocked] = useState(false)
+  const [pin, setPin]           = useState('')
+  const [adminTab, setAdminTab] = useState('pending')
+  const [toast, setToast]       = useState(null)
+  const [syncing, setSyncing]   = useState(false)
+
+  // Images tab state
+  const [imgLocs, setImgLocs]       = useState([])
+  const [imgLoading, setImgLoading] = useState(false)
+  const [uploading, setUploading]   = useState({})
+  const [imgSearch, setImgSearch]   = useState('')
+  const fileRefs = useRef({})
 
   const { pending, approved, loading, approveSub, rejectSub } = usePending()
+
+  useEffect(() => {
+    if (adminTab !== 'images') return
+    if (imgLocs.length > 0) return
+    setImgLoading(true)
+    if (supabase) {
+      supabase.from('locations')
+        .select('id, name, city, category, image_url')
+        .order('name')
+        .then(({ data }) => {
+          setImgLocs(data || SEED_LOCATIONS)
+          setImgLoading(false)
+        })
+    } else {
+      setImgLocs(SEED_LOCATIONS)
+      setImgLoading(false)
+    }
+  }, [adminTab])
+
+  async function handleUpload(loc, file) {
+    if (!supabase) return showToast('Supabase not connected — images tab requires live DB', 'error')
+    setUploading(u => ({ ...u, [loc.id]: true }))
+    try {
+      const ext  = file.name.split('.').pop().toLowerCase() || 'jpg'
+      const path = `${loc.id}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('location-images')
+        .upload(path, file, { upsert: true, contentType: file.type })
+      if (upErr) throw upErr
+      const { data: { publicUrl } } = supabase.storage.from('location-images').getPublicUrl(path)
+      const { error: dbErr } = await supabase.from('locations').update({ image_url: publicUrl }).eq('id', loc.id)
+      if (dbErr) throw dbErr
+      setImgLocs(prev => prev.map(l => l.id === loc.id ? { ...l, image_url: publicUrl } : l))
+      showToast(`✓ Photo saved for "${loc.name}"`)
+    } catch (e) {
+      showToast(e.message || 'Upload failed', 'error')
+    }
+    setUploading(u => ({ ...u, [loc.id]: false }))
+  }
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
@@ -37,7 +79,6 @@ export default function AdminView({ lang, font, onBack, totalLocations, location
   const handleSync = async () => {
     if (!supabase) return showToast('Supabase not connected — add env vars to sync', 'error')
     setSyncing(true)
-    // Strip JS-only fields that may not exist in older DB deployments
     const rows = SEED_LOCATIONS.map(({ needs_verification, slug, region, ...rest }) => ({
       ...rest,
       slug: slug ?? null,
@@ -49,26 +90,6 @@ export default function AdminView({ lang, font, onBack, totalLocations, location
     else showToast(`✓ ${rows.length} locations synced to Supabase`)
     setSyncing(false)
   }
-
-  const handleSaveImage = async () => {
-    if (!supabase || !imgLoc) return
-    setImgSaving(true)
-    const { error } = await supabase
-      .from('locations')
-      .update({ image_url: imgUrl || null })
-      .eq('id', imgLoc.id)
-    if (error) showToast(`Save failed: ${error.message}`, 'error')
-    else { showToast(`✓ Image updated for "${imgLoc.name}"`); setImgLoc(null); setImgUrl('') }
-    setImgSaving(false)
-  }
-
-  const imgLocations = useMemo(() => {
-    if (!imgSearch.trim()) return locations.slice(0, 40)
-    const q = imgSearch.toLowerCase()
-    return locations.filter(l =>
-      l.name.toLowerCase().includes(q) || l.city.toLowerCase().includes(q)
-    ).slice(0, 40)
-  }, [locations, imgSearch])
 
   const inputStyle = { background:'#0D1117', border:'1px solid #2A2F3E', borderRadius:8, padding:'9px 14px', color:'#E8DCC8', fontSize:13, width:'100%', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }
   const btnStyle   = (col='#C9A84C') => ({ background:col, color:'#0D1117', border:'none', borderRadius:8, padding:'9px 20px', cursor:'pointer', fontSize:13, fontWeight:600, fontFamily:'inherit' })
@@ -96,7 +117,7 @@ export default function AdminView({ lang, font, onBack, totalLocations, location
     ['pending',  `Pending (${pending.length})`],
     ['approved', `Approved (${approved.length})`],
     ['sync',     'Sync DB'],
-    ['images',   'Images'],
+    ['images',   '📷 Images'],
     ['sql',      'SQL'],
   ]
 
@@ -228,66 +249,56 @@ export default function AdminView({ lang, font, onBack, totalLocations, location
         {/* ── Images ──────────────────────────────────────────────────────── */}
         {adminTab === 'images' && (
           <div>
-            {!supabase ? (
-              <div style={{ background:'#3A1A1A', border:'1px solid #DC2626', borderRadius:10, padding:24, textAlign:'center' }}>
-                <div style={{ fontSize:32, marginBottom:12 }}>🔌</div>
-                <div style={{ fontSize:15, color:'#FCA5A5', marginBottom:8 }}>Supabase not connected</div>
-                <div style={{ fontSize:13, color:'#9CA3AF' }}>
-                  Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> to your <code>.env</code> file to manage images.
-                </div>
-              </div>
-            ) : imgLoc ? (
-              <div style={{ background:'#161B27', border:'1px solid #2A2F3E', borderRadius:10, padding:24 }}>
-                <button onClick={() => { setImgLoc(null); setImgUrl('') }} style={{ background:'none', border:'none', color:'#9CA3AF', cursor:'pointer', fontSize:13, fontFamily:'inherit', padding:0, marginBottom:16 }}>← Back to list</button>
-                <div style={{ fontSize:16, fontWeight:500, marginBottom:4 }}>{imgLoc.name}</div>
-                <div style={{ fontSize:12, color:'#C9A84C', marginBottom:20 }}>{imgLoc.city} · {imgLoc.category}</div>
-                {imgUrl && (
-                  <img src={imgUrl} alt="" onError={e => e.target.style.display='none'}
-                    style={{ width:'100%', maxHeight:200, objectFit:'cover', borderRadius:8, marginBottom:16, border:'1px solid #2A2F3E' }} />
-                )}
-                <label style={{ fontSize:12, color:'#6B7280', display:'block', marginBottom:6 }}>Image URL</label>
-                <input
-                  value={imgUrl}
-                  onChange={e => setImgUrl(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  style={{ ...inputStyle, marginBottom:16 }}
-                />
-                <div style={{ display:'flex', gap:10 }}>
-                  <button onClick={handleSaveImage} disabled={imgSaving} style={{ ...btnStyle(), opacity: imgSaving ? 0.5 : 1 }}>
-                    {imgSaving ? 'Saving…' : 'Save Image'}
-                  </button>
-                  {imgLoc.image_url && (
-                    <button onClick={() => { setImgUrl(''); handleSaveImage() }} style={btnStyle('#F87171')}>Remove Image</button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div>
-                <input
-                  value={imgSearch}
-                  onChange={e => setImgSearch(e.target.value)}
-                  placeholder="Search location by name or city…"
-                  style={{ ...inputStyle, marginBottom:16 }}
-                />
-                <div style={{ display:'grid', gap:8 }}>
-                  {imgLocations.map(loc => (
-                    <div
-                      key={loc.id}
-                      onClick={() => { setImgLoc(loc); setImgUrl(loc.image_url || '') }}
-                      style={{ background:'#161B27', border:'1px solid #2A2F3E', borderRadius:10, padding:'14px 16px', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center' }}
-                    >
-                      <div>
-                        <div style={{ fontSize:14, fontWeight:500 }}>{loc.name}</div>
-                        <div style={{ fontSize:12, color:'#6B7280' }}>{loc.city} · {loc.category}</div>
+            <p style={{ fontSize:12, color:'#6B7280', marginBottom:14, lineHeight:1.6 }}>
+              Upload a photo for each location. Images are stored in Supabase Storage (<code style={{ color:'#C9A84C' }}>location-images</code> bucket) and the URL is saved to the database.
+            </p>
+            <input
+              value={imgSearch}
+              onChange={e => setImgSearch(e.target.value)}
+              placeholder="Filter locations…"
+              style={{ width:'100%', background:'#161B27', border:'1px solid #2A2F3E', borderRadius:8, padding:'9px 14px', color:'#E8DCC8', fontSize:13, fontFamily:'inherit', marginBottom:16, boxSizing:'border-box', outline:'none' }}
+            />
+            {imgLoading
+              ? <div style={{ color:'#6B7280', textAlign:'center', padding:'40px 0' }}>Loading locations…</div>
+              : <div style={{ display:'grid', gap:8 }}>
+                  {imgLocs
+                    .filter(l => !imgSearch || l.name.toLowerCase().includes(imgSearch.toLowerCase()) || l.city.toLowerCase().includes(imgSearch.toLowerCase()))
+                    .map(loc => (
+                    <div key={loc.id} style={{ background:'#161B27', border:'1px solid #2A2F3E', borderRadius:10, padding:12, display:'flex', alignItems:'center', gap:12 }}>
+                      <div style={{ width:64, height:48, borderRadius:6, overflow:'hidden', flexShrink:0, background:'#0D1117', border:'1px solid #2A2F3E', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        {loc.image_url
+                          ? <img src={loc.image_url} alt={loc.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { e.target.style.display='none' }} />
+                          : <span style={{ fontSize:20, opacity:0.3 }}>📷</span>
+                        }
                       </div>
-                      {loc.image_url
-                        ? <span style={{ fontSize:11, background:'#1A2A3A', color:'#60A5FA', padding:'3px 10px', borderRadius:20 }}>Has image ✓</span>
-                        : <span style={{ fontSize:11, color:'#4B5563' }}>No image</span>}
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:500, color:'#E8DCC8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{loc.name}</div>
+                        <div style={{ fontSize:11, color:'#6B7280' }}>{loc.city}</div>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display:'none' }}
+                        ref={el => fileRefs.current[loc.id] = el}
+                        onChange={e => { if (e.target.files[0]) handleUpload(loc, e.target.files[0]); e.target.value = '' }}
+                      />
+                      <button
+                        onClick={() => fileRefs.current[loc.id]?.click()}
+                        disabled={uploading[loc.id]}
+                        style={{
+                          background: loc.image_url ? '#1F2937' : '#1A2A1A',
+                          border: `1px solid ${loc.image_url ? '#374151' : '#2D6A4F'}`,
+                          borderRadius:8, padding:'6px 14px', cursor:'pointer',
+                          fontSize:12, color: loc.image_url ? '#9CA3AF' : '#4ADE80',
+                          fontFamily:'inherit', flexShrink:0, whiteSpace:'nowrap',
+                        }}
+                      >
+                        {uploading[loc.id] ? '⏳ Uploading…' : loc.image_url ? '🔄 Replace' : '📷 Add Photo'}
+                      </button>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+            }
           </div>
         )}
 
@@ -305,7 +316,17 @@ export default function AdminView({ lang, font, onBack, totalLocations, location
   )
 }
 
-const SQL = `-- 1. Locations table
+const SQL = `-- 0. Storage bucket for location images
+insert into storage.buckets (id, name, public) values ('location-images', 'location-images', true)
+  on conflict (id) do nothing;
+create policy "Public read location images"
+  on storage.objects for select using (bucket_id = 'location-images');
+create policy "Admin upload location images"
+  on storage.objects for insert with check (bucket_id = 'location-images');
+create policy "Admin update location images"
+  on storage.objects for update using (bucket_id = 'location-images');
+
+-- 1. Locations table
 create table if not exists locations (
   id                 bigint generated by default as identity primary key,
   name               text not null,

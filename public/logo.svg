@@ -1,42 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 180">
   <defs>
-    <linearGradient id="g" x1="30" y1="36" x2="148" y2="172" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#F07068"/>
-      <stop offset="100%" stop-color="#F8A878"/>
+    <linearGradient id="g" x1="0" y1="0" x2="155" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#E04D2A"/>
+      <stop offset="100%" stop-color="#F5976A"/>
+    </linearGradient>
+    <linearGradient id="gr" x1="0" y1="0" x2="155" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#EA6A46"/>
+      <stop offset="100%" stop-color="#F8AA82"/>
     </linearGradient>
   </defs>
 
-  <!-- Right pin (behind, tip lower-left) -->
-  <path d="M 90 170
-           C 78 150 78 112 78 72
-           A 34 34 0 0 1 146 72
-           C 146 112 124 150 90 170 Z"
-        fill="url(#g)" opacity="0.88"/>
+  <!-- Right pin (behind) -->
+  <path d="M 102 158 L 65 88 A 42 42 0 1 1 139 88 Z" fill="url(#gr)"/>
+  <circle cx="102" cy="68" r="16" fill="white"/>
 
-  <!-- Left pin (front, tip lower-right) -->
-  <path d="M 90 170
-           C 104 150 104 112 104 72
-           A 36 36 0 0 0 32 72
-           C 32 112 52 150 90 170 Z"
-        fill="url(#g)"/>
-
-  <!-- White circle holes in pin tops -->
-  <circle cx="68"  cy="72" r="16" fill="white"/>
-  <circle cx="112" cy="72" r="13" fill="white"/>
-
-  <!-- Dark crossing stems -->
-  <path d="M 86 106 Q 88 138 90 170" stroke="#3C3C3C" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-  <path d="M 94 106 Q 92 138 90 170" stroke="#3C3C3C" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <!-- Left pin (front) -->
+  <path d="M 58 168 L 16 89 A 48 48 0 1 1 100 89 Z" fill="url(#g)"/>
+  <circle cx="58" cy="66" r="19" fill="white"/>
 
   <!-- HaMakom -->
-  <text x="196" y="122"
+  <text x="172" y="108"
     font-family="'Helvetica Neue',Helvetica,Arial,sans-serif"
-    font-size="70" font-weight="700" letter-spacing="-1"
-    fill="#383838">HaMakom</text>
+    font-size="68" font-weight="700" letter-spacing="-1"
+    fill="#E8DCC8">HaMakom</text>
 
   <!-- המקום -->
-  <text x="337" y="160"
+  <text x="172" y="148"
     font-family="'Helvetica Neue',Helvetica,Arial,sans-serif"
-    font-size="36" font-weight="500"
-    fill="#383838" text-anchor="middle">המקום</text>
+    font-size="38" font-weight="500"
+    fill="#9CA3AF">המקום</text>
 </svg>

@@ -1,35 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="pg" x1="15" y1="0" x2="85" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#F06858"/>
-      <stop offset="100%" stop-color="#F0A070"/>
+    <linearGradient id="g" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#E04D2A"/>
+      <stop offset="100%" stop-color="#F5976A"/>
+    </linearGradient>
+    <linearGradient id="gr" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#EA6A46"/>
+      <stop offset="100%" stop-color="#F8AA82"/>
     </linearGradient>
   </defs>
 
   <!-- Dark rounded background -->
-  <rect width="100" height="100" rx="22" fill="#2C2E3E"/>
+  <rect width="100" height="100" rx="22" fill="#1A1F2E"/>
 
-  <!-- Right pin (behind, tip goes lower-left) -->
-  <path d="M 48 77
-           C 45 62 45 48 45 36
-           A 18 18 0 0 1 81 36
-           C 81 48 68 62 48 77 Z"
-        fill="url(#pg)" opacity="0.9"/>
+  <!-- Right pin (behind) -->
+  <path d="M 61 79 L 39 46 A 24 24 0 1 1 83 46 Z" fill="url(#gr)"/>
+  <circle cx="61" cy="36" r="9" fill="white"/>
 
-  <!-- Left pin (front, tip goes lower-right) -->
-  <path d="M 52 77
-           C 55 62 55 48 55 36
-           A 18 18 0 0 0 19 36
-           C 19 48 32 62 52 77 Z"
-        fill="url(#pg)"/>
-
-  <!-- Dark hole in left pin top -->
-  <circle cx="37" cy="36" r="8.5" fill="#2C2E3E"/>
-
-  <!-- Dark hole in right pin top -->
-  <circle cx="63" cy="36" r="8.5" fill="#2C2E3E"/>
-
-  <!-- Crossing stems (dark lines between the two pin tails) -->
-  <line x1="47" y1="54" x2="52" y2="78" stroke="#2C2E3E" stroke-width="4" stroke-linecap="round"/>
-  <line x1="53" y1="54" x2="48" y2="78" stroke="#2C2E3E" stroke-width="4" stroke-linecap="round"/>
+  <!-- Left pin (front) -->
+  <path d="M 38 83 L 12 47 A 27 27 0 1 1 62 47 Z" fill="url(#g)"/>
+  <circle cx="37" cy="34" r="11" fill="white"/>
 </svg>

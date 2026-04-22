@@ -4,7 +4,7 @@ import { DATE_STAGE_BADGE, CATEGORIES } from '../lib/constants'
 
 const WHY_MAX = 300
 
-export default function SuggestView({ lang, tx, font, onBack }) {
+export default function SuggestView({ tx, font, onBack }) {
   const [form, setForm] = useState({
     name: '', city: '', category: '', kashrus: '', why: '',
     whatsapp: '', dateStage: [], price: 2,

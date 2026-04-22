@@ -12,9 +12,8 @@ export default function FilterBar({ tx, filters, setFilters }) {
   ]
 
   return (
-    <div style={{ marginBottom: 12 }}>
-      {/* Row 1: Date stage pills + dropdowns */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 8, alignItems: 'center' }}>
+    <div style={{ marginBottom: 6, display: 'grid', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, alignItems: 'center', scrollbarWidth: 'none' }}>
         {dateOptions.map(({ val, label }) => (
           <button
             key={val}
@@ -31,9 +30,9 @@ export default function FilterBar({ tx, filters, setFilters }) {
             {label}
           </button>
         ))}
+      </div>
 
-        <div style={{ width: 1, height: 18, background: '#2A2F3E', flexShrink: 0, margin: '0 2px' }} />
-
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
         <FilterSelect
           value={cityFilter}
           onChange={v => set('cityFilter', v)}
@@ -57,8 +56,7 @@ export default function FilterBar({ tx, filters, setFilters }) {
         />
       </div>
 
-      {/* Row 2: Category chips */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
         {CATEGORIES.map(cat => (
           <button
             key={cat}
@@ -67,7 +65,7 @@ export default function FilterBar({ tx, filters, setFilters }) {
               background:   categoryFilter === cat ? '#C9A84C' : '#161B27',
               color:        categoryFilter === cat ? '#0D1117' : '#9CA3AF',
               border:       '1px solid ' + (categoryFilter === cat ? '#C9A84C' : '#2A2F3E'),
-              borderRadius: 20, padding: '5px 12px', cursor: 'pointer',
+              borderRadius: 20, padding: '8px 12px', cursor: 'pointer',
               fontSize: 11, fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
             }}
           >
@@ -85,8 +83,10 @@ function FilterSelect({ value, onChange, options, labels = {}, dir }) {
       value={value}
       onChange={e => onChange(e.target.value)}
       style={{
-        background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 8,
-        padding: '6px 10px', color: '#E8DCC8', fontSize: 11,
+        width: '100%',
+        minWidth: 0,
+        background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 12,
+        padding: '10px 10px', color: '#E8DCC8', fontSize: 11,
         fontFamily: 'inherit', cursor: 'pointer', outline: 'none',
         direction: dir, flexShrink: 0,
       }}

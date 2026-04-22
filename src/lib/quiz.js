@@ -1,144 +1,236 @@
-// Score a single location against quiz answers (0–16 pts)
-export function scoreLocation(loc, answers) {
+function scoreOverlap(tags, selected) {
+  if (!selected) return 0
+  return tags.includes(selected) ? 4 : 0
+}
+
+function scoreLengthMatch(plan, selectedLength) {
+  if (!selectedLength) return 0
+  const tags = plan.length_tags || []
+  if (!tags.length) return 0
+  return tags.includes(selectedLength) ? 3 : 0
+}
+
+export function scorePlan(plan, answers) {
   let score = 0
 
-  // Date stage match (0–4 pts)
-  if (answers.stage != null) {
-    const stages = Array.isArray(loc.date_stage) ? loc.date_stage : [loc.date_stage]
-    if (stages.includes(answers.stage)) score += 4
-    else if (stages.some(s => Math.abs(s - answers.stage) === 1)) score += 1
-  }
+  score += scoreOverlap(plan.when_tags || [], answers.when)
+  score += scoreLengthMatch(plan, answers.length)
+  score += scoreOverlap(plan.focus_tags || [], answers.focus)
+  if (answers.city && answers.city !== 'flexible' && plan.city === answers.city) score += 3
+  score += scoreOverlap(plan.seriousness_tags || [], answers.seriousness)
 
-  // Vibe/occasion match (0–3 pts)
-  if (answers.vibe && loc.occasion?.includes(answers.vibe)) score += 3
-
-  // Ambiance match (0–2 pts)
-  if (answers.ambiance && loc.occasion?.includes(answers.ambiance)) score += 2
-
-  // Price match (0–3 pts)
-  if (answers.budget != null) {
-    const diff = Math.abs(loc.price - answers.budget)
-    if (diff === 0) score += 3
-    else if (diff === 1) score += 1
-  }
-
-  // City match (0–2 pts)
-  if (answers.city && answers.city !== 'other' && loc.city === answers.city) score += 2
-
-  // Kashrus match (0–2 pts)
-  if (answers.kashrus === 'strict' && loc.kashrus) score += 2
-  if (answers.kashrus === 'prefer' && (loc.kashrus || loc.occasion?.includes('frum-friendly'))) score += 1
+  if (plan.featured) score += 0.5
+  if (answers.when === 'tonight') score += plan.tonight_pick_weight || 0
 
   return score
 }
 
-// Get top N personalized results sorted by score
-export function getPersonalizedResults(locations, answers, n = 5) {
-  return [...locations]
-    .map(loc => ({ ...loc, _score: scoreLocation(loc, answers) }))
-    .sort((a, b) => b._score - a._score)
-    .slice(0, n)
-}
+function scorePlanBehaviorBoost(plan, behavior = {}) {
+  const entries = Object.entries(behavior.feedbackByItem || {})
+  if (!entries.length) return 0
 
-// Build bilingual personality tag pills from answers
-export function buildPersonalityTags(answers) {
-  const tags = { en: [], he: [] }
+  const planIndex = behavior.planIndex || {}
+  let score = 0
 
-  const vibeMap = {
-    romantic:    { en: '🌹 Romantic',    he: '🌹 רומנטי' },
-    fun:         { en: '😄 Fun',         he: '😄 כיפי' },
-    casual:      { en: '🌿 Chill',       he: '🌿 נינוח' },
-    adventurous: { en: '🏔️ Adventurous', he: '🏔️ הרפתקני' },
-  }
-  const stageMap = {
-    1: { en: '💫 First Date',      he: '💫 דייט ראשון' },
-    2: { en: '😊 Few Dates In',    he: '😊 כמה דייטים' },
-    3: { en: '🔥 Getting Serious', he: '🔥 רציניים' },
-  }
-  const kashrusMap = {
-    strict: { en: '✡️ Strictly Kosher',  he: '✡️ כשר מהדרין' },
-    prefer: { en: '🙂 Kosher-Friendly',  he: '🙂 כשר-ידידותי' },
-  }
-  const budgetMap = {
-    1: { en: '🤌 Budget-Friendly', he: '🤌 חסכוני' },
-    2: { en: '😌 Mid-Range',       he: '😌 בינוני' },
-    3: { en: '✨ Premium',         he: '✨ פרמיום' },
-    4: { en: '🎉 Splurge',        he: '🎉 יוקרה' },
-  }
+  entries.forEach(([key, feedback]) => {
+    if (!key.startsWith('plan:') || !feedback?.went || (feedback.rating || 0) < 4) return
+    const pastPlan = planIndex[key.replace('plan:', '')]
+    if (!pastPlan) return
 
-  ;[
-    [answers.vibe,    vibeMap],
-    [answers.stage,   stageMap],
-    [answers.kashrus, kashrusMap],
-    [answers.budget,  budgetMap],
-  ].forEach(([key, map]) => {
-    if (key != null && map[key]) {
-      tags.en.push(map[key].en)
-      tags.he.push(map[key].he)
-    }
+    if (pastPlan.city === plan.city) score += 0.5
+    if ((pastPlan.focus_tags || []).some((tag) => (plan.focus_tags || []).includes(tag))) score += 0.75
+    if ((pastPlan.seriousness_tags || []).some((tag) => (plan.seriousness_tags || []).includes(tag))) score += 0.35
   })
 
-  return tags
+  return Math.min(score, 2)
 }
 
-// Get up to 2 "why it matches you" reasons for a result card
-export function getMatchReasons(loc, answers, lang) {
-  const reasons = []
+export function getMatchedPlans(plans, answers, count = 2, behavior = {}) {
+  const planIndex = Object.fromEntries((plans || []).map((plan) => [String(plan.id), plan]))
+
+  return [...plans]
+    .map((plan) => ({ ...plan, _score: scorePlan(plan, answers) + scorePlanBehaviorBoost(plan, { ...behavior, planIndex }) }))
+    .sort((a, b) => b._score - a._score)
+    .slice(0, count)
+}
+
+export function buildPlanIdentity(answers) {
+  const map = {
+    'atmosphere:getting-serious': {
+      en: 'The Quiet Romantic',
+      he: 'הרומנטיקן השקט',
+    },
+    'atmosphere:getting-to-know': {
+      en: 'The Thoughtful Explorer',
+      he: 'החוקר המתחשב',
+    },
+    'food-drink:just-met': {
+      en: 'The Easy Charmer',
+      he: 'הכובש בקלות',
+    },
+    'food-drink:getting-serious': {
+      en: 'The Intentional Romantic',
+      he: 'הרומנטיקן המכוון',
+    },
+    'activity:just-met': {
+      en: 'The Playful Connector',
+      he: 'המחבר המשחקי',
+    },
+    'activity:getting-to-know': {
+      en: 'The Energetic Explorer',
+      he: 'החוקר האנרגטי',
+    },
+    'outdoors:getting-serious': {
+      en: 'The Gentle Planner',
+      he: 'המתכנן העדין',
+    },
+    'outdoors:getting-to-know': {
+      en: 'The Calm Adventurer',
+      he: 'ההרפתקן הרגוע',
+    },
+  }
+
+  const direct = map[`${answers.focus}:${answers.seriousness}`]
+  if (direct) return direct
+
+  return {
+    en: 'The Intentional Dater',
+    he: 'הדייטר המכוון',
+  }
+}
+
+export function getPlanFitSummary(plan, answers, lang) {
   const isHe = lang === 'he'
-
-  const stages = Array.isArray(loc.date_stage) ? loc.date_stage : [loc.date_stage]
-  if (answers.stage != null && stages.includes(answers.stage)) {
-    const lbl = { 1: { en: 'first dates', he: 'דייט ראשון' }, 2: { en: 'second dates', he: 'דייט שני' }, 3: { en: 'deeper connection', he: 'קשר עמוק' } }
-    const l = lbl[answers.stage]
-    if (l) reasons.push(isHe ? `מושלם ל${l.he}` : `Perfect for ${l.en}`)
+  const whenText = {
+    tonight: { en: 'a low-friction plan for tonight', he: 'תוכנית זורמת לערב הקרוב' },
+    'thursday-night': { en: 'something that works well before Shabbat', he: 'משהו שעובד טוב לפני שבת' },
+    'planning-ahead': { en: 'a plan worth setting aside time for', he: 'תוכנית ששווה לפנות לה זמן' },
+  }
+  const lengthText = {
+    short: { en: 'a lighter evening', he: 'ערב קליל יותר' },
+    medium: { en: 'a balanced pace', he: 'קצב מאוזן' },
+    long: { en: 'room to make a full night of it', he: 'מקום להפוך את זה לערב מלא' },
+  }
+  const focusText = {
+    atmosphere: { en: 'strong atmosphere', he: 'אווירה חזקה' },
+    'food-drink': { en: 'great food and drink', he: 'אוכל ושתייה טובים' },
+    activity: { en: 'something to do together', he: 'משהו לעשות יחד' },
+    outdoors: { en: 'space, air, and movement', he: 'מרחב, אוויר ותנועה' },
+  }
+  const cityText = {
+    Jerusalem: { en: 'near Jerusalem', he: 'ליד ירושלים' },
+    'Tel Aviv': { en: 'near Tel Aviv', he: 'ליד תל אביב' },
+    "Modi'in": { en: "near Modi'in", he: 'ליד מודיעין' },
+    'Beit Shemesh': { en: 'near Beit Shemesh', he: 'ליד בית שמש' },
+    'Tzur Hadassah': { en: 'near Tzur Hadassah', he: 'ליד צור הדסה' },
+  }
+  const seriousnessText = {
+    'just-met': { en: 'without too much pressure', he: 'בלי יותר מדי לחץ' },
+    'getting-to-know': { en: 'with room for longer conversation', he: 'עם מקום לשיחה ארוכה יותר' },
+    'getting-serious': { en: 'that feels more intentional', he: 'שמרגישה יותר מכוונת' },
   }
 
-  if (answers.vibe && loc.occasion?.includes(answers.vibe)) {
-    const lbl = {
-      romantic:    { en: 'romantic atmosphere', he: 'אווירה רומנטית' },
-      fun:         { en: 'fun & playful energy', he: 'אנרגיה כיפית' },
-      casual:      { en: 'relaxed chill vibe', he: 'ויב נינוח' },
-      adventurous: { en: 'adventurous spirit', he: 'רוח הרפתקנית' },
-    }
-    const l = lbl[answers.vibe]
-    if (l) reasons.push(isHe ? `${l.he} ✓` : `${l.en} ✓`)
+  const whenPart = whenText[answers.when]
+  const lengthPart = answers.length ? lengthText[answers.length] : null
+  const focusPart = focusText[answers.focus]
+  const cityPart = answers.city && answers.city !== 'flexible' ? cityText[answers.city] : null
+  const seriousnessPart = seriousnessText[answers.seriousness]
+
+  if (!whenPart || !focusPart || !seriousnessPart) {
+    return isHe ? 'התוכנית הזאת מתאימה לקצב ולאווירה שבחרתם.' : 'This plan fits the pace and energy you picked.'
   }
 
-  if (answers.ambiance && loc.occasion?.includes(answers.ambiance)) {
-    const lbl = {
-      views:    { en: 'stunning views',       he: 'נוף מרהיב' },
-      creative: { en: 'creative experience',  he: 'חוויה יצירתית' },
-      upscale:  { en: 'upscale feel',         he: 'תחושה יוקרתית' },
-      unique:   { en: 'unique experience',    he: 'חוויה ייחודית' },
-    }
-    const l = lbl[answers.ambiance]
-    if (l) reasons.push(isHe ? l.he : l.en)
+  if (cityPart && lengthPart) {
+    return isHe
+      ? `בחרנו תוכנית עם ${focusPart.he}, שמתאימה ל${whenPart.he}, ${lengthPart.he}, ${cityPart.he}, ו${seriousnessPart.he}.`
+      : `We picked a plan built around ${focusPart.en}, giving you ${whenPart.en}, ${lengthPart.en}, ${cityPart.en}, and a flow that works ${seriousnessPart.en}.`
   }
 
-  if (answers.kashrus === 'strict' && loc.kashrus) {
-    reasons.push(isHe ? `כשרות: ${loc.kashrus}` : `Kosher: ${loc.kashrus}`)
+  if (cityPart) {
+    return isHe
+      ? `בחרנו תוכנית עם ${focusPart.he}, שמתאימה ל${whenPart.he}, ${cityPart.he}, ו${seriousnessPart.he}.`
+      : `We picked a plan built around ${focusPart.en}, giving you ${whenPart.en}, ${cityPart.en}, and a flow that works ${seriousnessPart.en}.`
   }
 
-  if (answers.city && answers.city !== 'other' && loc.city === answers.city) {
-    const city = isHe ? (loc.city_he || loc.city) : loc.city
-    reasons.push(isHe ? `ב${city}` : `In ${city}`)
+  if (lengthPart) {
+    return isHe
+      ? `בחרנו תוכנית עם ${focusPart.he}, שמתאימה ל${whenPart.he}, ${lengthPart.he}, ו${seriousnessPart.he}.`
+      : `We picked a plan built around ${focusPart.en}, giving you ${whenPart.en}, ${lengthPart.en}, and a flow that works ${seriousnessPart.en}.`
   }
 
-  return reasons.slice(0, 2)
+  return isHe
+    ? `בחרנו תוכנית עם ${focusPart.he}, שמתאימה ל${whenPart.he} ו${seriousnessPart.he}.`
+    : `We picked a plan built around ${focusPart.en}, giving you ${whenPart.en} and a flow that works ${seriousnessPart.en}.`
 }
 
-// Persist quiz answers across OAuth page redirects
 export function saveAnswersToSession(answers) {
-  try { sessionStorage.setItem('hamakom-quiz', JSON.stringify(answers)) } catch {}
+  try {
+    sessionStorage.setItem('hamakom-quiz', JSON.stringify(answers))
+  } catch {
+    // ignore
+  }
 }
 
 export function loadAnswersFromSession() {
   try {
     const raw = sessionStorage.getItem('hamakom-quiz')
     return raw ? JSON.parse(raw) : null
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 export function clearAnswersFromSession() {
-  try { sessionStorage.removeItem('hamakom-quiz') } catch {}
+  try {
+    sessionStorage.removeItem('hamakom-quiz')
+  } catch {
+    // ignore
+  }
+}
+
+export function savePendingSaveToSession(item) {
+  try {
+    sessionStorage.setItem('hamakom-pending-save', JSON.stringify(item))
+  } catch {
+    // ignore
+  }
+}
+
+export function loadPendingSaveFromSession() {
+  try {
+    const raw = sessionStorage.getItem('hamakom-pending-save')
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export function clearPendingSaveFromSession() {
+  try {
+    sessionStorage.removeItem('hamakom-pending-save')
+  } catch {
+    // ignore
+  }
+}
+
+export function savePendingPlanToSession(planId) {
+  savePendingSaveToSession({ type: 'plan', id: planId })
+}
+
+export function loadPendingPlanFromSession() {
+  const pending = loadPendingSaveFromSession()
+  return pending?.type === 'plan' ? pending.id : null
+}
+
+export function clearPendingPlanFromSession() {
+  clearPendingSaveFromSession()
+}
+
+export function savePendingPlaceToSession(placeId) {
+  savePendingSaveToSession({ type: 'place', id: placeId })
+}
+
+export function loadPendingPlaceFromSession() {
+  const pending = loadPendingSaveFromSession()
+  return pending?.type === 'place' ? pending.id : null
 }

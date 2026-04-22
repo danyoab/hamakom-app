@@ -1,32 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 180">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" role="img" aria-label="HaMakom logo">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="155" y2="180" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#E04D2A"/>
-      <stop offset="100%" stop-color="#F5976A"/>
-    </linearGradient>
-    <linearGradient id="gr" x1="0" y1="0" x2="155" y2="180" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#EA6A46"/>
-      <stop offset="100%" stop-color="#F8AA82"/>
+    <linearGradient id="iconGrad" x1="380" y1="770" x2="760" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF4D5E"/>
+      <stop offset="55%" stop-color="#FF8A72"/>
+      <stop offset="100%" stop-color="#FFB183"/>
     </linearGradient>
   </defs>
 
-  <!-- Right pin (behind) -->
-  <path d="M 102 158 L 65 88 A 42 42 0 1 1 139 88 Z" fill="url(#gr)"/>
-  <circle cx="102" cy="68" r="16" fill="white"/>
+  <g transform="translate(6 8) scale(0.18) translate(-373 -421)">
+    <path fill="url(#iconGrad)" fill-rule="evenodd" d="M 478 426 L 457 430 L 437 438 L 417 450 L 397 470 L 382 494 L 375 515 L 373 527 L 373 555 L 379 580 L 394 610 L 446 683 L 518 778 L 521 778 L 522 773 L 549 721 L 563 689 L 458 584 L 451 575 L 441 556 L 439 537 L 442 521 L 450 506 L 458 498 L 472 489 L 486 485 L 506 486 L 516 490 L 527 498 L 536 508 L 541 516 L 546 531 L 546 549 L 541 565 L 533 577 L 519 589 L 511 593 L 488 598 L 521 633 L 555 665 L 559 662 L 581 633 L 601 597 L 612 560 L 613 531 L 608 509 L 597 485 L 582 465 L 565 449 L 550 439 L 529 430 L 509 426 Z"/>
+    <path fill="url(#iconGrad)" fill-rule="evenodd" d="M 641 421 L 607 422 L 587 427 L 566 436 L 566 438 L 580 446 L 597 463 L 612 485 L 622 481 L 644 481 L 664 490 L 677 504 L 686 526 L 687 539 L 685 555 L 673 577 L 663 587 L 647 597 L 629 602 L 614 601 L 573 660 L 573 662 L 584 669 L 601 648 L 626 612 L 631 609 L 637 609 L 633 618 L 616 643 L 581 685 L 583 693 L 601 731 L 610 755 L 619 771 L 665 710 L 729 618 L 745 586 L 749 573 L 753 544 L 752 526 L 745 499 L 737 482 L 726 466 L 709 449 L 694 438 L 664 425 Z"/>
+  </g>
 
-  <!-- Left pin (front) -->
-  <path d="M 58 168 L 16 89 A 48 48 0 1 1 100 89 Z" fill="url(#g)"/>
-  <circle cx="58" cy="66" r="19" fill="white"/>
-
-  <!-- HaMakom -->
-  <text x="172" y="108"
-    font-family="'Helvetica Neue',Helvetica,Arial,sans-serif"
-    font-size="68" font-weight="700" letter-spacing="-1"
-    fill="#E8DCC8">HaMakom</text>
-
-  <!-- המקום -->
-  <text x="172" y="148"
-    font-family="'Helvetica Neue',Helvetica,Arial,sans-serif"
-    font-size="38" font-weight="500"
-    fill="#9CA3AF">המקום</text>
+  <text x="88" y="42" fill="#F5EFE4" font-size="34" font-weight="700" font-family="Georgia, 'Palatino Linotype', serif" letter-spacing="0.2">
+    HaMakom
+  </text>
+  <text x="90" y="68" fill="#A8B0BE" font-size="17" font-weight="600" font-family="'Arial Hebrew', Arial, sans-serif">
+    המקום
+  </text>
 </svg>

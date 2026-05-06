@@ -29,11 +29,14 @@ export default function ResultsPage({
   lang,
   font,
   plan,
+  planIndex = 0,
+  planCount = 1,
   backupLocations = [],
   answers,
   saved,
   reminderSet,
   onBrowseAll,
+  onNextPlan,
   onToggleBackupOptions,
   onOpenBackupLocation,
   onOpenPlanMaps,
@@ -204,16 +207,24 @@ export default function ResultsPage({
         </section>
 
         <div style={{ display: 'grid', gap: 10 }}>
+          {onNextPlan && planCount > 1 && (
+            <button onClick={onNextPlan} style={ghostButtonStyle}>
+              {isHe
+                ? `הציגו תוכנית אחרת ${planIndex + 1}/${planCount}`
+                : `Show me a different plan ${planIndex + 1}/${planCount}`}
+            </button>
+          )}
+
           <button onClick={onRetakeQuiz} style={ghostButtonStyle}>
-            {isHe ? 'ענו שוב על השאלות הקצרות' : 'Retake the quick questions'}
+            {isHe ? 'שנו את התשובות' : 'Change my answers'}
           </button>
 
           <button onClick={onBrowseAll} style={ghostButtonStyle}>
-            {isHe ? 'עדיין לא בטוחים? דפדפו בחלופות' : 'Still unsure? Browse alternatives'}
+            {isHe ? 'דפדפו בכל המקומות' : 'Browse all locations'}
           </button>
 
           <button onClick={onBuildYourOwnPlan} style={lowEmphasisButtonStyle}>
-            {isHe ? 'רוצים שליטה מלאה? בנו בעצמכם' : 'Need more control? Build your own'}
+            {isHe ? 'בנו תוכנית בעצמכם' : 'Build your own plan'}
           </button>
         </div>
       </div>

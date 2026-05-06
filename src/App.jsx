@@ -20,6 +20,7 @@ import {
   saveAnswersToSession,
   savePendingSaveToSession,
 } from './lib/quiz'
+import { assembleDynamicPlan } from './lib/planBuilder'
 import Card from './components/Card'
 import DetailView from './components/DetailView'
 import SuggestView from './components/SuggestView'
@@ -96,8 +97,19 @@ export default function App() {
 
   const matchedPlans = useMemo(() => {
     if (!quizAnswers) return []
+
+    if (locations.length > 0) {
+      const baseSeed = quizAnswers._seed || Date.now()
+      const dynamic = []
+      for (let i = 0; i < 3; i++) {
+        const plan = assembleDynamicPlan(locations, { ...quizAnswers, _seed: baseSeed + i * 999983 })
+        if (plan) dynamic.push(plan)
+      }
+      if (dynamic.length >= 2) return dynamic
+    }
+
     return getMatchedPlans(datePlans, quizAnswers, 2, { feedbackByItem: dateFeedback })
-  }, [dateFeedback, datePlans, quizAnswers])
+  }, [dateFeedback, datePlans, locations, quizAnswers])
 
   const currentPlan = matchedPlans[resultIndex] || null
   const alternatePlan = matchedPlans.find((_, index) => index !== resultIndex) || null
@@ -295,9 +307,10 @@ export default function App() {
   }
 
   const handleQuizComplete = (answers) => {
-    setQuizAnswers(answers)
+    const seeded = { ...answers, _seed: Date.now() }
+    setQuizAnswers(seeded)
     setResultIndex(0)
-    saveAnswersToSession(answers)
+    saveAnswersToSession(seeded)
     setOverlay('quiz-results')
     void trackEvent('quiz_completed', {
       userId: authUser?.id,
@@ -530,6 +543,8 @@ export default function App() {
           lang={lang}
           font={font}
           plan={currentPlan}
+          planIndex={resultIndex}
+          planCount={matchedPlans.length}
           alternatePlan={alternatePlan}
           backupLocations={backupLocations}
           answers={quizAnswers || {}}
@@ -552,6 +567,7 @@ export default function App() {
               properties: { count: backupLocations.length },
             })
           }
+          onNextPlan={matchedPlans.length > 1 ? () => setResultIndex((i) => (i + 1) % matchedPlans.length) : undefined}
           onOpenBackupLocation={openLocationFromResults}
           onOpenPlanMaps={() => {
             void trackEvent('plan_maps_opened', {

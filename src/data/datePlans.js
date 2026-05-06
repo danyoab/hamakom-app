@@ -604,7 +604,7 @@ export const DATE_PLANS = [
     title_he: 'פתח תקווה ברמה',
     identity_label_en: 'The Thoughtful Planner',
     identity_label_he: 'המתכנן המחושב',
-    when_tags: ['planning-ahead', 'weekend'],
+    when_tags: ['tonight', 'thursday-night', 'planning-ahead', 'weekend'],
     focus_tags: ['atmosphere', 'food-drink'],
     seriousness_tags: ['getting-serious', 'romantic'],
     length_tags: ['long'],

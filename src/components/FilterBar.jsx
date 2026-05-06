@@ -83,7 +83,7 @@ export default function FilterBar({ tx, filters, setFilters }) {
 
 function ScrollFade({ children }) {
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', overflow: 'hidden' }}>
       {children}
       <div style={{
         position: 'absolute', top: 0, right: 0, bottom: 0, width: 32, pointerEvents: 'none',

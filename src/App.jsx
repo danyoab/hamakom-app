@@ -890,12 +890,6 @@ function HomePage({
           {lang === 'he' ? 'כל המקומות עדיין כאן אם אתם רוצים יותר שליטה. פשוט לא צריך להתחיל משם.' : 'Every place is still here if you want more control. You just do not need to start there.'}
         </div>
 
-        {error ? (
-          <div style={{ background: '#1A1010', border: '1px solid #5A2020', borderRadius: 12, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#F87171' }}>
-            {lang === 'he' ? 'לא ניתן להתחבר לשרת, מוצגים נתוני גיבוי.' : 'Could not reach the server, showing cached data.'}
-          </div>
-        ) : null}
-
         {loading ? <div style={{ textAlign: 'center', padding: '18px 0', color: APP_MUTED }}>{tx.loading}</div> : null}
 
         <div style={{ display: 'grid', gap: 10 }}>

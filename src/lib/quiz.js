@@ -18,8 +18,8 @@ export function scorePlan(plan, answers) {
   score += scoreOverlap(plan.focus_tags || [], answers.focus)
 
   if (answers.city && answers.city !== 'flexible') {
-    if (plan.city === answers.city) score += 5
-    else score -= 1
+    if (plan.city === answers.city) score += 10
+    else score -= 3
   }
 
   score += scoreOverlap(plan.seriousness_tags || [], answers.seriousness)

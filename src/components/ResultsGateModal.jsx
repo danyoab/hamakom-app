@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', itemTitle, itemSubtitle, onClose }) {
   const [mode, setMode] = useState('choose')
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [resendCountdown, setResendCountdown] = useState(0)
   const isHe = lang === 'he'
   const dir = isHe ? 'rtl' : 'ltr'
   const isPlace = itemType === 'place'
@@ -28,9 +31,13 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
         previewLabel: isHe ? 'התוכנית שתישמר' : 'Plan to Save',
       }
 
+  const authUnavailable = isHe
+    ? 'ההתחברות אינה זמינה כרגע. נסו שוב מאוחר יותר.'
+    : 'Sign-in is unavailable right now. Please try again later.'
+
   const handleGoogle = async () => {
     if (!supabase) {
-      onClose()
+      setError(authUnavailable)
       return
     }
 
@@ -45,11 +52,26 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
     }
   }
 
+  function startResendCountdown() {
+    setResendCountdown(30)
+    const t = setInterval(() => {
+      setResendCountdown(c => {
+        if (c <= 1) { clearInterval(t); return 0 }
+        return c - 1
+      })
+    }, 1000)
+  }
+
   const handleEmail = async (event) => {
     event.preventDefault()
 
     if (!supabase) {
-      onClose()
+      setError(authUnavailable)
+      return
+    }
+
+    if (!EMAIL_RE.test(email)) {
+      setError(isHe ? 'כתובת אימייל לא תקינה.' : 'Please enter a valid email address.')
       return
     }
 
@@ -64,8 +86,27 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
 
       if (authError) throw authError
       setSent(true)
+      startResendCountdown()
     } catch {
       setError(isHe ? 'לא הצלחנו לשלוח קישור. נסו שוב.' : 'We could not send the link. Try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResend = async () => {
+    if (!supabase || resendCountdown > 0 || !email) return
+    setLoading(true)
+    setError('')
+    try {
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin, shouldCreateUser: true },
+      })
+      if (authError) throw authError
+      startResendCountdown()
+    } catch {
+      setError(isHe ? 'לא הצלחנו לשלוח שוב. נסו מאוחר יותר.' : 'Could not resend. Please try again later.')
     } finally {
       setLoading(false)
     }
@@ -74,6 +115,9 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
   return (
     <div
       dir={dir}
+      role="dialog"
+      aria-modal="true"
+      aria-label={isHe ? 'התחברות לשמירה' : 'Sign in to save'}
       style={{
         position: 'fixed',
         inset: 0,
@@ -88,8 +132,7 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
     >
       <div
         style={{
-          width: '100%',
-          maxWidth: 520,
+          width: 'min(100%, 520px)',
           background: 'linear-gradient(180deg,#141922 0%,#0D1117 100%)',
           border: '1px solid #2A2F3E',
           borderBottom: 'none',
@@ -218,7 +261,17 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
           <div style={{ textAlign: 'center', paddingTop: 6 }}>
             <div style={{ fontSize: 38, marginBottom: 10 }}>✉</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>{isHe ? 'בדקו את תיבת המייל' : 'Check your inbox'}</div>
-            <div style={{ fontSize: 14, color: '#9CA3AF', lineHeight: 1.5 }}>{isHe ? `שלחנו קישור ל-${email}` : `We sent a link to ${email}`}</div>
+            <div style={{ fontSize: 14, color: '#9CA3AF', lineHeight: 1.5, marginBottom: 16 }}>{isHe ? `שלחנו קישור ל-${email}` : `We sent a link to ${email}`}</div>
+            <button
+              onClick={handleResend}
+              disabled={resendCountdown > 0 || loading}
+              style={{ background: 'none', border: 'none', color: resendCountdown > 0 ? '#6B7280' : '#C9A84C', fontSize: 13, cursor: resendCountdown > 0 ? 'default' : 'pointer', fontFamily: 'inherit' }}
+            >
+              {resendCountdown > 0
+                ? (isHe ? `שליחה חוזרת בעוד ${resendCountdown}ש׳` : `Resend in ${resendCountdown}s`)
+                : (isHe ? 'שלחו שוב' : 'Resend link')}
+            </button>
+            {error ? <div style={{ fontSize: 12, color: '#F87171', marginTop: 8 }}>{error}</div> : null}
           </div>
         )}
       </div>

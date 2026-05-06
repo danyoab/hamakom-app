@@ -19,12 +19,12 @@ export function scorePlan(plan, answers) {
 
   if (answers.city && answers.city !== 'flexible') {
     if (plan.city === answers.city) score += 5
-    else score -= 2
+    else score -= 1
   }
 
   score += scoreOverlap(plan.seriousness_tags || [], answers.seriousness)
 
-  if (plan.featured) score += 0.5
+  if (plan.featured) score += 1.5
   if (answers.when === 'tonight') score += plan.tonight_pick_weight || 0
 
   return score
@@ -38,13 +38,20 @@ function scorePlanBehaviorBoost(plan, behavior = {}) {
   let score = 0
 
   entries.forEach(([key, feedback]) => {
-    if (!key.startsWith('plan:') || !feedback?.went || (feedback.rating || 0) < 4) return
+    if (!key.startsWith('plan:')) return
     const pastPlan = planIndex[key.replace('plan:', '')]
     if (!pastPlan) return
 
-    if (pastPlan.city === plan.city) score += 0.5
-    if ((pastPlan.focus_tags || []).some((tag) => (plan.focus_tags || []).includes(tag))) score += 0.75
-    if ((pastPlan.seriousness_tags || []).some((tag) => (plan.seriousness_tags || []).includes(tag))) score += 0.35
+    const rating = feedback?.rating || 0
+    const went = feedback?.went
+
+    if (went && rating >= 4) {
+      if (pastPlan.city === plan.city) score += 0.5
+      if ((pastPlan.focus_tags || []).some((tag) => (plan.focus_tags || []).includes(tag))) score += 0.75
+      if ((pastPlan.seriousness_tags || []).some((tag) => (plan.seriousness_tags || []).includes(tag))) score += 0.35
+    } else if (!went || rating <= 2) {
+      if (pastPlan.id === plan.id) score -= 3
+    }
   })
 
   return Math.min(score, 2)

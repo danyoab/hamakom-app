@@ -53,7 +53,7 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
         ) : (
-          CATEGORY_EMOJI[loc.category]
+          <span aria-label={loc.category}>{CATEGORY_EMOJI[loc.category] || '📍'}</span>
         )}
       </div>
 
@@ -77,16 +77,24 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
                   fontWeight: 600,
                 }}
               >
-                {tx.dateLabels[String(stage)]}
+                {tx.dateLabels[String(stage)] ?? ''}
               </span>
             ))}
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 5 }}>
-          {loc.featured ? (
+          {loc.is_partner && loc.partner_tier === 'featured' ? (
+            <span style={{ background: '#2A2000', color: '#E8B84B', fontSize: 9, padding: '2px 6px', borderRadius: 999, fontWeight: 700, border: '1px solid #C9A84C44' }}>
+              {tx.verifiedPartner || '✓ Verified Partner'}
+            </span>
+          ) : loc.is_partner ? (
+            <span style={{ background: '#1A2A1A', color: '#4ADE80', fontSize: 9, padding: '2px 6px', borderRadius: 999, fontWeight: 700 }}>
+              {tx.verifiedLabel || 'Verified'}
+            </span>
+          ) : loc.featured ? (
             <span style={{ background: '#3A2A0A', color: '#C9A84C', fontSize: 9, padding: '2px 6px', borderRadius: 999, fontWeight: 700 }}>
-              Featured
+              {tx.featuredLabel || 'Featured'}
             </span>
           ) : null}
         </div>
@@ -124,7 +132,12 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
             border: 'none',
             cursor: 'pointer',
             fontSize: 18,
-            padding: '4px 8px',
+            padding: '10px 12px',
+            minWidth: 44,
+            minHeight: 44,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             transition: 'transform 0.1s',
             alignSelf: 'center',
             transform: saved ? 'scale(1.15)' : 'scale(1)',

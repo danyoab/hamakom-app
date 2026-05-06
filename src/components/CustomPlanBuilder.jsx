@@ -187,7 +187,11 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
               style={inputStyle(tx.dir)}
             />
             <div style={{ display: 'grid', gap: 10, marginTop: 14, maxHeight: 480, overflowY: 'auto' }}>
-              {firstStopChoices.map((location) => (
+              {firstStopChoices.length === 0 ? (
+                <div style={{ color: MUTED, fontSize: 13, padding: '20px 0', textAlign: 'center', lineHeight: 1.6 }}>
+                  {tx.noLocationsFound}
+                </div>
+              ) : firstStopChoices.map((location) => (
                 <SelectableLocationCard
                   key={location.id}
                   location={location}

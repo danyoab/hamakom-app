@@ -152,6 +152,11 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
             <div style={{ fontSize: 12, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: 8 }}>
               {isHe ? 'דייט ב־60 שניות' : 'Date in 60 Seconds'}
             </div>
+            {step === 0 ? (
+              <div style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 10 }}>
+                {isHe ? 'ענו על 5 שאלות ← קבלו תוכנית ערב מלאה עם 3 תחנות' : 'Answer 5 questions → get a complete 3-stop evening plan'}
+              </div>
+            ) : null}
             <div style={{ fontSize: 28, lineHeight: 1.16, fontWeight: 700, marginBottom: 8 }}>{isHe ? question.he : question.en}</div>
             <div style={{ fontSize: 14, color: '#9CA3AF' }}>{isHe ? question.subhe : question.suben}</div>
           </div>

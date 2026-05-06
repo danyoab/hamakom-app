@@ -44,6 +44,7 @@ export default function ResultsPage({
   onBuildYourOwnPlan,
 }) {
   const [showBackups, setShowBackups] = useState(false)
+  const [shareError, setShareError] = useState(false)
   const isHe = lang === 'he'
   const dir = isHe ? 'rtl' : 'ltr'
   const text = getLocalizedPlanText(plan, lang)
@@ -60,6 +61,7 @@ export default function ResultsPage({
       ? `הנה התוכנית שלנו: ${text.title}\n${text.startTime}\n${text.shareSummary}\nhamakom.app`
       : `Here is our plan: ${text.title}\n${text.startTime}\n${text.shareSummary}\nhamakom.app`
 
+    setShareError(false)
     try {
       if (navigator.share) {
         await navigator.share({ title: text.title, text: message })
@@ -67,8 +69,8 @@ export default function ResultsPage({
         window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
       }
       onSharePlan?.()
-    } catch {
-      // Ignore share cancellation.
+    } catch (err) {
+      if (err?.name !== 'AbortError') setShareError(true)
     }
   }
 
@@ -149,6 +151,11 @@ export default function ResultsPage({
             <button onClick={handleShare} style={actionButtonStyle}>
               {isHe ? 'שתף תוכנית' : 'Share Plan'}
             </button>
+            {shareError ? (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', fontSize: 12, color: '#F87171', padding: '4px 0' }}>
+                {isHe ? 'לא הצלחנו לשתף כרגע. נסו שוב.' : 'Could not share right now. Try again.'}
+              </div>
+            ) : null}
             {firstStopMaps ? (
               <a href={firstStopMaps} target="_blank" rel="noopener noreferrer" onClick={() => onOpenPlanMaps?.()} style={actionLinkStyle}>
                 {isHe ? 'פתח במפות' : 'Open in Maps'}

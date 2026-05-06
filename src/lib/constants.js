@@ -52,6 +52,15 @@ export const CITIES = [
   'Savyon',
   "Givat Ko'ah",
   "Sha'arei Tikva",
+  'Yehud',
+  'Shefayim',
+  'Tzoffit',
+  'Tzur Yigal',
+  'Ganey Tal',
+  'Ein Carmel',
+  'Binyamina',
+  'Moshav Hamad',
+  'Beer Yaakov',
   'Various',
 ]
 
@@ -100,8 +109,6 @@ export const CITY_COORDS = {
   'Ashdod':             [31.8044, 34.6553],
   'Holon':              [32.0108, 34.7732],
   'Ein Gedi':           [31.4581, 35.3862],
-  'Petach Tikva':       [32.0870, 34.8878],
-  'Ramat Gan':          [32.0701, 34.8238],
   'Mitzpe Yericho':     [31.8483, 35.3893],
   'Kfar Daniel':        [31.9369, 34.9356],
   'Latrun':             [31.8383, 34.9786],
@@ -161,16 +168,21 @@ export const CITY_COORDS = {
   'Beer Yaakov':        [31.9350, 34.8350],
 }
 
+const CATEGORY_COLOR_MAP = {
+  'Parks & Outdoors': '#2D6A4F',
+  'Hotels & Lounges': '#C9A84C',
+  'Museums & Culture': '#7B6FBF',
+  'Activities & Experiences': '#C25B3A',
+  'Cafés & Restaurants': '#4A90D9',
+  'Wineries': '#722F37',
+}
+
 export function getCategoryColor(cat) {
+  if (!cat) return '#6B7280'
+  // Exact match first, then fallback to substring for encoding variants
   return (
-    {
-      'Parks & Outdoors': '#2D6A4F',
-      'Hotels & Lounges': '#C9A84C',
-      'Museums & Culture': '#7B6FBF',
-      'Activities & Experiences': '#C25B3A',
-      'Cafés & Restaurants': '#4A90D9',
-      'Wineries': '#722F37',
-    }[cat] || '#6B7280'
+    CATEGORY_COLOR_MAP[cat] ||
+    (cat.includes('Caf') ? '#4A90D9' : '#6B7280')
   )
 }
 

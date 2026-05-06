@@ -168,7 +168,8 @@ export function scoreLocation(location, answers, behavior = {}) {
 
   score += scoreBehaviorBoost(location, behaviorProfile)
 
-  if (location.featured) score += 0.25
+  const isColdStart = !Object.keys(behaviorProfile.cityWeights).length && !Object.keys(behaviorProfile.categoryWeights).length
+  if (location.featured) score += isColdStart ? 2 : 1.5
 
   return score
 }

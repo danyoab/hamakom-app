@@ -13,24 +13,26 @@ export default function FilterBar({ tx, filters, setFilters }) {
 
   return (
     <div style={{ marginBottom: 6, display: 'grid', gap: 10 }}>
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, alignItems: 'center', scrollbarWidth: 'none' }}>
-        {dateOptions.map(({ val, label }) => (
-          <button
-            key={val}
-            onClick={() => set('dateFilter', val)}
-            style={{
-              background:   dateFilter === val ? '#C9A84C' : '#161B27',
-              color:        dateFilter === val ? '#0D1117' : '#9CA3AF',
-              border:       '1px solid ' + (dateFilter === val ? '#C9A84C' : '#2A2F3E'),
-              borderRadius: 20, padding: '6px 13px', cursor: 'pointer',
-              fontSize: 11, fontFamily: 'inherit', whiteSpace: 'nowrap',
-              fontWeight: dateFilter === val ? 600 : 400, flexShrink: 0,
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ScrollFade>
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, alignItems: 'center', scrollbarWidth: 'none' }}>
+          {dateOptions.map(({ val, label }) => (
+            <button
+              key={val}
+              onClick={() => set('dateFilter', val)}
+              style={{
+                background:   dateFilter === val ? '#C9A84C' : '#161B27',
+                color:        dateFilter === val ? '#0D1117' : '#9CA3AF',
+                border:       '1px solid ' + (dateFilter === val ? '#C9A84C' : '#2A2F3E'),
+                borderRadius: 20, padding: '6px 13px', cursor: 'pointer',
+                fontSize: 11, fontFamily: 'inherit', whiteSpace: 'nowrap',
+                fontWeight: dateFilter === val ? 600 : 400, flexShrink: 0,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </ScrollFade>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
         <FilterSelect
@@ -56,23 +58,37 @@ export default function FilterBar({ tx, filters, setFilters }) {
         />
       </div>
 
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
-        {CATEGORIES.map(cat => (
-          <button
-            key={cat}
-            onClick={() => set('categoryFilter', categoryFilter === cat ? 'All' : cat)}
-            style={{
-              background:   categoryFilter === cat ? '#C9A84C' : '#161B27',
-              color:        categoryFilter === cat ? '#0D1117' : '#9CA3AF',
-              border:       '1px solid ' + (categoryFilter === cat ? '#C9A84C' : '#2A2F3E'),
-              borderRadius: 20, padding: '8px 12px', cursor: 'pointer',
-              fontSize: 11, fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
-            }}
-          >
-            {cat === 'All' ? tx.allCategories : (CATEGORY_EMOJI[cat] + ' ' + tx.categories[cat]?.split(' & ')[0])}
-          </button>
-        ))}
-      </div>
+      <ScrollFade>
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat}
+              onClick={() => set('categoryFilter', categoryFilter === cat ? 'All' : cat)}
+              style={{
+                background:   categoryFilter === cat ? '#C9A84C' : '#161B27',
+                color:        categoryFilter === cat ? '#0D1117' : '#9CA3AF',
+                border:       '1px solid ' + (categoryFilter === cat ? '#C9A84C' : '#2A2F3E'),
+                borderRadius: 20, padding: '8px 12px', cursor: 'pointer',
+                fontSize: 11, fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
+              }}
+            >
+              {cat === 'All' ? tx.allCategories : (CATEGORY_EMOJI[cat] + ' ' + tx.categories[cat]?.split(' & ')[0])}
+            </button>
+          ))}
+        </div>
+      </ScrollFade>
+    </div>
+  )
+}
+
+function ScrollFade({ children }) {
+  return (
+    <div style={{ position: 'relative' }}>
+      {children}
+      <div style={{
+        position: 'absolute', top: 0, right: 0, bottom: 0, width: 32, pointerEvents: 'none',
+        background: 'linear-gradient(to right, transparent, #0D1117)',
+      }} />
     </div>
   )
 }

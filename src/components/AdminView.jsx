@@ -67,6 +67,8 @@ export default function AdminView({
 }) {
   const [unlocked, setUnlocked] = useState(false)
   const [pin, setPin] = useState('')
+  const [pinAttempts, setPinAttempts] = useState(0)
+  const [lockedUntil, setLockedUntil] = useState(null)
   const [adminTab, setAdminTab] = useState('plans')
   const [toast, setToast] = useState(null)
   const [syncing, setSyncing] = useState(false)
@@ -76,6 +78,11 @@ export default function AdminView({
   const [uploading, setUploading] = useState({})
   const [imgSearch, setImgSearch] = useState('')
   const fileRefs = useRef({})
+
+  const [partnerLocs, setPartnerLocs] = useState([])
+  const [partnerLoading, setPartnerLoading] = useState(false)
+  const [partnerSearch, setPartnerSearch] = useState('')
+  const [partnerCandidates, setPartnerCandidates] = useState([])
 
   const [planSearch, setPlanSearch] = useState('')
   const [selectedPlanId, setSelectedPlanId] = useState(datePlans[0]?.id || null)
@@ -109,6 +116,21 @@ export default function AdminView({
       setImgLoading(false)
     }
   }, [adminTab, imgLocs.length])
+
+  useEffect(() => {
+    if (adminTab !== 'partners') return
+    if (!supabase) return
+    setPartnerLoading(true)
+    supabase
+      .from('locations')
+      .select('id, name, city, category, is_partner, partner_tier, reservation_url, partner_contact')
+      .eq('is_partner', true)
+      .order('name')
+      .then(({ data }) => {
+        setPartnerLocs(data || [])
+        setPartnerLoading(false)
+      })
+  }, [adminTab])
 
   useEffect(() => {
     if (adminTab !== 'analytics' || !supabase) return
@@ -361,24 +383,111 @@ export default function AdminView({
     setPlanDraft(clone(nextPlan))
   }
 
+  const searchPartnerCandidates = async (query) => {
+    if (!supabase || !query) { setPartnerCandidates([]); return }
+    const { data } = await supabase
+      .from('locations')
+      .select('id, name, city, category, is_partner')
+      .ilike('name', `%${query}%`)
+      .limit(10)
+    setPartnerCandidates(data || [])
+  }
+
+  const savePartnerFields = async (loc) => {
+    if (!supabase) return showToast('Supabase not connected', 'error')
+    const { error } = await supabase
+      .from('locations')
+      .update({
+        is_partner: loc.is_partner,
+        partner_tier: loc.partner_tier,
+        reservation_url: loc.reservation_url || null,
+        partner_contact: loc.partner_contact || null,
+      })
+      .eq('id', loc.id)
+    if (error) return showToast(error.message, 'error')
+    showToast(`Saved partner "${loc.name}"`)
+    setPartnerLocs((prev) => prev.map((item) => (item.id === loc.id ? loc : item)))
+  }
+
+  const removePartner = async (id, name) => {
+    if (!supabase) return showToast('Supabase not connected', 'error')
+    if (!window.confirm(`Remove "${name}" from partner program?`)) return
+    const { error } = await supabase
+      .from('locations')
+      .update({ is_partner: false, partner_tier: null })
+      .eq('id', id)
+    if (error) return showToast(error.message, 'error')
+    setPartnerLocs((prev) => prev.filter((item) => item.id !== id))
+    showToast(`"${name}" removed from partners`)
+  }
+
+  const addPartner = async (loc) => {
+    if (!supabase) return showToast('Supabase not connected', 'error')
+    const { error } = await supabase
+      .from('locations')
+      .update({ is_partner: true, partner_tier: 'basic' })
+      .eq('id', loc.id)
+    if (error) return showToast(error.message, 'error')
+    setPartnerLocs((prev) => [...prev, { ...loc, is_partner: true, partner_tier: 'basic', reservation_url: '', partner_contact: '' }])
+    setPartnerCandidates([])
+    setPartnerSearch('')
+    showToast(`"${loc.name}" added as partner`)
+  }
+
+  const MAX_PIN_ATTEMPTS = 5
+  const LOCKOUT_MS = 5 * 60 * 1000 // 5 minutes
+
+  function tryPin() {
+    const now = Date.now()
+    if (lockedUntil && now < lockedUntil) return
+    if (pin === ADMIN_PIN) {
+      setPinAttempts(0)
+      setLockedUntil(null)
+      setUnlocked(true)
+    } else {
+      const next = pinAttempts + 1
+      setPinAttempts(next)
+      setPin('')
+      if (next >= MAX_PIN_ATTEMPTS) {
+        setLockedUntil(now + LOCKOUT_MS)
+      }
+    }
+  }
+
   if (!unlocked) {
+    const now = Date.now()
+    const isLocked = lockedUntil && now < lockedUntil
+    const remaining = isLocked ? Math.ceil((lockedUntil - now) / 60000) : 0
     return (
       <div style={{ minHeight: '100vh', background: '#0D1117', color: '#E8DCC8', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
         <div style={{ fontSize: 40, marginBottom: 20 }}>🔐</div>
         <h2 style={{ fontSize: 22, fontWeight: 400, marginBottom: 8 }}>Admin Access</h2>
         <p style={{ color: '#6B7280', fontSize: 13, marginBottom: 28 }}>Enter your PIN to continue</p>
-        <input
-          type="password"
-          value={pin}
-          onChange={(event) => setPin(event.target.value)}
-          onKeyDown={(event) => event.key === 'Enter' && setUnlocked(pin === ADMIN_PIN)}
-          placeholder="PIN"
-          style={{ ...inputStyle, width: 160, letterSpacing: '0.3em', textAlign: 'center', marginBottom: 12 }}
-        />
-        <button onClick={() => setUnlocked(pin === ADMIN_PIN)} style={btnStyle()}>
-          Enter
-        </button>
-        {pin.length > 0 && pin !== ADMIN_PIN ? <p style={{ color: '#F87171', fontSize: 13, marginTop: 12 }}>Incorrect PIN.</p> : null}
+        {isLocked ? (
+          <p style={{ color: '#F87171', fontSize: 14, marginBottom: 24, textAlign: 'center' }}>
+            Too many incorrect attempts. Try again in {remaining} minute{remaining !== 1 ? 's' : ''}.
+          </p>
+        ) : (
+          <>
+            <input
+              type="password"
+              value={pin}
+              onChange={(event) => setPin(event.target.value)}
+              onKeyDown={(event) => event.key === 'Enter' && tryPin()}
+              placeholder="PIN"
+              disabled={isLocked}
+              style={{ ...inputStyle, width: 160, letterSpacing: '0.3em', textAlign: 'center', marginBottom: 12 }}
+            />
+            <button onClick={tryPin} style={btnStyle()}>
+              Enter
+            </button>
+            {pinAttempts > 0 && (
+              <p style={{ color: '#F87171', fontSize: 13, marginTop: 12 }}>
+                Incorrect PIN. {MAX_PIN_ATTEMPTS - pinAttempts} attempt{MAX_PIN_ATTEMPTS - pinAttempts !== 1 ? 's' : ''} remaining.
+              </p>
+            )}
+          </>
+        )}
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', marginTop: 20, fontSize: 13, fontFamily: font }}>
           ← Back
         </button>
@@ -391,6 +500,7 @@ export default function AdminView({
     ['analytics', 'Analytics'],
     ['pending', `Pending (${pending.length})`],
     ['approved', `Approved (${approved.length})`],
+    ['partners', `Partners (${partnerLocs.length})`],
     ['sync', 'Sync DB'],
     ['images', 'Images'],
     ['sql', 'SQL'],
@@ -937,12 +1047,133 @@ export default function AdminView({
           </div>
         ) : null}
 
+        {adminTab === 'partners' ? (
+          <div>
+            {!supabase ? (
+              <div style={{ background: '#3A1A1A', border: '1px solid #DC2626', borderRadius: 10, padding: 16, color: '#FCA5A5', fontSize: 13 }}>
+                Partners tab requires a live Supabase connection.
+              </div>
+            ) : partnerLoading ? (
+              <div style={{ color: '#9CA3AF', fontSize: 13 }}>Loading partners...</div>
+            ) : (
+              <>
+                <div style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#C9A84C', marginBottom: 10 }}>Add Location to Partner Program</div>
+                  <input
+                    value={partnerSearch}
+                    onChange={(event) => {
+                      setPartnerSearch(event.target.value)
+                      searchPartnerCandidates(event.target.value)
+                    }}
+                    placeholder="Search location by name..."
+                    style={{ ...inputStyle, marginBottom: 8 }}
+                  />
+                  {partnerCandidates.length > 0 && (
+                    <div style={{ display: 'grid', gap: 6 }}>
+                      {partnerCandidates.map((loc) => (
+                        <div key={loc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#121722', border: '1px solid #232A39', borderRadius: 8, padding: '8px 12px' }}>
+                          <div>
+                            <div style={{ fontSize: 13, color: '#E8DCC8' }}>{loc.name}</div>
+                            <div style={{ fontSize: 11, color: '#C9A84C' }}>{loc.city} · {loc.category}</div>
+                          </div>
+                          {loc.is_partner ? (
+                            <span style={{ fontSize: 11, color: '#4ADE80' }}>Already a partner</span>
+                          ) : (
+                            <button onClick={() => addPartner(loc)} style={btnStyle('#4ADE80')}>Add</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {partnerLocs.length === 0 ? (
+                  <div style={{ color: '#6B7280', fontSize: 13, padding: 20, textAlign: 'center' }}>No partner locations yet. Add one above.</div>
+                ) : (
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {partnerLocs.map((loc) => (
+                      <PartnerCard
+                        key={loc.id}
+                        loc={loc}
+                        inputStyle={inputStyle}
+                        btnStyle={btnStyle}
+                        ghostBtnStyle={ghostBtnStyle}
+                        onSave={savePartnerFields}
+                        onRemove={removePartner}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : null}
+
         {adminTab === 'sql' ? (
           <div style={{ background: '#0A0E1A', border: '1px solid #2A2F3E', borderRadius: 10, padding: 20 }}>
             <div style={{ fontSize: 11, letterSpacing: '0.15em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 12 }}>Paste into Supabase SQL Editor</div>
             <pre style={{ fontSize: 11, color: '#9CA3AF', margin: 0, overflow: 'auto', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{SQL}</pre>
           </div>
         ) : null}
+      </div>
+    </div>
+  )
+}
+
+function PartnerCard({ loc, inputStyle, btnStyle, ghostBtnStyle, onSave, onRemove }) {
+  const [draft, setDraft] = useState({ ...loc })
+  const update = (key, value) => setDraft((prev) => ({ ...prev, [key]: value }))
+  const tierColors = { featured: '#C9A84C', basic: '#4ADE80' }
+
+  return (
+    <div style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 12, padding: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: '#E8DCC8' }}>{loc.name}</div>
+          <div style={{ fontSize: 11, color: '#C9A84C', marginTop: 2 }}>{loc.city} · {loc.category}</div>
+        </div>
+        <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 999, background: '#2A2A0A', color: tierColors[draft.partner_tier] || '#9CA3AF', fontWeight: 700, border: `1px solid ${tierColors[draft.partner_tier] || '#374151'}44` }}>
+          {draft.partner_tier || 'no tier'}
+        </span>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+        <label style={{ display: 'grid', gap: 4 }}>
+          <span style={{ fontSize: 10, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Tier</span>
+          <select
+            value={draft.partner_tier || ''}
+            onChange={(event) => update('partner_tier', event.target.value || null)}
+            style={{ ...inputStyle, padding: '8px 10px' }}
+          >
+            <option value="">— none —</option>
+            <option value="basic">basic</option>
+            <option value="featured">featured</option>
+          </select>
+        </label>
+        <label style={{ display: 'grid', gap: 4 }}>
+          <span style={{ fontSize: 10, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Reservation URL</span>
+          <input
+            value={draft.reservation_url || ''}
+            onChange={(event) => update('reservation_url', event.target.value)}
+            placeholder="https://..."
+            style={{ ...inputStyle, padding: '8px 10px' }}
+          />
+        </label>
+      </div>
+
+      <label style={{ display: 'grid', gap: 4, marginBottom: 12 }}>
+        <span style={{ fontSize: 10, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Partner Contact (internal)</span>
+        <input
+          value={draft.partner_contact || ''}
+          onChange={(event) => update('partner_contact', event.target.value)}
+          placeholder="email or phone"
+          style={{ ...inputStyle, padding: '8px 10px' }}
+        />
+      </label>
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => onSave(draft)} style={btnStyle()}>Save</button>
+        <button onClick={() => onRemove(loc.id, loc.name)} style={{ ...ghostBtnStyle, color: '#F87171', borderColor: '#7F1D1D' }}>Remove</button>
       </div>
     </div>
   )

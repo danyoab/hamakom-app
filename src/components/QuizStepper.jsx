@@ -8,65 +8,58 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
   const dir = isHe ? 'rtl' : 'ltr'
 
   const questions = useMemo(() => {
-    const cityChoices = cityOptions.map((city, index) => ({
+    const cityChoices = cityOptions.map((city) => ({
       value: city,
-      icon: ['◫', '◪', '◩', '◨', '◧', '◬'][index % 6],
       en: city,
       he: city,
-      suben: `Prefer plans around ${city}`,
-      subhe: `העדפה לתוכניות באזור ${city}`,
     }))
 
     return [
       {
         id: 'length',
-        icon: '◔',
         en: 'How big should this date feel?',
         he: 'כמה גדול הדייט הזה צריך להרגיש?',
-        suben: 'Pick the pace that feels right for tonight.',
-        subhe: 'בחרו את הקצב שמרגיש נכון לערב הזה.',
+        suben: 'Pick the pace that feels right.',
+        subhe: 'בחרו את הקצב שמרגיש נכון.',
         options: [
-          { value: 'short', icon: '◐', en: 'Quick and light', he: 'קליל וקצר', suben: 'A lighter evening without overcommitting', subhe: 'ערב קליל בלי להרגיש מחויבות גדולה' },
-          { value: 'medium', icon: '◑', en: 'Balanced night', he: 'ערב מאוזן', suben: 'Enough shape to feel like a real plan', subhe: 'מספיק מבנה כדי להרגיש כמו תוכנית אמיתית' },
-          { value: 'long', icon: '●', en: 'Make a night of it', he: 'לעשות מזה ערב', suben: 'More time, more flow, more room to stretch', subhe: 'יותר זמן, יותר זרימה, יותר מקום להאריך' },
+          { value: 'short',  en: 'Quick and light',   he: 'קליל וקצר',        suben: 'A lighter evening, no overcommitting', subhe: 'ערב קליל בלי להרגיש מחויבות גדולה' },
+          { value: 'medium', en: 'Balanced night',    he: 'ערב מאוזן',         suben: 'Enough shape to feel like a real plan', subhe: 'מספיק מבנה כדי להרגיש כמו תוכנית אמיתית' },
+          { value: 'long',   en: 'Make a night of it', he: 'לעשות מזה ערב',   suben: 'More time, more flow, more room to stretch', subhe: 'יותר זמן, יותר זרימה, יותר מקום להאריך' },
         ],
       },
       {
         id: 'focus',
-        icon: '◎',
         en: 'What kind of night do you want?',
         he: 'איזה ערב אתם רוצים?',
         suben: 'Pick the vibe that feels right.',
         subhe: 'בחרו את הוייב שמרגיש נכון.',
         options: [
-          { value: 'food-drink', icon: '◌', en: 'Great food & drinks', he: 'אוכל ושתייה טובים', suben: 'The meal is the plan', subhe: 'הארוחה היא התוכנית' },
-          { value: 'atmosphere', icon: '✦', en: 'Somewhere with a vibe', he: 'מקום עם אווירה', suben: 'Setting, mood, and intimacy', subhe: 'מקום, מצב רוח ואינטימיות' },
-          { value: 'outdoors', icon: '△', en: 'Outside or active', he: 'בחוץ או פעיל', suben: 'Air, movement, views — not a restaurant', subhe: 'אוויר, תנועה, נוף — לא מסעדה' },
+          { value: 'food-drink',  en: 'Great food & drinks',    he: 'אוכל ושתייה טובים',  suben: 'The meal is the plan',                    subhe: 'הארוחה היא התוכנית' },
+          { value: 'atmosphere',  en: 'Somewhere with a vibe',  he: 'מקום עם אווירה',      suben: 'Setting, mood, and intimacy',              subhe: 'מקום, מצב רוח ואינטימיות' },
+          { value: 'outdoors',    en: 'Outside or active',       he: 'בחוץ או פעיל',        suben: 'Air, movement, views — not a restaurant', subhe: 'אוויר, תנועה, נוף — לא מסעדה' },
         ],
       },
       {
         id: 'city',
-        icon: '⌖',
         en: 'What city should this be near?',
         he: 'ליד איזו עיר הדייט צריך להיות?',
         suben: 'Pick local if distance matters, or stay flexible.',
-        subhe: 'בחרו מקומי אם מרחק חשוב, או השאירו את זה גמיש.',
+        subhe: 'בחרו מקומי אם מרחק חשוב, או השאירו גמיש.',
         options: [
           ...cityChoices,
-          { value: 'flexible', icon: '◎', en: "I'm flexible", he: 'אני גמיש/ה', suben: 'Just give me the best match', subhe: 'פשוט תנו לי את ההתאמה הכי טובה' },
+          { value: 'flexible', en: "I'm flexible", he: 'אני גמיש/ה', suben: 'Just give me the best match', subhe: 'פשוט תנו לי את ההתאמה הכי טובה' },
         ],
       },
       {
         id: 'seriousness',
-        icon: '◍',
         en: 'How serious is this date?',
         he: 'כמה הדייט הזה רציני?',
         suben: 'This changes the tone more than people admit.',
         subhe: 'זה משנה את הטון יותר ממה שאנשים מודים.',
         options: [
-          { value: 'just-met', icon: '○', en: 'Just met', he: 'הרגע הכרנו', suben: 'Keep it low pressure', subhe: 'לשמור על אפס לחץ' },
-          { value: 'getting-to-know', icon: '◔', en: 'Getting to know each other', he: 'מכירים אחד את השני', suben: 'More time, better conversation', subhe: 'יותר זמן, יותר שיחה' },
-          { value: 'getting-serious', icon: '●', en: 'Getting serious', he: 'זה נהיה רציני', suben: 'Make it feel intentional', subhe: 'לתת לזה להרגיש מכוון' },
+          { value: 'just-met',        en: 'Just met',                  he: 'הרגע הכרנו',        suben: 'Keep it low pressure',       subhe: 'לשמור על אפס לחץ' },
+          { value: 'getting-to-know', en: 'Getting to know each other', he: 'מכירים אחד את השני', suben: 'More time, better conversation', subhe: 'יותר זמן, יותר שיחה' },
+          { value: 'getting-serious', en: 'Getting serious',            he: 'זה נהיה רציני',      suben: 'Make it feel intentional',   subhe: 'לתת לזה להרגיש מכוון' },
         ],
       },
     ]
@@ -77,14 +70,11 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
 
   const handleSelect = (value) => {
     if (chosen !== null) return
-
     setChosen(value)
     const nextAnswers = { ...answers, [question.id]: value }
-
     setTimeout(() => {
       setChosen(null)
       setAnswers(nextAnswers)
-
       if (step < questions.length - 1) setStep((current) => current + 1)
       else onComplete(nextAnswers)
     }, 240)
@@ -94,6 +84,8 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
     if (step > 0) setStep((current) => current - 1)
     else onBack()
   }
+
+  const isCityStep = question.id === 'city'
 
   return (
     <div
@@ -131,35 +123,35 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
         </div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '28px 24px 32px' }}>
-        <div style={{ width: '100%', maxWidth: 500 }}>
-          <div style={{ textAlign: 'center', marginBottom: 26 }}>
-            <div style={{ fontSize: 44, marginBottom: 12 }}>{question.icon}</div>
-            <div style={{ fontSize: 12, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: 8 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px 24px 32px' }}>
+        <div style={{ width: '100%', maxWidth: 500, margin: '0 auto' }}>
+
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: 14 }}>
               {isHe ? 'דייט ב־60 שניות' : 'Date in 60 Seconds'}
             </div>
-            {step === 0 ? (
-              <div style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 10 }}>
-                {isHe ? 'ענו על 4 שאלות ← קבלו תוכנית ערב מלאה עם 3 תחנות' : 'Answer 4 questions → get a complete 3-stop evening plan'}
-              </div>
-            ) : null}
-            <div style={{ fontSize: 28, lineHeight: 1.16, fontWeight: 700, marginBottom: 8 }}>{isHe ? question.he : question.en}</div>
-            <div style={{ fontSize: 14, color: '#9CA3AF' }}>{isHe ? question.subhe : question.suben}</div>
+            <div style={{ fontSize: 28, lineHeight: 1.16, fontWeight: 700, marginBottom: 8 }}>
+              {isHe ? question.he : question.en}
+            </div>
+            <div style={{ fontSize: 14, color: '#9CA3AF' }}>
+              {isHe ? question.subhe : question.suben}
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ display: 'grid', gap: 10 }}>
             {question.options.map((option) => {
               const isChosen = chosen === option.value
+              const showSub = !isCityStep && option.suben
               return (
                 <button
                   key={option.value}
                   onClick={() => handleSelect(option.value)}
                   disabled={chosen !== null}
                   style={{
-                    background: isChosen ? 'linear-gradient(135deg,#1D2B1E 0%,#18231B 100%)' : '#161B27',
+                    background: isChosen ? '#1A2420' : '#161B27',
                     border: `1px solid ${isChosen ? '#C9A84C' : '#2A2F3E'}`,
-                    borderRadius: 18,
-                    padding: '16px 18px',
+                    borderRadius: 16,
+                    padding: showSub ? '15px 18px' : '14px 18px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 14,
@@ -169,14 +161,37 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
                     color: '#E8DCC8',
                     transform: isChosen ? 'scale(0.985)' : 'scale(1)',
                     transition: 'all 0.16s ease',
+                    width: '100%',
                   }}
                 >
-                  <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0, color: isChosen ? '#C9A84C' : '#E8DCC8' }}>{option.icon}</span>
-                  <span style={{ flex: 1 }}>
-                    <span style={{ display: 'block', fontSize: 17, fontWeight: 600, marginBottom: 3 }}>{isHe ? option.he : option.en}</span>
-                    <span style={{ display: 'block', fontSize: 12, color: '#9CA3AF' }}>{isHe ? option.subhe : option.suben}</span>
+                  <span
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      border: `2px solid ${isChosen ? '#C9A84C' : '#4B5563'}`,
+                      background: isChosen ? '#C9A84C' : 'transparent',
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.16s ease',
+                    }}
+                  >
+                    {isChosen && (
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#0D1117', display: 'block' }} />
+                    )}
                   </span>
-                  <span style={{ opacity: isChosen ? 1 : 0, color: '#C9A84C', fontSize: 16 }}>✓</span>
+                  <span style={{ flex: 1 }}>
+                    <span style={{ display: 'block', fontSize: 16, fontWeight: 600 }}>
+                      {isHe ? option.he : option.en}
+                    </span>
+                    {showSub && (
+                      <span style={{ display: 'block', fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
+                        {isHe ? option.subhe : option.suben}
+                      </span>
+                    )}
+                  </span>
                 </button>
               )
             })}

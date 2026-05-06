@@ -26,9 +26,9 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
         suben: 'We will give you one answer, not more options.',
         subhe: 'אנחנו ניתן לכם תשובה אחת, לא עוד אפשרויות.',
         options: [
-          { value: 'tonight', icon: '◐', en: 'Tonight', he: 'הערב', suben: 'Fast, easy, executable', subhe: 'מהיר, קל, אפשר לצאת לדרך' },
-          { value: 'thursday-night', icon: '◑', en: 'Thursday Night', he: 'חמישי בלילה', suben: 'A classic date night before Shabbat', subhe: 'לילה קלאסי לדייט לפני שבת' },
-          { value: 'planning-ahead', icon: '◒', en: 'Planning ahead', he: 'מתכננים מראש', suben: 'Worth making room for', subhe: 'שווה לפנות לזה זמן' },
+          { value: 'tonight', icon: '◐', en: 'Tonight', he: 'הערב', suben: 'Quick and easy to pull off', subhe: 'מהיר, קל, אפשר לצאת לדרך' },
+          { value: 'thursday-night', icon: '◑', en: 'Motzei Shabbat', he: 'מוצאי שבת', suben: 'Saturday night — classic date night', subhe: 'לילה קלאסי לדייט' },
+          { value: 'planning-ahead', icon: '◒', en: 'Planning ahead', he: 'מתכננים מראש', suben: 'Something worth booking in advance', subhe: 'שווה לפנות לזה זמן' },
         ],
       },
       {

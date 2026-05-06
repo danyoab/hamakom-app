@@ -1,4 +1,8 @@
 import { useEffect, useRef } from 'react'
+import { CITY_COORDS } from '../lib/constants'
+
+// ~300 m offset per stop so city-fallback pins don't all stack on each other
+const JITTER = [[0, 0], [0.0027, 0], [-0.0013, 0.0023]]
 
 // Numbered marker SVG — gold circle with stop index
 function markerSvg(n) {
@@ -10,11 +14,19 @@ function markerSvg(n) {
   </svg>`
 }
 
-export default function PlanStopsMap({ stops = [], lang }) {
+export default function PlanStopsMap({ stops = [], lang, planCity }) {
   const mapRef = useRef(null)
   const instanceRef = useRef(null)
 
-  const stopsWithCoords = stops.filter(s => s.lat && s.lng)
+  // Resolve coords for each stop: exact venue coords, or city centre with small offset
+  const cityFallback = planCity ? CITY_COORDS[planCity] : null
+  const stopsWithCoords = stops.map((s, i) => {
+    if (s.lat && s.lng) return s
+    if (!cityFallback) return null
+    const [dlat, dlng] = JITTER[i] || [0, 0]
+    return { ...s, lat: cityFallback[0] + dlat, lng: cityFallback[1] + dlng, _approx: true }
+  }).filter(Boolean)
+
   if (stopsWithCoords.length < 2) return null
 
   useEffect(() => {

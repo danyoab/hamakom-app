@@ -251,6 +251,7 @@ const SLOT_INSTRUCTIONS = {
 function toStop(loc, slotIndex, focus) {
   const instructions = SLOT_INSTRUCTIONS[focus] || SLOT_INSTRUCTIONS['food-drink']
   const fallback = instructions[slotIndex] || instructions[0]
+  const coords = coordsOf(loc) // exact venue coords, or city-centre fallback
   return {
     name_en:        loc.name,
     name_he:        loc.name_he || loc.name,
@@ -258,8 +259,8 @@ function toStop(loc, slotIndex, focus) {
     instruction_he: loc.description_he || loc.description || fallback.he,
     maps_query:     loc.maps_query || `${loc.name} ${loc.city} Israel`,
     _price:         loc.price || 2,
-    lat:            loc.lat || null,
-    lng:            loc.lng || null,
+    lat:            coords ? coords[0] : null,
+    lng:            coords ? coords[1] : null,
   }
 }
 

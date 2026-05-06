@@ -94,22 +94,10 @@ export default function ResultsPage({
             <Pill>{text.duration}</Pill>
           </div>
           <p style={{ margin: '0 0 10px', color: '#B8A990', fontSize: 15, lineHeight: 1.55 }}>{text.narrative}</p>
-          <div style={{ fontSize: 14, color: '#D8CCB3', lineHeight: 1.55 }}>
-            {isHe
-              ? 'זה המהלך הנכון למצב שבחרתם. לא עוד רשימה, אלא תוכנית שאפשר פשוט לצאת אליה.'
-              : 'This is the right move for the context you picked. Not another list, just a plan you can actually commit to.'}
-          </div>
         </div>
       </div>
 
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px 20px 40px' }}>
-        <section style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 20, padding: 18, marginBottom: 14 }}>
-          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 8 }}>
-            {isHe ? 'למה זה מתאים' : 'Why this fits'}
-          </div>
-          <div style={{ fontSize: 16, lineHeight: 1.6, color: '#E8DCC8' }}>{fitSummary}</div>
-        </section>
-
         <section style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 20, padding: 18, marginBottom: 14 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 16 }}>
             <FactCard label={isHe ? 'תקציב' : 'Budget'} value={text.budget} />

@@ -19,19 +19,6 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
 
     return [
       {
-        id: 'when',
-        icon: '○',
-        en: 'When are you planning this date?',
-        he: 'מתי אתם מתכננים את הדייט?',
-        suben: 'We will give you one answer, not more options.',
-        subhe: 'אנחנו ניתן לכם תשובה אחת, לא עוד אפשרויות.',
-        options: [
-          { value: 'tonight', icon: '◐', en: 'Tonight', he: 'הערב', suben: 'Quick and easy to pull off', subhe: 'מהיר, קל, אפשר לצאת לדרך' },
-          { value: 'thursday-night', icon: '◑', en: 'Motzei Shabbat', he: 'מוצאי שבת', suben: 'Saturday night — classic date night', subhe: 'לילה קלאסי לדייט' },
-          { value: 'planning-ahead', icon: '◒', en: 'Planning ahead', he: 'מתכננים מראש', suben: 'Something worth booking in advance', subhe: 'שווה לפנות לזה זמן' },
-        ],
-      },
-      {
         id: 'length',
         icon: '◔',
         en: 'How big should this date feel?',
@@ -47,15 +34,14 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
       {
         id: 'focus',
         icon: '◎',
-        en: 'What matters most?',
-        he: 'מה הכי חשוב לכם?',
-        suben: 'Pick the one thing the night should deliver.',
-        subhe: 'בחרו את הדבר האחד שהערב צריך לספק.',
+        en: 'What kind of night do you want?',
+        he: 'איזה ערב אתם רוצים?',
+        suben: 'Pick the vibe that feels right.',
+        subhe: 'בחרו את הוייב שמרגיש נכון.',
         options: [
-          { value: 'atmosphere', icon: '✦', en: 'Atmosphere', he: 'אווירה', suben: 'Mood, intimacy, and setting', subhe: 'וייב, אינטימיות ומקום' },
-          { value: 'food-drink', icon: '◌', en: 'Food & Drink', he: 'אוכל ושתייה', suben: 'Great taste, easy flow', subhe: 'טעם טוב וזרימה' },
-          { value: 'activity', icon: '◇', en: 'Activity', he: 'פעילות', suben: 'Something to do together', subhe: 'משהו לעשות ביחד' },
-          { value: 'outdoors', icon: '△', en: 'Outdoors', he: 'בחוץ', suben: 'Air, movement, and views', subhe: 'אוויר, תנועה ונוף' },
+          { value: 'food-drink', icon: '◌', en: 'Great food & drinks', he: 'אוכל ושתייה טובים', suben: 'The meal is the plan', subhe: 'הארוחה היא התוכנית' },
+          { value: 'atmosphere', icon: '✦', en: 'Somewhere with a vibe', he: 'מקום עם אווירה', suben: 'Setting, mood, and intimacy', subhe: 'מקום, מצב רוח ואינטימיות' },
+          { value: 'outdoors', icon: '△', en: 'Outside or active', he: 'בחוץ או פעיל', suben: 'Air, movement, views — not a restaurant', subhe: 'אוויר, תנועה, נוף — לא מסעדה' },
         ],
       },
       {
@@ -154,7 +140,7 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
             </div>
             {step === 0 ? (
               <div style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 10 }}>
-                {isHe ? 'ענו על 5 שאלות ← קבלו תוכנית ערב מלאה עם 3 תחנות' : 'Answer 5 questions → get a complete 3-stop evening plan'}
+                {isHe ? 'ענו על 4 שאלות ← קבלו תוכנית ערב מלאה עם 3 תחנות' : 'Answer 4 questions → get a complete 3-stop evening plan'}
               </div>
             ) : null}
             <div style={{ fontSize: 28, lineHeight: 1.16, fontWeight: 700, marginBottom: 8 }}>{isHe ? question.he : question.en}</div>

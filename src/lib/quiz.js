@@ -1,5 +1,6 @@
 function scoreOverlap(tags, selected) {
   if (!selected) return 0
+  if (selected === 'outdoors' && tags.includes('activity')) return 4
   return tags.includes(selected) ? 4 : 0
 }
 

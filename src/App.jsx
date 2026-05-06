@@ -800,7 +800,6 @@ function AppHeader({ tx, lang, tab, savedCount, onToggleLang }) {
                   המקום
                 </span>
               </div>
-              <div style={{ fontSize: 11, color: '#7B8496', marginTop: 4, lineHeight: 1.2 }}>{tx.tagline}</div>
             </div>
           </div>
 
@@ -825,18 +824,10 @@ function AppHeader({ tx, lang, tab, savedCount, onToggleLang }) {
           </div>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gap: 4,
-            paddingTop: 10,
-            borderTop: '1px solid rgba(42,47,62,0.9)',
-          }}
-        >
+        <div style={{ paddingTop: 8, borderTop: '1px solid rgba(42,47,62,0.9)' }}>
           <div style={{ fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: APP_MUTED }}>
             {titleMap[tab]}
           </div>
-          <div style={{ fontSize: 14, color: '#CDBD9F', lineHeight: 1.35, maxWidth: 520 }}>{subtitleMap[tab]}</div>
         </div>
       </div>
     </div>
@@ -855,44 +846,33 @@ function HomePage({
   onOpenExplore,
 }) {
   return (
-    <div style={{ display: 'grid', gap: 14 }}>
+    <div style={{ display: 'grid', gap: 12 }}>
       <section
         style={{
           background: 'linear-gradient(145deg,#171E2B 0%,#111A10 100%)',
           border: `1px solid ${APP_BORDER}`,
           borderRadius: 22,
-          padding: 22,
+          padding: '22px 22px 20px',
         }}
       >
-        <div style={{ fontSize: 12, letterSpacing: '0.16em', color: APP_ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>
-          {tx.planHeroEyebrow}
-        </div>
-        <h1 style={{ margin: '0 0 10px', fontSize: 32, lineHeight: 1.04 }}>{tx.planHeroTitle}</h1>
-        <p style={{ margin: '0 0 18px', color: '#B8A990', fontSize: 15, lineHeight: 1.6 }}>{tx.planHeroText}</p>
-        <div style={{ display: 'grid', gap: 10 }}>
-          <button onClick={onStartQuiz} style={primaryButtonStyle}>
-            {tx.planHeroAction}
-          </button>
-        </div>
+        <h1 style={{ margin: '0 0 16px', fontSize: 30, lineHeight: 1.1 }}>{tx.planHeroTitle}</h1>
+        <button onClick={onStartQuiz} style={primaryButtonStyle}>
+          {tx.planHeroAction}
+        </button>
       </section>
 
       <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 20, padding: 18 }}>
-        <div style={{ fontSize: 11, letterSpacing: '0.16em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 8 }}>
+        <div style={{ fontSize: 11, letterSpacing: '0.16em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
           {tx.tonightsPick}
         </div>
         <TonightPlanCard lang={lang} tx={tx} plan={tonightPlan} onOpenPlan={onOpenTonightPlan} onStartQuiz={onStartQuiz} />
       </section>
 
       <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 20, padding: 18 }}>
-        <div style={{ fontSize: 11, letterSpacing: '0.16em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 5 }}>{tx.browseSecondaryEyebrow}</div>
-        <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>{tx.browseSecondaryTitle}</div>
-        <div style={{ color: '#9CA3AF', fontSize: 14, lineHeight: 1.6, marginBottom: 14 }}>
-          {lang === 'he' ? 'כל המקומות עדיין כאן אם אתם רוצים יותר שליטה. פשוט לא צריך להתחיל משם.' : 'Every place is still here if you want more control. You just do not need to start there.'}
+        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>
+          {lang === 'he' ? 'עיינו במקומות' : 'Browse places'}
         </div>
-
-        {loading ? <div style={{ textAlign: 'center', padding: '18px 0', color: APP_MUTED }}>{tx.loading}</div> : null}
-
-        <div style={{ display: 'grid', gap: 10 }}>
+        <div style={{ display: 'grid', gap: 8 }}>
           <button onClick={onOpenExplore} style={{ ...ghostButtonStyle, whiteSpace: 'nowrap' }}>
             {tx.openExplore}
           </button>

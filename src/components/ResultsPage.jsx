@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { getMapsUrl } from '../lib/constants'
 import { buildPlanIdentity, getPlanFitSummary } from '../lib/quiz'
+import PlanStopsMap from './PlanStopsMap'
 
 function getLocalizedPlanText(plan, lang) {
   const isHe = lang === 'he'
@@ -110,6 +111,8 @@ export default function ResultsPage({
           <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
             {isHe ? 'איך הערב נבנה' : 'How the night unfolds'}
           </div>
+
+          <PlanStopsMap stops={plan.stops} lang={lang} />
 
           <div style={{ display: 'grid', gap: 12 }}>
             {primaryStops.map((stop, index) => (

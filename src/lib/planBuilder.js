@@ -258,6 +258,8 @@ function toStop(loc, slotIndex, focus) {
     instruction_he: loc.description_he || loc.description || fallback.he,
     maps_query:     loc.maps_query || `${loc.name} ${loc.city} Israel`,
     _price:         loc.price || 2,
+    lat:            loc.lat || null,
+    lng:            loc.lng || null,
   }
 }
 

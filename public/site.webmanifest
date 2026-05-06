@@ -1,0 +1,17 @@
+{
+  "name": "HaMakom",
+  "short_name": "HaMakom",
+  "description": "Date ideas for Jewish singles in Israel.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D1117",
+  "theme_color": "#0D1117",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

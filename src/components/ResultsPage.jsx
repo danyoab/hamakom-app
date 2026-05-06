@@ -1,224 +1,342 @@
-import { useState } from 'react'
-import { getMatchReasons } from '../lib/quiz'
-import { CATEGORY_EMOJI, getCategoryColor, getMapsUrl } from '../lib/constants'
+import { useMemo, useState } from 'react'
+import { getMapsUrl } from '../lib/constants'
+import { buildPlanIdentity, getPlanFitSummary } from '../lib/quiz'
 
-export default function ResultsPage({ lang, font, results, answers, personalityTags, onBrowseAll, onRetakeQuiz }) {
+function getLocalizedPlanText(plan, lang) {
   const isHe = lang === 'he'
-  const dir  = isHe ? 'rtl' : 'ltr'
-  const tags = isHe ? personalityTags.he : personalityTags.en
+  return {
+    title: isHe ? plan.title_he : plan.title_en,
+    narrative: isHe ? plan.narrative_he : plan.narrative_en,
+    startTime: isHe ? plan.start_time_text_he : plan.start_time_text_en,
+    duration: isHe ? plan.duration_text_he : plan.duration_text_en,
+    budget: isHe ? plan.budget_text_he : plan.budget_text_en,
+    shareSummary: isHe ? plan.share_summary_he : plan.share_summary_en,
+  }
+}
+
+function getPaceLabel(plan, answers, lang) {
+  const pace = answers.length || plan.length_tags?.[0] || 'medium'
+  const labels = {
+    short: { en: 'Quick and light', he: 'קליל וקצר' },
+    medium: { en: 'Balanced night', he: 'ערב מאוזן' },
+    long: { en: 'Make a night of it', he: 'לעשות מזה ערב' },
+  }
+
+  return labels[pace]?.[lang] || labels.medium[lang]
+}
+
+export default function ResultsPage({
+  lang,
+  font,
+  plan,
+  backupLocations = [],
+  answers,
+  saved,
+  reminderSet,
+  onBrowseAll,
+  onToggleBackupOptions,
+  onOpenBackupLocation,
+  onOpenPlanMaps,
+  onSavePlan,
+  onSharePlan,
+  onSetReminder,
+  onRetakeQuiz,
+  onBuildYourOwnPlan,
+}) {
+  const [showBackups, setShowBackups] = useState(false)
+  const [shareError, setShareError] = useState(false)
+  const isHe = lang === 'he'
+  const dir = isHe ? 'rtl' : 'ltr'
+  const text = getLocalizedPlanText(plan, lang)
+  const identity = buildPlanIdentity(answers)
+  const fitSummary = getPlanFitSummary(plan, answers, lang)
+  const paceLabel = getPaceLabel(plan, answers, lang)
+  const firstStopMaps = useMemo(() => getMapsUrl(plan.stops?.[0]?.maps_query), [plan])
+  const isShortPlan = (answers.length || plan.length_tags?.[0]) === 'short'
+  const primaryStops = isShortPlan ? plan.stops.slice(0, 2) : plan.stops
+  const optionalStops = isShortPlan ? plan.stops.slice(2) : []
+
+  const handleShare = async () => {
+    const message = isHe
+      ? `הנה התוכנית שלנו: ${text.title}\n${text.startTime}\n${text.shareSummary}\nhamakom.app`
+      : `Here is our plan: ${text.title}\n${text.startTime}\n${text.shareSummary}\nhamakom.app`
+
+    setShareError(false)
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: text.title, text: message })
+      } else {
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
+      }
+      onSharePlan?.()
+    } catch (err) {
+      if (err?.name !== 'AbortError') setShareError(true)
+    }
+  }
 
   return (
     <div dir={dir} style={{ minHeight: '100vh', background: '#0D1117', color: '#E8DCC8', fontFamily: font }}>
-
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0D1117 0%, #131A10 100%)',
-        borderBottom: '1px solid #2A2F3E',
-        padding: '28px 24px 20px',
-      }}>
-        <div style={{ maxWidth: 520, margin: '0 auto' }}>
-          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#C9A84C', textTransform: 'uppercase', marginBottom: 8 }}>
-            {isHe ? '🎉 התוצאות שלך' : '🎉 Your results'}
+      <div
+        style={{
+          background: 'linear-gradient(180deg,#111827 0%,#131B17 100%)',
+          borderBottom: '1px solid #2A2F3E',
+          padding: '26px 24px 20px',
+        }}
+      >
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          <div style={{ fontSize: 12, letterSpacing: '0.16em', color: '#C9A84C', textTransform: 'uppercase', marginBottom: 8 }}>
+            {isHe ? 'הבחירה החזקה שלך' : 'Your strongest pick'}
           </div>
-          <h1 style={{ fontSize: 24, fontWeight: 600, color: '#E8DCC8', margin: '0 0 6px', lineHeight: 1.2 }}>
-            {isHe ? 'תוכנית הדייט המושלמת שלך' : 'Your perfect date plan'}
-          </h1>
-          <p style={{ fontSize: 14, color: '#9CA3AF', margin: '0 0 14px' }}>
+          <h1 style={{ fontSize: 30, lineHeight: 1.08, margin: '0 0 8px' }}>{text.title}</h1>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            <Pill>{identity[lang]}</Pill>
+            <Pill>{text.startTime}</Pill>
+            <Pill>{text.duration}</Pill>
+          </div>
+          <p style={{ margin: '0 0 10px', color: '#B8A990', fontSize: 15, lineHeight: 1.55 }}>{text.narrative}</p>
+          <div style={{ fontSize: 14, color: '#D8CCB3', lineHeight: 1.55 }}>
             {isHe
-              ? `מצאנו ${results.length} מקומות שמתאימים בדיוק לסגנון שלך`
-              : `We found ${results.length} spots matched exactly to your style`}
-          </p>
-
-          {/* Personality tag pills */}
-          {tags.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {tags.map((tag, i) => (
-                <span key={i} style={{
-                  background: '#1A2030', border: '1px solid #C9A84C', borderRadius: 20,
-                  padding: '3px 10px', fontSize: 12, color: '#C9A84C',
-                }}>
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
+              ? 'זה המהלך הנכון למצב שבחרתם. לא עוד רשימה, אלא תוכנית שאפשר פשוט לצאת אליה.'
+              : 'This is the right move for the context you picked. Not another list, just a plan you can actually commit to.'}
+          </div>
         </div>
       </div>
 
-      {/* ── Result cards ────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 520, margin: '0 auto', padding: '16px 20px' }}>
-        {results.map((loc, i) => (
-          <ResultCard key={loc.id} loc={loc} rank={i + 1} lang={lang} isHe={isHe} answers={answers} />
-        ))}
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px 20px 40px' }}>
+        <section style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 20, padding: 18, marginBottom: 14 }}>
+          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 8 }}>
+            {isHe ? 'למה זה מתאים' : 'Why this fits'}
+          </div>
+          <div style={{ fontSize: 16, lineHeight: 1.6, color: '#E8DCC8' }}>{fitSummary}</div>
+        </section>
 
-        {/* ── Bottom actions ──────────────────────────────────────────── */}
-        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <section style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 20, padding: 18, marginBottom: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 16 }}>
+            <FactCard label={isHe ? 'תקציב' : 'Budget'} value={text.budget} />
+            <FactCard label={isHe ? 'קצב' : 'Pace'} value={paceLabel} />
+          </div>
+
+          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
+            {isHe ? 'איך הערב נבנה' : 'How the night unfolds'}
+          </div>
+
+          <div style={{ display: 'grid', gap: 12 }}>
+            {primaryStops.map((stop, index) => (
+              <StopCard key={`${plan.id}-${index}`} stop={stop} index={index} lang={lang} />
+            ))}
+          </div>
+
+          {optionalStops.length ? (
+            <div style={{ marginTop: 12, background: '#10151F', border: '1px dashed #374151', borderRadius: 14, padding: 14 }}>
+              <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 6 }}>
+                {isHe ? 'אם הערב זורם' : 'If the night is flowing'}
+              </div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {optionalStops.map((stop, index) => (
+                  <CompactStopCard key={`${plan.id}-optional-${index}`} stop={stop} lang={lang} />
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </section>
+
+        <section style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 20, padding: 18, marginBottom: 14 }}>
+          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>
+            {isHe ? 'תתחייבו למהלך' : 'Commit to the plan'}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+            <button onClick={onSavePlan} style={saved ? activeActionButtonStyle : actionButtonStyle}>
+              {saved ? (isHe ? '✓ נשמר' : '✓ Saved') : isHe ? 'שמור תוכנית' : 'Save Plan'}
+            </button>
+            <button onClick={handleShare} style={actionButtonStyle}>
+              {isHe ? 'שתף תוכנית' : 'Share Plan'}
+            </button>
+            {shareError ? (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', fontSize: 12, color: '#F87171', padding: '4px 0' }}>
+                {isHe ? 'לא הצלחנו לשתף כרגע. נסו שוב.' : 'Could not share right now. Try again.'}
+              </div>
+            ) : null}
+            {firstStopMaps ? (
+              <a href={firstStopMaps} target="_blank" rel="noopener noreferrer" onClick={() => onOpenPlanMaps?.()} style={actionLinkStyle}>
+                {isHe ? 'פתח במפות' : 'Open in Maps'}
+              </a>
+            ) : (
+              <div style={{ ...actionButtonStyle, opacity: 0.45 }}>{isHe ? 'אין מפה זמינה' : 'Maps unavailable'}</div>
+            )}
+            <button onClick={onSetReminder} style={reminderSet ? activeActionButtonStyle : actionButtonStyle}>
+              {reminderSet ? (isHe ? '✓ תזכורת נשמרה' : '✓ Reminder Set') : isHe ? 'קבע תזכורת' : 'Set Reminder'}
+            </button>
+          </div>
+        </section>
+
+        <section style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 18, padding: 16, marginBottom: 14 }}>
           <button
-            onClick={onBrowseAll}
-            style={{
-              background: 'linear-gradient(135deg, #C9A84C, #E8B84B)',
-              color: '#0D1117', border: 'none', borderRadius: 12,
-              padding: '14px', fontSize: 15, fontWeight: 600,
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}
+            onClick={() =>
+              setShowBackups((current) => {
+                const next = !current
+                if (next) onToggleBackupOptions?.()
+                return next
+              })
+            }
+            style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', padding: 0, width: '100%', textAlign: isHe ? 'right' : 'left' }}
           >
-            {isHe ? 'עיין בכל המקומות →' : 'Browse all places →'}
+            {showBackups
+              ? isHe
+                ? 'סגור חלופות'
+                : 'Hide backup options'
+              : isHe
+                ? 'רוצים וייב אחר? ראו עוד 3 חלופות'
+                : 'Want a different vibe? See 3 more options'}
           </button>
-          <button
-            onClick={onRetakeQuiz}
-            style={{
-              background: 'none', border: '1.5px solid #2A2F3E', borderRadius: 12,
-              padding: '13px', fontSize: 14, color: '#9CA3AF',
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}
-          >
-            {isHe ? '🔄 קח את הבוחן מחדש' : '🔄 Retake the quiz'}
+
+          {showBackups ? (
+            <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+              {backupLocations.map((location) => (
+                <button
+                  key={location.id}
+                  onClick={() => onOpenBackupLocation(location)}
+                  style={{
+                    background: '#161B27',
+                    border: '1px solid #2A2F3E',
+                    borderRadius: 14,
+                    padding: '14px 16px',
+                    textAlign: isHe ? 'right' : 'left',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    color: '#E8DCC8',
+                  }}
+                >
+                  <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>{isHe ? location.name_he || location.name : location.name}</div>
+                  <div style={{ fontSize: 12, color: '#C9A84C', marginBottom: 6 }}>{isHe ? location.city_he || location.city : location.city}</div>
+                  <div style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.5 }}>{isHe ? location.description_he || location.description : location.description}</div>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </section>
+
+        <div style={{ display: 'grid', gap: 10 }}>
+          <button onClick={onRetakeQuiz} style={ghostButtonStyle}>
+            {isHe ? 'ענו שוב על השאלות הקצרות' : 'Retake the quick questions'}
+          </button>
+
+          <button onClick={onBrowseAll} style={ghostButtonStyle}>
+            {isHe ? 'עדיין לא בטוחים? דפדפו בחלופות' : 'Still unsure? Browse alternatives'}
+          </button>
+
+          <button onClick={onBuildYourOwnPlan} style={lowEmphasisButtonStyle}>
+            {isHe ? 'רוצים שליטה מלאה? בנו בעצמכם' : 'Need more control? Build your own'}
           </button>
         </div>
-
-        <div style={{ height: 32 }} />
       </div>
     </div>
   )
 }
 
-function ResultCard({ loc, rank, lang, isHe, answers }) {
-  const [copied,    setCopied]    = useState(false)
-  const [imgFailed, setImgFailed] = useState(false)
+function Pill({ children }) {
+  return <span style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 999, padding: '6px 11px', fontSize: 12, color: '#C9A84C' }}>{children}</span>
+}
 
-  const name = isHe ? (loc.name_he || loc.name) : loc.name
-  const city = isHe ? (loc.city_he || loc.city) : loc.city
-  const desc = isHe ? (loc.description_he || loc.description) : loc.description
-  const reasons  = getMatchReasons(loc, answers, lang)
-  const color    = getCategoryColor(loc.category)
-  const showImg  = loc.image_url && !imgFailed
-
-  const handleShare = async () => {
-    const text = isHe
-      ? `רעיון מושלם לדייט: ${name} ב${city} 💫\nhamakom.app`
-      : `Perfect date idea: ${name} in ${city} 💫\nhamakom.app`
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'HaMakom', text })
-      } else {
-        await navigator.clipboard.writeText(text)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      }
-    } catch {}
-  }
-
+function FactCard({ label, value }) {
   return (
-    <div style={{
-      background: '#161B27',
-      border: `1px solid #2A2F3E`,
-      borderRadius: 14,
-      marginBottom: 12,
-      overflow: 'hidden',
-      position: 'relative',
-    }}>
-      {/* Image or colour band */}
-      <div style={{ height: 160, background: showImg ? '#000' : `${color}22`, overflow: 'hidden', position: 'relative' }}>
-        {showImg
-          ? <img src={loc.image_url} alt={name} onError={() => setImgFailed(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.88 }} />
-          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, opacity: 0.25 }}>
-              {CATEGORY_EMOJI[loc.category]}
-            </div>
-        }
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(22,27,39,0.95) 100%)' }} />
-        {/* Rank badge */}
-        <div style={{
-          position: 'absolute', top: 10, [isHe ? 'left' : 'right']: 10,
-          background: color, color: '#0D1117',
-          fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '3px 9px',
-        }}>
-          #{rank}
-        </div>
-        {/* Name pinned to bottom of image */}
-        <div style={{ position: 'absolute', bottom: 10, [isHe ? 'right' : 'left']: 14, paddingInlineEnd: 50 }}>
-          <div style={{ fontSize: 17, fontWeight: 600, color: '#E8DCC8', lineHeight: 1.2 }}>{name}</div>
-          <div style={{ fontSize: 12, color: '#C9A84C', marginTop: 2 }}>{city}</div>
-        </div>
-      </div>
-
-      <div style={{ padding: '12px 16px 16px' }}>
-      {/* Name & city (shown only when no image) */}
-      {!showImg && <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
-        <span style={{ fontSize: 26, lineHeight: 1, flexShrink: 0 }}>{CATEGORY_EMOJI[loc.category] || '📍'}</span>
-        <div>
-          <div style={{ fontSize: 17, fontWeight: 600, color: '#E8DCC8', lineHeight: 1.2 }}>{name}</div>
-          <div style={{ fontSize: 12, color: '#C9A84C', marginTop: 2 }}>{city}</div>
-        </div>
-      </div>}
-
-      {/* Description */}
-      {desc && (
-        <div style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.5, marginBottom: 10 }}>
-          {desc.length > 120 ? desc.slice(0, 120) + '…' : desc}
-        </div>
-      )}
-
-      {/* Why-it-matches pills */}
-      {reasons.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-          {reasons.map((r, i) => (
-            <span key={i} style={{
-              background: '#0F1A12', border: `1px solid ${color}44`,
-              borderRadius: 20, padding: '3px 10px',
-              fontSize: 11, color: color, fontWeight: 500,
-            }}>
-              {r}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Kashrus badge */}
-      {loc.kashrus && (
-        <div style={{
-          display: 'inline-block',
-          background: '#0F1A12', border: '1px solid #4ADE8044',
-          borderRadius: 6, padding: '2px 8px',
-          fontSize: 11, color: '#4ADE80', marginBottom: 10,
-        }}>
-          ✡️ {loc.kashrus}
-        </div>
-      )}
-
-      {/* Action buttons */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        {loc.maps_query && (
-          <a
-            href={getMapsUrl(loc.maps_query)}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              flex: 1, background: '#1F2937', border: '1px solid #374151',
-              borderRadius: 8, padding: '9px 12px', textAlign: 'center',
-              fontSize: 13, color: '#E8DCC8', textDecoration: 'none',
-              fontFamily: 'inherit',
-            }}
-          >
-            📍 {isHe ? 'מפות' : 'Maps'}
-          </a>
-        )}
-        <button
-          onClick={handleShare}
-          style={{
-            flex: 1, background: '#1F2937', border: '1px solid #374151',
-            borderRadius: 8, padding: '9px 12px',
-            fontSize: 13, color: copied ? '#4ADE80' : '#E8DCC8',
-            cursor: 'pointer', fontFamily: 'inherit',
-            transition: 'color 0.2s',
-          }}
-        >
-          {copied
-            ? (isHe ? '✓ הועתק!' : '✓ Copied!')
-            : (isHe ? '📤 שתף' : '📤 Share')}
-        </button>
-      </div>
-      </div>{/* end card body */}
+    <div style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 14, padding: '12px 14px' }}>
+      <div style={{ fontSize: 10, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 15, color: '#E8DCC8' }}>{value}</div>
     </div>
   )
+}
+
+function StopCard({ stop, index, lang }) {
+  const isHe = lang === 'he'
+  const title = isHe ? stop.name_he : stop.name_en
+  const instruction = isHe ? stop.instruction_he : stop.instruction_en
+  const orderTip = isHe ? stop.order_tip_he : stop.order_tip_en
+  const mapsUrl = getMapsUrl(stop.maps_query)
+
+  return (
+    <div style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 16, padding: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 999, background: '#C9A84C', color: '#0D1117', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{index + 1}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 5 }}>{title}</div>
+          <div style={{ fontSize: 14, lineHeight: 1.55, color: '#D0D5DD' }}>{instruction}</div>
+          {orderTip ? <div style={{ fontSize: 12, lineHeight: 1.5, color: '#9CA3AF', marginTop: 8 }}>{orderTip}</div> : null}
+          {mapsUrl ? (
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 10, fontSize: 13, color: '#C9A84C', textDecoration: 'none' }}>
+              {isHe ? 'פתח במפות' : 'Open in Maps'}
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CompactStopCard({ stop, lang }) {
+  const isHe = lang === 'he'
+  const title = isHe ? stop.name_he : stop.name_en
+  const instruction = isHe ? stop.instruction_he : stop.instruction_en
+  const mapsUrl = getMapsUrl(stop.maps_query)
+
+  return (
+    <div style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 12, padding: 12 }}>
+      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{title}</div>
+      <div style={{ fontSize: 13, lineHeight: 1.5, color: '#9CA3AF' }}>{instruction}</div>
+      {mapsUrl ? (
+        <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8, fontSize: 12, color: '#C9A84C', textDecoration: 'none' }}>
+          {isHe ? 'פתח במפות' : 'Open in Maps'}
+        </a>
+      ) : null}
+    </div>
+  )
+}
+
+const actionButtonStyle = {
+  background: '#1F2937',
+  color: '#E8DCC8',
+  border: '1px solid #374151',
+  borderRadius: 14,
+  padding: '14px 16px',
+  fontSize: 14,
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  textAlign: 'center',
+}
+
+const activeActionButtonStyle = {
+  ...actionButtonStyle,
+  background: '#18261D',
+  color: '#4ADE80',
+  border: '1px solid #2E6E45',
+}
+
+const actionLinkStyle = {
+  ...actionButtonStyle,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textDecoration: 'none',
+}
+
+const ghostButtonStyle = {
+  background: 'transparent',
+  color: '#9CA3AF',
+  border: '1px dashed #374151',
+  borderRadius: 14,
+  padding: '13px 16px',
+  cursor: 'pointer',
+  fontSize: 13,
+  fontWeight: 600,
+  fontFamily: 'inherit',
+}
+
+const lowEmphasisButtonStyle = {
+  background: 'none',
+  border: 'none',
+  color: '#6B7280',
+  fontSize: 13,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  paddingTop: 6,
 }

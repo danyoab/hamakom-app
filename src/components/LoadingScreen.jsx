@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 const STEPS_EN = [
   "Analyzing your date style…",
@@ -19,12 +19,22 @@ export default function LoadingScreen({ lang, font, onComplete }) {
   const isHe  = lang === 'he'
   const steps = isHe ? STEPS_HE : STEPS_EN
 
+  const stableOnComplete = useCallback(onComplete, [onComplete])
+
   useEffect(() => {
     const TOTAL_MS  = 3000
     const TICK_MS   = 40
     const BASE_STEP = 100 / (TOTAL_MS / TICK_MS)
     let current = 0
     let done    = false
+
+    // Safety valve: always complete within 5 seconds even if interval stalls
+    const safetyTimer = setTimeout(() => {
+      if (!done) {
+        done = true
+        try { stableOnComplete() } catch { /* ignore */ }
+      }
+    }, 5000)
 
     const id = setInterval(() => {
       // Non-linear: fast start, stalls near 90, then jumps to 100
@@ -38,12 +48,18 @@ export default function LoadingScreen({ lang, font, onComplete }) {
       if (current >= 100 && !done) {
         done = true
         clearInterval(id)
-        setTimeout(onComplete, 350)
+        clearTimeout(safetyTimer)
+        setTimeout(() => {
+          try { stableOnComplete() } catch { /* ignore */ }
+        }, 350)
       }
     }, TICK_MS)
 
-    return () => clearInterval(id)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      clearInterval(id)
+      clearTimeout(safetyTimer)
+    }
+  }, [stableOnComplete, steps.length])
 
   return (
     <div
@@ -95,6 +111,9 @@ export default function LoadingScreen({ lang, font, onComplete }) {
         @keyframes hamakomPulse {
           0%, 100% { transform: scale(1);    opacity: 1; }
           50%       { transform: scale(1.07); opacity: 0.88; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          [style*="hamakomPulse"] { animation: none !important; }
         }
       `}</style>
     </div>

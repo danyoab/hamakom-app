@@ -15,39 +15,37 @@ function pickFromTop(items, rng, topN = 6) {
   return pool[Math.floor(rng() * pool.length)]
 }
 
-// ─── Neighborhood area groups ──────────────────────────────────────────────
-// Locations that share an area group get a proximity bonus for stop 2/3.
-const AREA_GROUPS = [
-  // Jerusalem
-  ['mahane yehuda', 'nachlaot', 'shuk', 'kikar musica'],
-  ['german colony', 'first station', 'emek refaim', 'baka', 'katamon'],
-  ['haas', 'promenade', 'tayelet', 'talpiot'],
-  ['ein kerem'],
-  ['botanical garden', 'french hill'],
-  ['old city', 'jaffa gate', 'mamilla'],
-  // Tel Aviv
-  ['rothschild', 'neve tzedek', 'florentin', 'levontin', 'carmel market'],
-  ['tel aviv port', 'namal', 'yarkon park'],
-  ['jaffa', 'old jaffa'],
-  ['sarona'],
-  ['dizengoff'],
-  // Haifa
-  ['german colony haifa', 'ben gurion boulevard'],
-  ['dado beach', 'haifa promenade'],
-  ['carmel', 'haifa carmel'],
-]
+// ─── Proximity ─────────────────────────────────────────────────────────────
 
-function areaGroupOf(loc) {
-  const text = `${loc.maps_query || ''} ${loc.description || ''}`.toLowerCase()
-  return AREA_GROUPS.findIndex(keywords => keywords.some(k => text.includes(k)))
+import { CITY_COORDS } from './constants.js'
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function coordsOf(loc) {
+  if (loc.lat && loc.lng) return [loc.lat, loc.lng]
+  const c = CITY_COORDS[loc.city]
+  return c || null
 }
 
 function proximityBonus(loc, anchor) {
   if (!anchor) return 0
-  const g1 = areaGroupOf(loc)
-  const g2 = areaGroupOf(anchor)
-  if (g1 !== -1 && g1 === g2) return 3
-  return 0
+  const a = coordsOf(anchor)
+  const b = coordsOf(loc)
+  if (!a || !b) return 0
+  const km = haversineKm(a[0], a[1], b[0], b[1])
+  if (km <= 0.5) return 6   // same block / 5-min walk
+  if (km <= 1.5) return 4   // 10-15 min walk
+  if (km <= 3)   return 2   // short drive / rideshare
+  if (km <= 6)   return 0
+  return -2                  // clearly different part of city
 }
 
 // ─── Stop slot definitions ─────────────────────────────────────────────────

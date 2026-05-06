@@ -49,21 +49,26 @@ function paceSignals(length) {
   }
 }
 
-function distanceKm(cityA, cityB) {
-  const a = CITY_COORDS[cityA]
-  const b = CITY_COORDS[cityB]
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function distanceKm(location, userCity) {
+  // Venue-level coordinates take priority over city-level
+  if (location.lat && location.lng && CITY_COORDS[userCity]) {
+    const [cityLat, cityLng] = CITY_COORDS[userCity]
+    return haversineKm(location.lat, location.lng, cityLat, cityLng)
+  }
+  const a = CITY_COORDS[location.city]
+  const b = CITY_COORDS[userCity]
   if (!a || !b) return null
-
-  const toRadians = (value) => (value * Math.PI) / 180
-  const dLat = toRadians(b[0] - a[0])
-  const dLon = toRadians(b[1] - a[1])
-  const lat1 = toRadians(a[0])
-  const lat2 = toRadians(b[0])
-  const hav =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
-
-  return 6371 * 2 * Math.atan2(Math.sqrt(hav), Math.sqrt(1 - hav))
+  return haversineKm(a[0], a[1], b[0], b[1])
 }
 
 function buildPreferenceProfile({ locations, savedPlaceIds = [], clickedLocationCounts = {}, feedbackByItem = {} }) {
@@ -122,7 +127,7 @@ export function scoreLocation(location, answers, behavior = {}) {
     if (location.city === answers.city) {
       score += 5
     } else {
-      const distance = distanceKm(location.city, answers.city)
+      const distance = distanceKm(location, answers.city)
       if (distance !== null) {
         if (distance <= pace.travelToleranceKm) score += 1.5
         else if (distance > pace.travelToleranceKm * 2) score -= 1

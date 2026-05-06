@@ -170,4 +170,10 @@ do $$ begin
   if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='partner_contact') then
     alter table locations add column partner_contact text default null;
   end if;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='lat') then
+    alter table locations add column lat double precision default null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='lng') then
+    alter table locations add column lng double precision default null;
+  end if;
 end $$;

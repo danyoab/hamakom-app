@@ -1,6 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
+async function geocodeQuery(mapsQuery) {
+  if (!mapsQuery) return {}
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(mapsQuery)}&format=json&limit=1&countrycodes=il`
+    const res = await fetch(url, { headers: { 'User-Agent': 'HaMakomApp/1.0' } })
+    const data = await res.json()
+    if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+  } catch {
+    // geocoding is best-effort — don't block approval on network failure
+  }
+  return {}
+}
+
 export function usePending() {
   const [pending, setPending]   = useState([])
   const [approved, setApproved] = useState([])
@@ -35,6 +48,7 @@ export function usePending() {
 
   const approveSub = async (sub) => {
     if (!supabase) return { error: 'Supabase unavailable' }
+    const coords = await geocodeQuery(sub.maps_query || `${sub.name} ${sub.city} Israel`)
     const { error: insertError } = await supabase.from('locations').insert([{
       name: sub.name,
       city: sub.city,
@@ -44,7 +58,10 @@ export function usePending() {
       price: sub.price || 2,
       kashrus: sub.kashrus || null,
       description: sub.why || null,
+      maps_query: sub.maps_query || null,
       status: 'approved',
+      lat: coords.lat || null,
+      lng: coords.lng || null,
     }])
     if (insertError) return { error: insertError.message }
 

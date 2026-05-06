@@ -15,48 +15,157 @@ function pickFromTop(items, rng, topN = 6) {
   return pool[Math.floor(rng() * pool.length)]
 }
 
-const FOCUS_OCCASIONS = {
-  'food-drink': ['first date', 'casual', 'coffee', 'evening', 'fun', 'romantic', 'upscale'],
-  atmosphere:   ['romantic', 'upscale', 'views', 'evening', 'intimate', 'unique'],
-  outdoors:     ['outdoors', 'active', 'views', 'nature', 'adventurous', 'unique'],
+// ─── Neighborhood area groups ──────────────────────────────────────────────
+// Locations that share an area group get a proximity bonus for stop 2/3.
+const AREA_GROUPS = [
+  // Jerusalem
+  ['mahane yehuda', 'nachlaot', 'shuk', 'kikar musica'],
+  ['german colony', 'first station', 'emek refaim', 'baka', 'katamon'],
+  ['haas', 'promenade', 'tayelet', 'talpiot'],
+  ['ein kerem'],
+  ['botanical garden', 'french hill'],
+  ['old city', 'jaffa gate', 'mamilla'],
+  // Tel Aviv
+  ['rothschild', 'neve tzedek', 'florentin', 'levontin', 'carmel market'],
+  ['tel aviv port', 'namal', 'yarkon park'],
+  ['jaffa', 'old jaffa'],
+  ['sarona'],
+  ['dizengoff'],
+  // Haifa
+  ['german colony haifa', 'ben gurion boulevard'],
+  ['dado beach', 'haifa promenade'],
+  ['carmel', 'haifa carmel'],
+]
+
+function areaGroupOf(loc) {
+  const text = `${loc.maps_query || ''} ${loc.description || ''}`.toLowerCase()
+  return AREA_GROUPS.findIndex(keywords => keywords.some(k => text.includes(k)))
 }
 
-const SERIOUSNESS_STAGES = {
-  'just-met':          [1],
-  'getting-to-know':   [1, 2],
-  'getting-serious':   [2, 3],
+function proximityBonus(loc, anchor) {
+  if (!anchor) return 0
+  const g1 = areaGroupOf(loc)
+  const g2 = areaGroupOf(anchor)
+  if (g1 !== -1 && g1 === g2) return 3
+  return 0
 }
 
-function scoreForRole(loc, focusOccasions, role) {
+// ─── Stop slot definitions ─────────────────────────────────────────────────
+// Each slot has: allowed categories, optional price bounds, preferred occasions.
+// Stops are picked in sequence so the night has a logical narrative.
+
+const SLOT_DEFS = {
+  'food-drink': [
+    {
+      // Stop 1: light opener — coffee, small plates, casual drinks
+      categories: ['Cafés & Restaurants'],
+      maxPrice: 2,
+      preferOccasions: ['coffee', 'casual', 'first date', 'dairy', 'light'],
+    },
+    {
+      // Stop 2: main meal
+      categories: ['Cafés & Restaurants', 'Hotels & Lounges'],
+      minPrice: 2,
+      preferOccasions: ['dinner', 'evening', 'romantic', 'upscale', 'fun'],
+    },
+    {
+      // Stop 3: dessert or brief walk
+      categories: ['Parks & Outdoors', 'Cafés & Restaurants'],
+      maxPrice: 2,
+      preferOccasions: ['dessert', 'casual', 'nature', 'unique', 'fun'],
+    },
+  ],
+  atmosphere: [
+    {
+      // Stop 1: cocktail bar, lounge, or view spot with drinks
+      categories: ['Hotels & Lounges', 'Cafés & Restaurants'],
+      minPrice: 2,
+      preferOccasions: ['evening', 'romantic', 'upscale', 'views', 'vibe'],
+    },
+    {
+      // Stop 2: dinner with ambiance
+      categories: ['Cafés & Restaurants'],
+      minPrice: 2,
+      preferOccasions: ['dinner', 'romantic', 'upscale', 'scenic', 'classic'],
+    },
+    {
+      // Stop 3: end the night — scenic walk or wine bar
+      categories: ['Parks & Outdoors', 'Hotels & Lounges', 'Cafés & Restaurants'],
+      maxPrice: 3,
+      preferOccasions: ['romantic', 'views', 'evening', 'unique'],
+    },
+  ],
+  outdoors: [
+    {
+      // Stop 1: outdoor spot — park, tayelet, nature
+      categories: ['Parks & Outdoors', 'Activities & Experiences'],
+      preferOccasions: ['nature', 'casual', 'active', 'first date', 'views', 'outdoors', 'unique'],
+    },
+    {
+      // Stop 2: café or light bite nearby
+      categories: ['Cafés & Restaurants'],
+      maxPrice: 2,
+      preferOccasions: ['casual', 'coffee', 'first date', 'unique'],
+    },
+    {
+      // Stop 3: optional dinner or second activity
+      categories: ['Cafés & Restaurants', 'Activities & Experiences', 'Wineries'],
+      minPrice: 2,
+      preferOccasions: ['dinner', 'evening', 'romantic', 'adventurous'],
+    },
+  ],
+}
+
+// ─── Scoring ───────────────────────────────────────────────────────────────
+
+function scoreForSlot(loc, slotDef, preferOccasions, anchor) {
   let score = 0
-  const occasions = loc.occasion || []
-  if (focusOccasions.some(o => occasions.includes(o))) score += 3
+
+  // Category match — hard filter baked into pool selection, but soft-boost too
+  if (slotDef.categories.includes(loc.category)) score += 2
+
+  // Price bounds
+  if (slotDef.minPrice && loc.price < slotDef.minPrice) score -= 3
+  if (slotDef.maxPrice && loc.price > slotDef.maxPrice) score -= 3
+
+  // Preferred occasions
+  const locOccasions = loc.occasion || []
+  const matched = (slotDef.preferOccasions || []).filter(o => locOccasions.includes(o))
+  score += matched.length * 1.5
+
+  // Featured boost
   if (loc.featured) score += 1.5
 
-  if (role === 'open') {
-    if (loc.price <= 2) score += 2
-    if (loc.category === 'Parks & Outdoors') score += 1
-  } else if (role === 'main') {
-    if (loc.price >= 2) score += 2
-    if (['Activities & Experiences', 'Wineries'].includes(loc.category)) score += 1
-  } else if (role === 'close') {
-    if (loc.price <= 2) score += 2
-    if (loc.category === 'Parks & Outdoors') score += 1.5
-  }
+  // Proximity to anchor stop
+  score += proximityBonus(loc, anchor)
 
   return score
 }
 
+function filterForSlot(locs, slotDef) {
+  return locs.filter(l => {
+    if (!slotDef.categories.includes(l.category)) return false
+    return true
+  })
+}
+
+// ─── Budget ────────────────────────────────────────────────────────────────
+
+const PRICE_RANGES = { 1: [35, 55], 2: [70, 110], 3: [130, 180], 4: [190, 260] }
+
 function budgetText(stops) {
-  const priceMap = { 1: 45, 2: 85, 3: 150, 4: 220 }
-  const perStop = stops.map(s => priceMap[s._price] || 85)
-  const lo = perStop.reduce((a, b) => a + b, 0)
-  const hi = Math.round(lo * 1.35 / 10) * 10
+  let lo = 0, hi = 0
+  stops.forEach(s => {
+    const [a, b] = PRICE_RANGES[s._price] || [70, 110]
+    lo += a; hi += b
+  })
   return {
     en: `₪${lo}–${hi} per person`,
     he: `₪${lo}–${hi} לאדם`,
   }
 }
+
+// ─── Copy ──────────────────────────────────────────────────────────────────
 
 const TITLES = {
   'food-drink:just-met':         { en: 'Easy Evening, Great Food',           he: 'ערב קל, אוכל טוב' },
@@ -67,7 +176,7 @@ const TITLES = {
   'atmosphere:getting-serious':  { en: 'A Deliberately Good Night',           he: 'ערב טוב במכוון' },
   'outdoors:just-met':           { en: 'Out of the Restaurant',               he: 'מחוץ למסעדה' },
   'outdoors:getting-to-know':    { en: 'Move First, Sit Second',              he: 'קודם לזוז, אחר כך לשבת' },
-  'outdoors:getting-serious':    { en: 'An Evening You\'ll Both Remember',    he: 'ערב שתזכרו שניכם' },
+  'outdoors:getting-serious':    { en: "An Evening You'll Both Remember",     he: 'ערב שתזכרו שניכם' },
 }
 
 const NARRATIVES = {
@@ -121,26 +230,59 @@ const DURATIONS = {
   long:   { en: '3.5–4 hours',   he: '3.5–4 שעות' },
 }
 
-function toStop(loc) {
+// ─── Stop instructions ─────────────────────────────────────────────────────
+
+const SLOT_INSTRUCTIONS = {
+  'food-drink': [
+    { en: 'Start light — order drinks or a small plate. No rush.', he: 'מתחילים קל — הזמינו שתייה או מנה קטנה. בלי מהירות.' },
+    { en: 'This is the main stop. Take your time here.', he: 'זו התחנה המרכזית. קחו את הזמן.' },
+    { en: 'Wind down here — dessert or a walk to close the night.', he: 'מסיימים כאן — קינוח או טיול לסיום הערב.' },
+  ],
+  atmosphere: [
+    { en: 'Order drinks and settle in. Let the place do the work.', he: 'הזמינו שתייה והתרווחו. תנו למקום לעשות את העבודה.' },
+    { en: 'Dinner here. The atmosphere carries the conversation.', he: 'ארוחת ערב כאן. האווירה מוביל את השיחה.' },
+    { en: 'A quiet close to the night.', he: 'סיום שקט לערב.' },
+  ],
+  outdoors: [
+    { en: 'Start outside — walk, look around, no agenda.', he: 'מתחילים בחוץ — מטיילים, מסתכלים סביב, בלי לוח זמנים.' },
+    { en: 'Grab a drink or something to eat nearby.', he: 'לוקחים שתייה או משהו לאכול בקרבת מקום.' },
+    { en: 'Round off the evening here.', he: 'מסיימים את הערב כאן.' },
+  ],
+}
+
+function toStop(loc, slotIndex, focus) {
+  const instructions = SLOT_INSTRUCTIONS[focus] || SLOT_INSTRUCTIONS['food-drink']
+  const fallback = instructions[slotIndex] || instructions[0]
   return {
     name_en:        loc.name,
     name_he:        loc.name_he || loc.name,
-    instruction_en: loc.description || `${loc.category} in ${loc.city}`,
-    instruction_he: loc.description_he || loc.description || loc.name_he || loc.name,
+    instruction_en: loc.description || fallback.en,
+    instruction_he: loc.description_he || loc.description || fallback.he,
     maps_query:     loc.maps_query || `${loc.name} ${loc.city} Israel`,
     _price:         loc.price || 2,
   }
 }
 
+// ─── Main export ───────────────────────────────────────────────────────────
+
+const SERIOUSNESS_STAGES = {
+  'just-met':        [1],
+  'getting-to-know': [1, 2],
+  'getting-serious': [2, 3],
+}
+
 export function assembleDynamicPlan(locations, answers) {
   const seed = answers._seed || Date.now()
   const rng = seededRng(seed)
+  const focus = answers.focus || 'food-drink'
 
+  // 1. Filter by city
   const cityPool =
     answers.city && answers.city !== 'flexible'
       ? locations.filter(l => l.city === answers.city || l.city === 'Various')
       : locations
 
+  // 2. Filter by seriousness / date_stage
   const stages = SERIOUSNESS_STAGES[answers.seriousness] || [1, 2]
   const eligible = cityPool.filter(
     l => l.status === 'approved' && (l.date_stage || []).some(s => stages.includes(s))
@@ -148,64 +290,80 @@ export function assembleDynamicPlan(locations, answers) {
 
   if (eligible.length < 2) return null
 
-  const focusOccasions = FOCUS_OCCASIONS[answers.focus] || FOCUS_OCCASIONS['food-drink']
+  const slotDefs = SLOT_DEFS[focus] || SLOT_DEFS['food-drink']
+  const length = answers.length || 'medium'
+  const stopCount = length === 'short' ? 2 : 3
 
-  const ranked = (role) =>
-    eligible
-      .map(l => ({ ...l, _s: scoreForRole(l, focusOccasions, role) }))
+  const usedIds = new Set()
+  const selectedLocs = []
+
+  // 3. Pick each stop in sequence, using the previous stop as proximity anchor
+  for (let i = 0; i < stopCount; i++) {
+    const slotDef = slotDefs[i]
+    if (!slotDef) break
+
+    const anchor = selectedLocs[selectedLocs.length - 1] || null
+    const pool = filterForSlot(eligible, slotDef).filter(l => !usedIds.has(l.id))
+
+    if (!pool.length) {
+      // Fallback: relax category constraint
+      const relaxed = eligible.filter(l => !usedIds.has(l.id))
+      if (!relaxed.length) break
+      const scored = relaxed
+        .map(l => ({ ...l, _s: scoreForSlot(l, slotDef, slotDef.preferOccasions, anchor) }))
+        .sort((a, b) => b._s - a._s)
+      const picked = pickFromTop(scored, rng, 6)
+      if (!picked) break
+      usedIds.add(picked.id)
+      selectedLocs.push(picked)
+      continue
+    }
+
+    const scored = pool
+      .map(l => ({ ...l, _s: scoreForSlot(l, slotDef, slotDef.preferOccasions, anchor) }))
       .sort((a, b) => b._s - a._s)
 
-  const stop1Loc = pickFromTop(ranked('open'), rng, 6)
-  if (!stop1Loc) return null
-
-  const stop2Loc = pickFromTop(
-    ranked('main').filter(l => l.id !== stop1Loc.id),
-    rng, 6
-  )
-  if (!stop2Loc) return null
-
-  const length = answers.length || 'medium'
-  let stop3Loc = null
-  if (length !== 'short') {
-    stop3Loc = pickFromTop(
-      ranked('close').filter(l => l.id !== stop1Loc.id && l.id !== stop2Loc.id),
-      rng, 6
-    )
+    const picked = pickFromTop(scored, rng, 6)
+    if (!picked) break
+    usedIds.add(picked.id)
+    selectedLocs.push(picked)
   }
 
-  const stops = [stop1Loc, stop2Loc, stop3Loc].filter(Boolean).map(toStop)
+  if (selectedLocs.length < 2) return null
+
+  const stops = selectedLocs.map((loc, i) => toStop(loc, i, focus))
   const budget = budgetText(stops)
 
   const city =
-    stop1Loc.city !== 'Various' ? stop1Loc.city :
-    stop2Loc.city !== 'Various' ? stop2Loc.city :
+    selectedLocs[0].city !== 'Various' ? selectedLocs[0].city :
+    selectedLocs[1]?.city !== 'Various' ? selectedLocs[1].city :
     (answers.city || 'flexible')
 
-  const key = `${answers.focus}:${answers.seriousness}`
-  const titleObj    = TITLES[key]    || { en: 'Your Evening Plan',       he: 'תוכנית הערב שלכם' }
+  const key = `${focus}:${answers.seriousness}`
+  const titleObj    = TITLES[key]    || { en: 'Your Evening Plan',            he: 'תוכנית הערב שלכם' }
   const narrativeObj = NARRATIVES[key] || { en: 'A plan built for your answers.', he: 'תוכנית שנבנתה לתשובות שלכם.' }
 
   return {
-    id:                   `dynamic-${seed}`,
+    id:                 `dynamic-${seed}`,
     city,
-    featured:             false,
-    _dynamic:             true,
-    title_en:             titleObj.en,
-    title_he:             titleObj.he,
-    narrative_en:         narrativeObj.en,
-    narrative_he:         narrativeObj.he,
-    start_time_text_en:   START_TIMES[length].en,
-    start_time_text_he:   START_TIMES[length].he,
-    duration_text_en:     DURATIONS[length].en,
-    duration_text_he:     DURATIONS[length].he,
-    budget_text_en:       budget.en,
-    budget_text_he:       budget.he,
-    share_summary_en:     stops.map(s => s.name_en).join(' → '),
-    share_summary_he:     stops.map(s => s.name_he).join(' → '),
-    length_tags:          [length],
-    focus_tags:           [answers.focus],
-    seriousness_tags:     [answers.seriousness],
-    when_tags:            [],
+    featured:           false,
+    _dynamic:           true,
+    title_en:           titleObj.en,
+    title_he:           titleObj.he,
+    narrative_en:       narrativeObj.en,
+    narrative_he:       narrativeObj.he,
+    start_time_text_en: START_TIMES[length].en,
+    start_time_text_he: START_TIMES[length].he,
+    duration_text_en:   DURATIONS[length].en,
+    duration_text_he:   DURATIONS[length].he,
+    budget_text_en:     budget.en,
+    budget_text_he:     budget.he,
+    share_summary_en:   stops.map(s => s.name_en).join(' → '),
+    share_summary_he:   stops.map(s => s.name_he).join(' → '),
+    length_tags:        [length],
+    focus_tags:         [focus],
+    seriousness_tags:   [answers.seriousness],
+    when_tags:          [],
     stops,
   }
 }

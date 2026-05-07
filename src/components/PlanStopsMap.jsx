@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { CITY_COORDS } from '../lib/constants'
+import 'leaflet/dist/leaflet.css'
 
 // ~300 m offset per stop so city-fallback pins don't all stack on each other
 const JITTER = [[0, 0], [0.0027, 0], [-0.0013, 0.0023]]
@@ -31,14 +32,12 @@ export default function PlanStopsMap({ stops = [], lang, planCity }) {
   if (stopsWithCoords.length < 2) return null
 
   useEffect(() => {
-    if (instanceRef.current) return // already initialised
+    if (instanceRef.current) return
 
-    // Dynamically import Leaflet so it doesn't SSR-crash
     import('leaflet').then(L => {
       const el = mapRef.current
       if (!el) return
 
-      // Fix default icon path broken by bundlers
       delete L.Icon.Default.prototype._getIconUrl
       L.Icon.Default.mergeOptions({ iconRetinaUrl: '', iconUrl: '', shadowUrl: '' })
 
@@ -51,7 +50,6 @@ export default function PlanStopsMap({ stops = [], lang, planCity }) {
         touchZoom: true,
       })
 
-      // CartoDB Dark Matter — matches app theme
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         maxZoom: 19,
       }).addTo(map)
@@ -86,10 +84,13 @@ export default function PlanStopsMap({ stops = [], lang, planCity }) {
         bounds.push([stop.lat, stop.lng])
       })
 
+      // invalidateSize before fitBounds so Leaflet knows the container's real dimensions
+      map.invalidateSize()
+
       if (bounds.length >= 2) {
-        map.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 })
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
       } else {
-        map.setView(bounds[0], 15)
+        map.setView(bounds[0], 14)
       }
 
       instanceRef.current = map

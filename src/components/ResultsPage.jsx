@@ -112,7 +112,7 @@ export default function ResultsPage({
             {isHe ? 'איך הערב נבנה' : 'How the night unfolds'}
           </div>
 
-          <PlanStopsMap stops={plan.stops} lang={lang} planCity={plan.city} />
+          <PlanStopsMap key={plan.id} stops={plan.stops} lang={lang} planCity={plan.city} />
 
           <div style={{ display: 'grid', gap: 12 }}>
             {primaryStops.map((stop, index) => (

@@ -18,13 +18,14 @@ export default function PlanStopsMap({ stops = [], lang, planCity }) {
   const mapRef = useRef(null)
   const instanceRef = useRef(null)
 
-  // Resolve coords for each stop: exact venue coords, or city centre with small offset
-  const cityFallback = planCity ? CITY_COORDS[planCity] : null
+  // Resolve coords for each stop: exact venue → stop's own city → planCity fallback
   const stopsWithCoords = stops.map((s, i) => {
     if (s.lat && s.lng) return s
-    if (!cityFallback) return null
+    const fallbackCity = s._city || planCity
+    const fallback = fallbackCity ? CITY_COORDS[fallbackCity] : null
+    if (!fallback) return null
     const [dlat, dlng] = JITTER[i] || [0, 0]
-    return { ...s, lat: cityFallback[0] + dlat, lng: cityFallback[1] + dlng, _approx: true }
+    return { ...s, lat: fallback[0] + dlat, lng: fallback[1] + dlng, _approx: true }
   }).filter(Boolean)
 
   if (stopsWithCoords.length < 2) return null

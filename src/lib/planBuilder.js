@@ -259,6 +259,7 @@ function toStop(loc, slotIndex, focus) {
     instruction_he: loc.description_he || loc.description || fallback.he,
     maps_query:     loc.maps_query || `${loc.name} ${loc.city} Israel`,
     _price:         loc.price || 2,
+    _city:          loc.city,
     lat:            coords ? coords[0] : null,
     lng:            coords ? coords[1] : null,
   }
@@ -277,10 +278,10 @@ export function assembleDynamicPlan(locations, answers) {
   const rng = seededRng(seed)
   const focus = answers.focus || 'food-drink'
 
-  // 1. Filter by city
+  // 1. Filter by city — exclude 'Various' chains when user picked a specific city
   const cityPool =
     answers.city && answers.city !== 'flexible'
-      ? locations.filter(l => l.city === answers.city || l.city === 'Various')
+      ? locations.filter(l => l.city === answers.city)
       : locations
 
   // 2. Filter by seriousness / date_stage

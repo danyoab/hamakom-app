@@ -16,7 +16,12 @@ export function scorePlan(plan, answers) {
   score += scoreOverlap(plan.when_tags || [], answers.when)
   score += scoreLengthMatch(plan, answers.length)
   score += scoreOverlap(plan.focus_tags || [], answers.focus)
-  if (answers.city && answers.city !== 'flexible' && plan.city === answers.city) score += 3
+
+  if (answers.city && answers.city !== 'flexible') {
+    if (plan.city === answers.city) score += 5
+    else score -= 2
+  }
+
   score += scoreOverlap(plan.seriousness_tags || [], answers.seriousness)
 
   if (plan.featured) score += 0.5
@@ -48,10 +53,22 @@ function scorePlanBehaviorBoost(plan, behavior = {}) {
 export function getMatchedPlans(plans, answers, count = 2, behavior = {}) {
   const planIndex = Object.fromEntries((plans || []).map((plan) => [String(plan.id), plan]))
 
-  return [...plans]
-    .map((plan) => ({ ...plan, _score: scorePlan(plan, answers) + scorePlanBehaviorBoost(plan, { ...behavior, planIndex }) }))
+  const scored = [...plans]
+    .map((plan) => ({
+      ...plan,
+      _score: scorePlan(plan, answers) + scorePlanBehaviorBoost(plan, { ...behavior, planIndex }),
+    }))
     .sort((a, b) => b._score - a._score)
-    .slice(0, count)
+    .slice(0, Math.max(count, 3))
+
+  if (scored[0]) {
+    scored[0]._cityMismatch = Boolean(
+      answers.city && answers.city !== 'flexible' && scored[0].city !== answers.city
+    )
+    scored[0]._lowConfidence = scored[0]._score < 4
+  }
+
+  return scored
 }
 
 export function buildPlanIdentity(answers) {

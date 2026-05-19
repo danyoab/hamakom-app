@@ -176,4 +176,46 @@ do $$ begin
   if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='lng') then
     alter table locations add column lng double precision default null;
   end if;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='avg_rating') then
+    alter table locations add column avg_rating numeric(3,1) default null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='review_count') then
+    alter table locations add column review_count int default 0;
+  end if;
 end $$;
+
+-- ── Community Reviews ──────────────────────────
+
+create table if not exists location_reviews (
+  id          uuid primary key default gen_random_uuid(),
+  location_id bigint references locations(id) on delete cascade,
+  user_id     uuid references auth.users(id) on delete cascade,
+  rating      int not null check (rating >= 1 and rating <= 5),
+  body        text check (char_length(body) <= 200),
+  created_at  timestamptz default now(),
+  unique (location_id, user_id)
+);
+
+alter table location_reviews enable row level security;
+create policy "public_read_reviews"    on location_reviews for select using (true);
+create policy "auth_insert_review"     on location_reviews for insert with check (auth.uid() = user_id);
+create policy "auth_update_own_review" on location_reviews for update using (auth.uid() = user_id);
+
+-- Trigger: keep avg_rating + review_count on locations in sync
+create or replace function sync_location_rating() returns trigger
+language plpgsql security definer as $$
+declare target bigint;
+begin
+  target := coalesce(new.location_id, old.location_id);
+  update locations
+    set avg_rating   = (select round(avg(rating)::numeric, 1) from location_reviews where location_id = target),
+        review_count = (select count(*) from location_reviews where location_id = target)
+    where id = target;
+  return coalesce(new, old);
+end;
+$$;
+
+drop trigger if exists location_rating_sync on location_reviews;
+create trigger location_rating_sync
+  after insert or update or delete on location_reviews
+  for each row execute function sync_location_rating();

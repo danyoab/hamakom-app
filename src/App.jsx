@@ -544,6 +544,7 @@ export default function App() {
           font={font}
           plan={currentPlan}
           planIndex={resultIndex}
+          userId={authUser?.id}
           planCount={matchedPlans.length}
           alternatePlan={alternatePlan}
           backupLocations={backupLocations}

@@ -134,6 +134,11 @@ function scoreForSlot(loc, slotDef, preferOccasions, anchor) {
   // Featured boost
   if (loc.featured) score += 1.5
 
+  // Community rating signal (only once 3+ reviews exist)
+  if (loc.avg_rating != null && (loc.review_count || 0) >= 3) {
+    score += (loc.avg_rating - 3) * 0.8 // range: ~−2.4 to +1.6
+  }
+
   // Proximity to anchor stop
   score += proximityBonus(loc, anchor)
 
@@ -260,6 +265,7 @@ function toStop(loc, slotIndex, focus) {
     maps_query:     loc.maps_query || `${loc.name} ${loc.city} Israel`,
     _price:         loc.price || 2,
     _city:          loc.city,
+    _locationId:    loc.id,
     lat:            coords ? coords[0] : null,
     lng:            coords ? coords[1] : null,
   }

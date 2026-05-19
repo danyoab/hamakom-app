@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { getMapsUrl } from '../lib/constants'
 import { buildPlanIdentity, getPlanFitSummary } from '../lib/quiz'
 import PlanStopsMap from './PlanStopsMap'
+import { upsertReview } from '../hooks/useReviews'
 
 function getLocalizedPlanText(plan, lang) {
   const isHe = lang === 'he'
@@ -36,6 +37,7 @@ export default function ResultsPage({
   answers,
   saved,
   reminderSet,
+  userId,
   onBrowseAll,
   onNextPlan,
   onToggleBackupOptions,
@@ -116,7 +118,7 @@ export default function ResultsPage({
 
           <div style={{ display: 'grid', gap: 12 }}>
             {primaryStops.map((stop, index) => (
-              <StopCard key={`${plan.id}-${index}`} stop={stop} index={index} lang={lang} />
+              <StopCard key={`${plan.id}-${index}`} stop={stop} index={index} lang={lang} userId={userId} />
             ))}
           </div>
 
@@ -248,7 +250,7 @@ function FactCard({ label, value }) {
   )
 }
 
-function StopCard({ stop, index, lang }) {
+function StopCard({ stop, index, lang, userId }) {
   const isHe = lang === 'he'
   const title = isHe ? stop.name_he : stop.name_en
   const instruction = isHe ? stop.instruction_he : stop.instruction_en
@@ -268,8 +270,79 @@ function StopCard({ stop, index, lang }) {
               {isHe ? 'פתח במפות' : 'Open in Maps'}
             </a>
           ) : null}
+          {userId && stop._locationId ? (
+            <StopRating locationId={stop._locationId} userId={userId} lang={lang} />
+          ) : null}
         </div>
       </div>
+    </div>
+  )
+}
+
+function StopRating({ locationId, userId, lang }) {
+  const [rating, setRating] = useState(0)
+  const [hover, setHover] = useState(0)
+  const [body, setBody] = useState('')
+  const [phase, setPhase] = useState('idle') // idle | rated | done
+  const [err, setErr] = useState(false)
+  const isHe = lang === 'he'
+
+  const handleStar = async (n) => {
+    setRating(n)
+    setPhase('rated')
+    setErr(false)
+    const { error } = await upsertReview({ locationId, userId, rating: n, body: '' })
+    if (error) setErr(true)
+  }
+
+  const handleSaveNote = async () => {
+    const { error } = await upsertReview({ locationId, userId, rating, body })
+    if (!error) setPhase('done')
+    else setErr(true)
+  }
+
+  if (phase === 'done') {
+    return (
+      <div style={{ marginTop: 10, fontSize: 12, color: '#6B7280' }}>
+        {isHe ? '✓ תודה על הדירוג' : '✓ Thanks for the rating'}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 5 }}>
+        {isHe ? 'איך היה המקום?' : 'How was this stop?'}
+      </div>
+      <div style={{ display: 'flex', gap: 4 }}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            onClick={() => handleStar(n)}
+            onMouseEnter={() => setHover(n)}
+            onMouseLeave={() => setHover(0)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, padding: '0 2px', color: n <= (hover || rating) ? '#C9A84C' : '#374151', lineHeight: 1 }}
+          >
+            ★
+          </button>
+        ))}
+      </div>
+      {phase === 'rated' && (
+        <div style={{ marginTop: 8 }}>
+          <input
+            value={body}
+            onChange={(e) => setBody(e.target.value.slice(0, 200))}
+            placeholder={isHe ? 'הוסיפו מחשבה קצרה (אופציונלי)' : 'Add a short thought (optional)'}
+            style={{ width: '100%', background: '#0D1117', border: '1px solid #374151', borderRadius: 8, padding: '7px 10px', color: '#E8DCC8', fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box' }}
+          />
+          {body.trim() && (
+            <button onClick={handleSaveNote} style={{ marginTop: 6, background: 'none', border: 'none', color: '#C9A84C', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+              {isHe ? 'שמור' : 'Save note'}
+            </button>
+          )}
+        </div>
+      )}
+      {err && <div style={{ color: '#F87171', fontSize: 11, marginTop: 4 }}>{isHe ? 'שגיאה, נסו שוב' : 'Error, try again'}</div>}
     </div>
   )
 }

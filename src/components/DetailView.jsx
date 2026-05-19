@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getInviteUrl, getMapsUrl, getWhatsAppUrl } from '../lib/constants'
+import { useLocationReviews } from '../hooks/useReviews'
 
 export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true }) {
+  const { reviews } = useLocationReviews(loc.id)
   const [imgFailed, setImgFailed] = useState(false)
   const name = lang === 'he' ? loc.name_he || loc.name : loc.name
   const city = lang === 'he' ? loc.city_he || loc.city : loc.city
@@ -167,6 +169,37 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
           <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.1em', marginBottom: 6, textTransform: 'uppercase' }}>{tx.importantNote}</div>
           <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0, lineHeight: 1.6 }}>{tx.kashrusNote}</p>
         </div>
+
+        {reviews.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 12 }}>
+              {lang === 'he' ? 'מה אנשים אמרו' : 'What people said'}
+            </div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {reviews.map((r) => (
+                <div key={r.id} style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 12, padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: r.body ? 6 : 0 }}>
+                    <span style={{ color: '#C9A84C', fontSize: 15, letterSpacing: 1 }}>
+                      {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#4B5563' }}>
+                      {new Date(r.created_at).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', { month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+                  {r.body ? <p style={{ margin: 0, fontSize: 13, color: '#D0D5DD', lineHeight: 1.55 }}>{r.body}</p> : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {loc.avg_rating && loc.review_count >= 1 ? (
+          <div style={{ marginTop: 10, fontSize: 12, color: '#6B7280', textAlign: 'center', paddingBottom: 8 }}>
+            {lang === 'he'
+              ? `${loc.avg_rating} ★ · ${loc.review_count} ביקורות מהקהילה`
+              : `${loc.avg_rating} ★ · ${loc.review_count} community ${loc.review_count === 1 ? 'review' : 'reviews'}`}
+          </div>
+        ) : null}
       </div>
     </div>
   )

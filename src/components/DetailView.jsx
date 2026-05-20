@@ -3,7 +3,6 @@ import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getInviteUrl, getMa
 import FeedbackModal from './FeedbackModal'
 
 export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true }) {
-  const { reviews } = useLocationReviews(loc.id)
   const [imgFailed, setImgFailed] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const name = lang === 'he' ? loc.name_he || loc.name : loc.name

@@ -93,6 +93,7 @@ When adding a place, update all relevant layers so it appears consistently in Ex
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_ADMIN_PIN`
+   - `VITE_PUBLIC_APP_URL`
 4. Deploy
 5. In Supabase Auth, add the Vercel production URL and preview URL pattern as redirect URLs
 

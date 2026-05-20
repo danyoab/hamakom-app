@@ -8,6 +8,24 @@ export const CATEGORIES = [
   'Wineries',
 ]
 
+// Cities shown as options in the date quiz. Order = display order.
+// A city can appear here even if it has no plans yet — the scorer in
+// quiz.js softens the cross-city penalty for low-coverage cities so
+// users still get reasonable suggestions (marked _cityMismatch).
+export const QUIZ_CITIES = [
+  'Jerusalem',
+  'Tel Aviv',
+  'Beit Shemesh',
+  "Modi'in",
+  'Tzur Hadassah',
+  'Haifa',
+  'Herzliya',
+  "Ra'anana",
+  'Netanya',
+  'Zichron Yaakov',
+  'Caesarea',
+]
+
 export const CITIES = [
   'All Cities',
   'Jerusalem',
@@ -76,7 +94,6 @@ export const DATE_STAGE_BADGE = {
   3: { bg: '#3A1A2A', text: '#F472B6' },
 }
 
-export const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || '1234'
 
 export const CITY_COORDS = {
   'Jerusalem':          [31.7683, 35.2137],

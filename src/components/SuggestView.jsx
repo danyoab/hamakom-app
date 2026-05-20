@@ -3,15 +3,18 @@ import { supabase } from '../lib/supabase'
 import { DATE_STAGE_BADGE, CATEGORIES } from '../lib/constants'
 
 const WHY_MAX = 300
+const SUBMIT_COOLDOWN_MS = 5 * 60 * 1000
 
 export default function SuggestView({ tx, font, onBack }) {
   const [form, setForm] = useState({
     name: '', city: '', category: '', kashrus: '', why: '',
     whatsapp: '', dateStage: [], price: 2,
+    _hp: '',
   })
   const [touched, setTouch] = useState({})
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState('')
+  const [cooldownUntil, setCooldownUntil] = useState(0)
 
   const set = (k, v) => { setForm(prev => ({ ...prev, [k]: v })); setTouch(prev => ({ ...prev, [k]: true })) }
   const toggleStage = (s) => setForm(prev => ({
@@ -33,6 +36,19 @@ export default function SuggestView({ tx, font, onBack }) {
       setError(tx.suggestRequired)
       return
     }
+
+    if (Date.now() < cooldownUntil) {
+      const mins = Math.ceil((cooldownUntil - Date.now()) / 60000)
+      setError(tx.dir === 'rtl' ? `נסו שוב בעוד ${mins} דקות` : `Please wait ${mins} more minute${mins !== 1 ? 's' : ''} before submitting again.`)
+      return
+    }
+
+    // Honeypot — silently succeed without inserting
+    if (form._hp) {
+      setStatus('success')
+      return
+    }
+
     setError('')
     setStatus('submitting')
 
@@ -49,6 +65,7 @@ export default function SuggestView({ tx, font, onBack }) {
       }])
       if (sbError) { setError(tx.suggestError); setStatus('idle'); return }
     }
+    setCooldownUntil(Date.now() + SUBMIT_COOLDOWN_MS)
     setStatus('success')
   }
 
@@ -148,6 +165,16 @@ export default function SuggestView({ tx, font, onBack }) {
         <Field label={tx.suggestWhatsApp} style={{ marginBottom:24 }}>
           <Input value={form.whatsapp} onChange={v => set('whatsapp',v)} placeholder={tx.suggestWhatsAppPH} dir={dir} />
         </Field>
+
+        {/* Honeypot — hidden from real users, catches bots */}
+        <input
+          name="website"
+          value={form._hp}
+          onChange={e => setForm(prev => ({ ...prev, _hp: e.target.value }))}
+          tabIndex={-1}
+          aria-hidden="true"
+          style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, width: 0 }}
+        />
 
         {error && <div style={{ color:'#F87171', fontSize:13, marginBottom:14 }}>{error}</div>}
 

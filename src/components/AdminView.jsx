@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ADMIN_PIN } from '../lib/constants'
 import { supabase } from '../lib/supabase'
-import { getDeploymentWarnings } from '../lib/appConfig'
+import { getDeploymentWarnings, isAdminUser } from '../lib/appConfig'
 import { usePending } from '../hooks/usePending'
 import { SEED_LOCATIONS } from '../data/locations'
 
@@ -60,13 +59,12 @@ function makeEmptyPlan() {
 export default function AdminView({
   font,
   onBack,
+  authUser,
   totalLocations,
   datePlans = [],
   onSaveDatePlans,
   onResetDatePlans,
 }) {
-  const [unlocked, setUnlocked] = useState(false)
-  const [pin, setPin] = useState('')
   const [adminTab, setAdminTab] = useState('plans')
   const [toast, setToast] = useState(null)
   const [syncing, setSyncing] = useState(false)
@@ -87,6 +85,8 @@ export default function AdminView({
     outcomes: [],
     feedback: [],
   })
+  const [reports, setReports] = useState([])
+  const [reportsLoading, setReportsLoading] = useState(false)
   const deploymentWarnings = getDeploymentWarnings()
 
   const { pending, approved, loading, approveSub, rejectSub } = usePending()
@@ -149,6 +149,20 @@ export default function AdminView({
     return () => {
       cancelled = true
     }
+  }, [adminTab])
+
+  useEffect(() => {
+    if (adminTab !== 'reports' || !supabase) return
+    setReportsLoading(true)
+    supabase
+      .from('problem_reports')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200)
+      .then(({ data, error }) => {
+        if (!error) setReports(data || [])
+        setReportsLoading(false)
+      })
   }, [adminTab])
 
   useEffect(() => {
@@ -221,6 +235,16 @@ export default function AdminView({
 
   async function handleUpload(loc, file) {
     if (!supabase) return showToast('Supabase not connected - images tab requires live DB', 'error')
+
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+    const MAX_SIZE_MB = 5
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return showToast('Only JPG, PNG, or WebP images are allowed.', 'error')
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      return showToast(`File must be under ${MAX_SIZE_MB}MB.`, 'error')
+    }
+
     setUploading((state) => ({ ...state, [loc.id]: true }))
     try {
       const ext = file.name.split('.').pop().toLowerCase() || 'jpg'
@@ -361,25 +385,15 @@ export default function AdminView({
     setPlanDraft(clone(nextPlan))
   }
 
-  if (!unlocked) {
+  if (!isAdminUser(authUser)) {
     return (
       <div style={{ minHeight: '100vh', background: '#0D1117', color: '#E8DCC8', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
         <div style={{ fontSize: 40, marginBottom: 20 }}>🔐</div>
         <h2 style={{ fontSize: 22, fontWeight: 400, marginBottom: 8 }}>Admin Access</h2>
-        <p style={{ color: '#6B7280', fontSize: 13, marginBottom: 28 }}>Enter your PIN to continue</p>
-        <input
-          type="password"
-          value={pin}
-          onChange={(event) => setPin(event.target.value)}
-          onKeyDown={(event) => event.key === 'Enter' && setUnlocked(pin === ADMIN_PIN)}
-          placeholder="PIN"
-          style={{ ...inputStyle, width: 160, letterSpacing: '0.3em', textAlign: 'center', marginBottom: 12 }}
-        />
-        <button onClick={() => setUnlocked(pin === ADMIN_PIN)} style={btnStyle()}>
-          Enter
-        </button>
-        {pin.length > 0 && pin !== ADMIN_PIN ? <p style={{ color: '#F87171', fontSize: 13, marginTop: 12 }}>Incorrect PIN.</p> : null}
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', marginTop: 20, fontSize: 13, fontFamily: font }}>
+        <p style={{ color: '#6B7280', fontSize: 13, marginBottom: 28 }}>
+          {authUser ? 'Your account does not have admin access.' : 'Sign in with an admin account to continue.'}
+        </p>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: 13, fontFamily: font }}>
           ← Back
         </button>
       </div>
@@ -391,6 +405,7 @@ export default function AdminView({
     ['analytics', 'Analytics'],
     ['pending', `Pending (${pending.length})`],
     ['approved', `Approved (${approved.length})`],
+    ['reports', 'Reports'],
     ['sync', 'Sync DB'],
     ['images', 'Images'],
     ['sql', 'SQL'],
@@ -877,11 +892,46 @@ export default function AdminView({
                       <div style={{ fontSize: 14, fontWeight: 500 }}>{sub.name}</div>
                       <div style={{ fontSize: 12, color: '#6B7280' }}>{sub.city} · {sub.category}</div>
                     </div>
-                    <span style={{ background: '#1A3A2A', color: '#4ADE80', fontSize: 11, padding: '3px 10px', borderRadius: 20 }}>Live</span>
+                    <span style={{ background: '#1A3A2A', color: '#4ADE80', fontSize: 11, padding: '3px 10px', borderRadius: 16 }}>Live</span>
                   </div>
                 ))}
               </div>
           : null}
+
+        {adminTab === 'reports' ? (
+          reportsLoading
+            ? <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280' }}>Loading…</div>
+            : reports.length === 0
+              ? <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280', fontStyle: 'italic' }}>No reports yet.</div>
+              : <div style={{ display: 'grid', gap: 8 }}>
+                  {reports.map((r) => (
+                    <div key={r.id} style={{ background: '#161B27', border: `1px solid ${r.resolved ? '#1A3A2A' : '#2A2F3E'}`, borderLeft: `3px solid ${r.resolved ? '#4ADE80' : '#F59E0B'}`, borderRadius: 10, padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
+                        <div>
+                          <span style={{ background: '#2A2010', color: '#F59E0B', fontSize: 11, padding: '2px 8px', borderRadius: 8, fontWeight: 600 }}>{r.type}</span>
+                          {r.location_name ? <span style={{ fontSize: 12, color: '#6B7280', marginLeft: 8 }}>📍 {r.location_name}</span> : null}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: 11, color: '#6B7280' }}>{new Date(r.created_at).toLocaleDateString()}</span>
+                          {!r.resolved ? (
+                            <button
+                              onClick={async () => {
+                                await supabase.from('problem_reports').update({ resolved: true }).eq('id', r.id)
+                                setReports((prev) => prev.map((rep) => rep.id === r.id ? { ...rep, resolved: true } : rep))
+                              }}
+                              style={{ ...btnStyle('#1A3A2A'), color: '#4ADE80', border: '1px solid #2D6A4F', fontSize: 11, padding: '3px 10px', borderRadius: 8 }}
+                            >
+                              Resolve
+                            </button>
+                          ) : <span style={{ fontSize: 11, color: '#4ADE80' }}>✓ Resolved</span>}
+                        </div>
+                      </div>
+                      {r.message ? <p style={{ fontSize: 13, color: '#C8BDA8', margin: '4px 0 0', lineHeight: 1.5 }}>{r.message}</p> : null}
+                      {r.email ? <p style={{ fontSize: 11, color: '#6B7280', margin: '4px 0 0' }}>↩ {r.email}</p> : null}
+                    </div>
+                  ))}
+                </div>
+        ) : null}
 
         {adminTab === 'sync' ? (
           <div style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 10, padding: 24 }}>

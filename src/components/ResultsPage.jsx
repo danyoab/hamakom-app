@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { getMapsUrl } from '../lib/constants'
 import { buildPlanIdentity, getPlanFitSummary } from '../lib/quiz'
-import PlanStopsMap from './PlanStopsMap'
+
+const PlanRouteMap = lazy(() => import('./PlanRouteMap'))
 
 const BG       = '#0D1117'
 const PANEL    = '#161B27'
@@ -100,10 +101,14 @@ export default function ResultsPage({
 
       <div style={{ maxWidth: 540, margin: '0 auto', padding: '18px 18px 48px' }}>
 
-        {/* ── Route map (PlanStopsMap falls back to city coords) ─ */}
-        <div style={{ marginBottom: 12 }}>
-          <PlanStopsMap key={plan.id} stops={primaryStops} lang={lang} planCity={plan.city} />
-        </div>
+        {/* ── Route map (only when stops have coords) ──────────── */}
+        {primaryStops.filter(s => s.lat && s.lng).length >= 2 ? (
+          <div style={{ marginBottom: 12, borderRadius: 16, overflow: 'hidden', height: 240, border: `1px solid ${BORDER}` }}>
+            <Suspense fallback={<div style={{ height: '100%', background: '#0B0F17', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>Loading map…</div>}>
+              <PlanRouteMap stops={primaryStops.map(s => ({ id: s.maps_query || s.name_en, name: s.name_en, name_he: s.name_he, lat: s.lat, lng: s.lng, city: plan.city }))} lang={lang} />
+            </Suspense>
+          </div>
+        ) : null}
 
         {/* ── The night unfolds (the plan itself) ─────── */}
         <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18, marginBottom: 12 }}>

@@ -15,7 +15,6 @@ export function useLocations() {
       .from('locations')
       .select('*')
       .eq('status', 'approved')
-      .order('is_partner', { ascending: false })
       .order('featured', { ascending: false })
       .order('name')
       .then(({ data, error }) => {

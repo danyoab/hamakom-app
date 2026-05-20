@@ -22,8 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
--e 
+
 # Local env — NEVER commit
+.env
 .env.local
 .env.*.local
-.vercel
+
+# Claude Code
+.claude/
+
+# Supabase CLI scratch
+supabase/.temp/

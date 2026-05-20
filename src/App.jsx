@@ -2,36 +2,44 @@ import { useEffect, useMemo, useState } from 'react'
 import { t } from './lib/translations'
 import { useLocations } from './hooks/useLocations'
 import { useLocalStorage } from './hooks/useLocalStorage'
+import { useSyncSaves } from './hooks/useSyncSaves'
 import { supabase } from './lib/supabase'
 import { DATE_PLANS } from './data/datePlans'
+import { QUIZ_CITIES } from './lib/constants'
 import {
   createRecommendationImpression,
+  grantAnalyticsConsent,
+  hasAnalyticsConsent,
+  revokeAnalyticsConsent,
   saveUserFeedback,
   trackEvent,
   upsertRecommendationOutcome,
 } from './lib/analytics'
 import { getRecommendedLocations } from './lib/locationRecommendations'
+import { getSmartMatchedPlans, recordPlanImpression } from './lib/planRecommendations'
 import {
   clearAnswersFromSession,
   clearPendingSaveFromSession,
-  getMatchedPlans,
   loadAnswersFromSession,
   loadPendingSaveFromSession,
   saveAnswersToSession,
   savePendingSaveToSession,
 } from './lib/quiz'
-import { assembleDynamicPlan } from './lib/planBuilder'
+import { lazy, Suspense } from 'react'
 import Card from './components/Card'
 import DetailView from './components/DetailView'
 import SuggestView from './components/SuggestView'
-import AdminView from './components/AdminView'
-import MapView from './components/MapView'
 import FilterBar from './components/FilterBar'
 import QuizStepper from './components/QuizStepper'
 import ResultsGateModal from './components/ResultsGateModal'
 import ResultsPage from './components/ResultsPage'
 import PlanPreviewPage from './components/PlanPreviewPage'
 import CustomPlanBuilder from './components/CustomPlanBuilder'
+import PrivacyPage from './components/PrivacyPage'
+import TermsPage from './components/TermsPage'
+import FeedbackModal from './components/FeedbackModal'
+const AdminView = lazy(() => import('./components/AdminView'))
+const MapView = lazy(() => import('./components/MapView'))
 
 const PRIMARY_TABS = ['home', 'explore', 'saved', 'profile']
 const APP_BG = '#0D1117'
@@ -65,6 +73,22 @@ function getTonightPlan(plans) {
   return weighted[dayOfYear % weighted.length] || plans[0]
 }
 
+function mergeDatePlansWithDefaults(currentPlans) {
+  const current = Array.isArray(currentPlans) ? currentPlans : []
+  const currentMap = new Map(current.map((plan) => [plan.id, plan]))
+  const merged = [...current]
+  let changed = false
+
+  DATE_PLANS.forEach((defaultPlan) => {
+    if (!currentMap.has(defaultPlan.id)) {
+      merged.push(defaultPlan)
+      changed = true
+    }
+  })
+
+  return changed ? merged : current
+}
+
 export default function App() {
   const [lang, setLang] = useState('en')
   const [tab, setTab] = useState('home')
@@ -78,6 +102,7 @@ export default function App() {
   const [savedPlaceIds, setSavedPlaceIds] = useLocalStorage('hamakom-saved-places', [])
   const [clickedLocationCounts, setClickedLocationCounts] = useLocalStorage('hamakom-clicked-locations', {})
   const [planReminderIds, setPlanReminderIds] = useLocalStorage('hamakom-plan-reminders', [])
+  const [reminderTimestamps, setReminderTimestamps] = useLocalStorage('hamakom-reminder-timestamps', {})
   const [dateFeedback, setDateFeedback] = useLocalStorage('hamakom-date-feedback', {})
   const [datePlans, setDatePlans] = useLocalStorage('hamakom-date-plans', DATE_PLANS)
   const [exploreMode, setExploreMode] = useState('list')
@@ -86,30 +111,51 @@ export default function App() {
   const [saveGateItem, setSaveGateItem] = useState(null)
   const [exploreExpanded, setExploreExpanded] = useState(false)
   const [currentRecommendationId, setCurrentRecommendationId] = useState(null)
+  const [showConsentBanner, setShowConsentBanner] = useState(() => !hasAnalyticsConsent())
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(() => hasAnalyticsConsent())
+  const [feedbackNudgePlanId, setFeedbackNudgePlanId] = useState(null)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
 
   const tx = t[lang]
   const font =
     lang === 'he'
-      ? "'David','Frank Ruhl Libre',Georgia,serif"
+      ? "'Heebo','David','Frank Ruhl Libre',system-ui,sans-serif"
       : "'Palatino Linotype',Palatino,Georgia,serif"
 
   const { locations, loading, error: locError } = useLocations()
 
+  useSyncSaves({ authUser, savedPlanIds, setSavedPlanIds, savedPlaceIds, setSavedPlaceIds })
+
+  // Check if any reminder is 24h+ old and no feedback yet — trigger nudge once
+  useEffect(() => {
+    if (!Object.keys(reminderTimestamps).length) return
+    const TWENTY_FOUR_H = 24 * 60 * 60 * 1000
+    for (const [planId, ts] of Object.entries(reminderTimestamps)) {
+      if (Date.now() - ts >= TWENTY_FOUR_H && !dateFeedback[`plan:${planId}`]) {
+        setFeedbackNudgePlanId(planId)
+        return
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    setDatePlans((current) => mergeDatePlansWithDefaults(current))
+  }, [setDatePlans])
+
   const matchedPlans = useMemo(() => {
     if (!quizAnswers) return []
+    return getSmartMatchedPlans(datePlans, locations, quizAnswers, 2, {
+      feedbackByItem: dateFeedback,
+      savedPlaceIds,
+      clickedLocationCounts,
+    })
+  }, [clickedLocationCounts, dateFeedback, datePlans, locations, quizAnswers, savedPlaceIds])
 
-    if (locations.length > 0) {
-      const baseSeed = quizAnswers._seed || Date.now()
-      const dynamic = []
-      for (let i = 0; i < 3; i++) {
-        const plan = assembleDynamicPlan(locations, { ...quizAnswers, _seed: baseSeed + i * 999983 })
-        if (plan) dynamic.push(plan)
-      }
-      if (dynamic.length >= 2) return dynamic
-    }
-
-    return getMatchedPlans(datePlans, quizAnswers, 2, { feedbackByItem: dateFeedback })
-  }, [dateFeedback, datePlans, locations, quizAnswers])
+  useEffect(() => {
+    if (!quizAnswers || !matchedPlans.length) return
+    matchedPlans.forEach((plan) => recordPlanImpression(plan.id))
+  }, [matchedPlans, quizAnswers])
 
   const currentPlan = matchedPlans[resultIndex] || null
   const alternatePlan = matchedPlans.find((_, index) => index !== resultIndex) || null
@@ -117,16 +163,21 @@ export default function App() {
   const savedPlans = useMemo(() => datePlans.filter((plan) => savedPlanIds.includes(plan.id)), [datePlans, savedPlanIds])
   const savedPlaces = useMemo(() => locations.filter((location) => savedPlaceIds.includes(location.id)), [locations, savedPlaceIds])
   const savedCount = savedPlans.length + savedPlaces.length
-  const availablePlanCities = useMemo(() => [...new Set(datePlans.map((plan) => plan.city).filter(Boolean))], [datePlans])
+  const availablePlanCities = useMemo(() => {
+    const planCities = new Set(datePlans.map((plan) => plan.city).filter(Boolean))
+    const merged = [...QUIZ_CITIES, ...[...planCities].filter((c) => !QUIZ_CITIES.includes(c))]
+    return merged
+  }, [datePlans])
   const backupLocations = useMemo(() => {
     if (!quizAnswers) return []
     return getRecommendedLocations(locations, quizAnswers, {
       limit: 3,
+      excludeIds: currentPlan?.source_location_ids || [],
       savedPlaceIds,
       clickedLocationCounts,
       feedbackByItem: dateFeedback,
     })
-  }, [clickedLocationCounts, dateFeedback, locations, quizAnswers, savedPlaceIds])
+  }, [clickedLocationCounts, currentPlan?.source_location_ids, dateFeedback, locations, quizAnswers, savedPlaceIds])
   const curatedExploreSections = useMemo(
     () => [
       {
@@ -288,6 +339,59 @@ export default function App() {
       })
   }, [authUser, quizAnswers])
 
+  useEffect(() => {
+    const base = 'HaMakom · המקום'
+    let title = base
+    let desc = 'Date ideas for Jewish singles in Israel.'
+
+    if (overlay === 'detail' && selectedLocation) {
+      title = `${selectedLocation.name} · HaMakom`
+      desc = selectedLocation.description || desc
+    } else if ((overlay === 'quiz-results' || overlay === 'results') && currentPlan) {
+      title = `${currentPlan.title_en} · HaMakom`
+      desc = currentPlan.narrative_en?.slice(0, 140) || desc
+    } else if (overlay === 'privacy') {
+      title = 'Privacy Policy · HaMakom'
+    } else if (overlay === 'terms') {
+      title = 'Terms of Service · HaMakom'
+    }
+
+    document.title = title
+    const metaDesc = document.querySelector('meta[name="description"]')
+    if (metaDesc) metaDesc.setAttribute('content', desc)
+    const ogTitle = document.querySelector('meta[property="og:title"]')
+    if (ogTitle) ogTitle.setAttribute('content', title)
+    const ogDesc = document.querySelector('meta[property="og:description"]')
+    if (ogDesc) ogDesc.setAttribute('content', desc)
+    const ogUrl = document.querySelector('meta[property="og:url"]')
+    if (ogUrl) ogUrl.setAttribute('content', window.location.href)
+
+    // JSON-LD structured data for location detail pages
+    let ldScript = document.getElementById('ld-json')
+    if (overlay === 'detail' && selectedLocation) {
+      if (!ldScript) {
+        ldScript = document.createElement('script')
+        ldScript.id = 'ld-json'
+        ldScript.type = 'application/ld+json'
+        document.head.appendChild(ldScript)
+      }
+      ldScript.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'LocalBusiness',
+        name: selectedLocation.name,
+        description: selectedLocation.description || '',
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: selectedLocation.city,
+          addressCountry: 'IL',
+        },
+        url: window.location.href,
+      })
+    } else if (ldScript) {
+      ldScript.remove()
+    }
+  }, [overlay, selectedLocation, currentPlan])
+
   const selectTab = (nextTab) => {
     if (!PRIMARY_TABS.includes(nextTab)) return
     setTab(nextTab)
@@ -350,6 +454,11 @@ export default function App() {
   const handleTogglePlanReminder = (planId) => {
     const enabled = !planReminderIds.includes(planId)
     setPlanReminderIds((prev) => (prev.includes(planId) ? prev.filter((id) => id !== planId) : [...prev, planId]))
+    if (enabled) {
+      setReminderTimestamps((prev) => ({ ...prev, [planId]: Date.now() }))
+    } else {
+      setReminderTimestamps((prev) => { const next = { ...prev }; delete next[planId]; return next })
+    }
     void trackEvent('plan_reminder_toggled', {
       userId: authUser?.id,
       itemType: 'plan',
@@ -434,6 +543,8 @@ export default function App() {
     setDetailReturnOverlay(overlay)
     setSelectedLocation(location)
     setOverlay('detail')
+    const slug = location.slug || location.id
+    window.history.pushState({}, '', `/location/${slug}`)
   }
 
   const openLocationFromResults = (location) => {
@@ -450,6 +561,8 @@ export default function App() {
     setDetailReturnOverlay('quiz-results')
     setSelectedLocation(location)
     setOverlay('detail')
+    const slug = location.slug || location.id
+    window.history.pushState({}, '', `/location/${slug}`)
   }
 
   const openQuiz = () => {
@@ -486,6 +599,7 @@ export default function App() {
           setOverlay(detailReturnOverlay)
           setSelectedLocation(null)
           setDetailReturnOverlay(null)
+          window.history.pushState({}, '', '/')
         }}
       />
     )
@@ -495,18 +609,29 @@ export default function App() {
     return <SuggestView lang={lang} tx={tx} font={font} onBack={() => setOverlay(null)} />
   }
 
+  if (overlay === 'privacy') {
+    return <PrivacyPage lang={lang} font={font} onBack={() => setOverlay(null)} />
+  }
+
+  if (overlay === 'terms') {
+    return <TermsPage lang={lang} font={font} onBack={() => setOverlay(null)} />
+  }
+
   if (overlay === 'admin') {
     return (
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0D1117' }} />}>
       <AdminView
         lang={lang}
         font={font}
         onBack={() => setOverlay(null)}
+        authUser={authUser}
         totalLocations={locations.length}
         locations={locations}
         datePlans={datePlans}
         onSaveDatePlans={setDatePlans}
         onResetDatePlans={() => setDatePlans(DATE_PLANS)}
       />
+      </Suspense>
     )
   }
 
@@ -539,6 +664,7 @@ export default function App() {
   if ((overlay === 'quiz-results' || (overlay === 'save-gate' && saveGateItem?.type !== 'place')) && currentPlan) {
     return (
       <>
+        <div style={{ paddingBottom: 76 }}>
         <ResultsPage
           lang={lang}
           font={font}
@@ -593,6 +719,8 @@ export default function App() {
           onRetakeQuiz={openQuiz}
           onBuildYourOwnPlan={openCustomPlanBuilder}
         />
+        </div>
+        <BottomNav tx={tx} tab={tab} savedCount={savedCount} onSelect={selectTab} />
         {overlay === 'save-gate' ? (
           <ResultsGateModal
             lang={lang}
@@ -649,8 +777,6 @@ export default function App() {
         <AppHeader
           tx={tx}
           lang={lang}
-          tab={tab}
-          savedCount={savedCount}
           onToggleLang={() => setLang((current) => (current === 'en' ? 'he' : 'en'))}
         />
 
@@ -674,9 +800,28 @@ export default function App() {
               loading={loading}
               error={locError}
               onStartQuiz={openQuiz}
+              onSurpriseMe={() => {
+                const cityKeys = [...new Set(datePlans.map((p) => p.city).filter(Boolean))]
+                const randomCity = cityKeys[Math.floor(Math.random() * cityKeys.length)] || 'flexible'
+                const pool = datePlans.filter((p) => p.city === randomCity)
+                const pick = pool[Math.floor(Math.random() * pool.length)] || datePlans[0]
+                if (!pick) return
+                void trackEvent('surprise_me_clicked', { userId: authUser?.id, properties: { city: randomCity } })
+                setOverlay('plan-preview')
+              }}
               onBuildYourOwnPlan={openCustomPlanBuilder}
               onOpenTonightPlan={openPlanPreview}
               onOpenExplore={() => selectTab('explore')}
+              onBrowseByCategory={(cat) => {
+                setBrowseFilters((prev) => ({ ...prev, categoryFilter: cat }))
+                setExploreExpanded(true)
+                selectTab('explore')
+              }}
+              onBrowseByCity={(city) => {
+                setBrowseFilters((prev) => ({ ...prev, cityFilter: city }))
+                setExploreExpanded(true)
+                selectTab('explore')
+              }}
             />
           ) : null}
 
@@ -708,6 +853,7 @@ export default function App() {
             <SavedPage
               lang={lang}
               tx={tx}
+              authUser={authUser}
               plans={savedPlans}
               places={savedPlaces}
               reminderIds={planReminderIds}
@@ -731,125 +877,141 @@ export default function App() {
               onOpenQuiz={openQuiz}
               onOpenSuggest={() => setOverlay('suggest')}
               onOpenAdmin={() => setOverlay('admin')}
+              onOpenFeedback={() => setShowFeedbackModal(true)}
+              onOpenPrivacy={() => setOverlay('privacy')}
+              onOpenTerms={() => setOverlay('terms')}
+              analyticsEnabled={analyticsEnabled}
+              onDeleteAccount={async () => {
+                const confirmed = window.confirm(
+                  lang === 'he'
+                    ? 'האם אתם בטוחים? פעולה זו תמחק את החשבון ואת כל הנתונים שלכם לצמיתות.'
+                    : 'Are you sure? This will permanently delete your account and all your data.'
+                )
+                if (!confirmed) return
+                try {
+                  const { data: { session } } = await supabase.auth.getSession()
+                  if (!session) return
+                  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${session.access_token}` },
+                  })
+                  if (res.ok) {
+                    await supabase.auth.signOut()
+                    localStorage.clear()
+                    window.location.reload()
+                  }
+                } catch {
+                  alert(lang === 'he' ? 'שגיאה במחיקת החשבון. נסו שוב.' : 'Error deleting account. Please try again.')
+                }
+              }}
+              onToggleAnalytics={() => {
+                if (analyticsEnabled) {
+                  revokeAnalyticsConsent()
+                  setAnalyticsEnabled(false)
+                } else {
+                  grantAnalyticsConsent()
+                  setAnalyticsEnabled(true)
+                  setShowConsentBanner(false)
+                }
+              }}
             />
           ) : null}
         </main>
       </div>
 
       <BottomNav tx={tx} tab={tab} savedCount={savedCount} onSelect={selectTab} />
+
+      {showConsentBanner ? (
+        <ConsentBanner
+          lang={lang}
+          font={font}
+          onAccept={() => {
+            grantAnalyticsConsent()
+            setAnalyticsEnabled(true)
+            setShowConsentBanner(false)
+          }}
+          onDecline={() => setShowConsentBanner(false)}
+          onOpenPrivacy={() => setOverlay('privacy')}
+        />
+      ) : showFeedbackModal ? (
+        <FeedbackModal lang={lang} font={font} onClose={() => setShowFeedbackModal(false)} />
+      ) : feedbackNudgePlanId && !showConsentBanner ? (
+        <FeedbackNudge
+          lang={lang}
+          font={font}
+          plan={datePlans.find((p) => p.id === feedbackNudgePlanId)}
+          onRespond={(feedback) => {
+            const key = `plan:${feedbackNudgePlanId}`
+            setDateFeedback((prev) => ({ ...prev, [key]: { ...feedback, ts: Date.now() } }))
+            setFeedbackNudgePlanId(null)
+          }}
+          onDismiss={() => setFeedbackNudgePlanId(null)}
+        />
+      ) : null}
     </div>
   )
 }
 
-function AppHeader({ tx, lang, tab, savedCount, onToggleLang }) {
-  const titleMap = {
-    home: tx.home,
-    explore: tx.explore,
-    saved: tx.saved,
-    profile: tx.profile,
-  }
-
-  const subtitleMap = {
-    home: tx.homeSubtitle,
-    explore: tx.exploreSubtitle,
-    saved: tx.savedSubtitle(savedCount),
-    profile: tx.profileSubtitle,
-  }
-
+function AppHeader({ lang, onToggleLang }) {
   return (
     <div
       style={{
-        background: 'linear-gradient(135deg,#0C111A 0%,#131B2B 60%,#101827 100%)',
+        background: APP_BG,
         borderBottom: `1px solid ${APP_BORDER}`,
-        padding: '14px 16px 12px',
+        padding: '12px 16px',
       }}
     >
-      <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 15,
-                background: 'linear-gradient(180deg,#131B2B 0%,#0F1725 100%)',
-                border: '1px solid #263247',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                boxShadow: '0 10px 24px rgba(0,0,0,0.22)',
-              }}
-            >
-              <img
-                src="/logo-icon.svg"
-                alt="HaMakom"
-                style={{
-                  width: 28,
-                  height: 28,
-                  objectFit: 'contain',
-                  display: 'block',
-                }}
-              />
-            </div>
-
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0, flexWrap: 'wrap' }}>
-                <span
-                  style={{
-                    fontSize: 'clamp(20px, 5.2vw, 28px)',
-                    fontWeight: 700,
-                    lineHeight: 1,
-                    color: APP_TEXT,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  HaMakom
-                </span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: '#8E97A8',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  המקום
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <button
-              onClick={onToggleLang}
-              style={{
-                background: '#253145',
-                border: '1px solid #3A475F',
-                borderRadius: 14,
-                padding: '10px 12px',
-                cursor: 'pointer',
-                color: APP_ACCENT,
-                fontSize: 13,
-                fontWeight: 700,
-                fontFamily: 'inherit',
-                minWidth: 54,
-              }}
-            >
-              {lang === 'en' ? 'עבר' : 'EN'}
-            </button>
-          </div>
+      <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <img
+            src="/logo-icon.svg"
+            alt="HaMakom"
+            style={{ width: 28, height: 28, objectFit: 'contain', display: 'block', flexShrink: 0 }}
+          />
+          <span style={{ fontSize: 18, fontWeight: 700, color: APP_TEXT, letterSpacing: '-0.01em' }}>
+            HaMakom
+          </span>
+          <span style={{ fontSize: 13, color: APP_MUTED, marginInlineStart: 2 }}>המקום</span>
         </div>
 
-        <div style={{ paddingTop: 8, borderTop: '1px solid rgba(42,47,62,0.9)' }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: APP_MUTED }}>
-            {titleMap[tab]}
-          </div>
-        </div>
+        <button
+          onClick={onToggleLang}
+          style={{
+            background: 'transparent',
+            border: `1px solid ${APP_BORDER}`,
+            borderRadius: 8,
+            padding: '6px 12px',
+            cursor: 'pointer',
+            color: APP_ACCENT,
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: 'inherit',
+            flexShrink: 0,
+          }}
+        >
+          {lang === 'en' ? 'עבר' : 'EN'}
+        </button>
       </div>
     </div>
   )
 }
+
+const HOME_CATEGORY_TILES = [
+  { cat: 'Hotels & Lounges',        emoji: '✨', label_en: 'Hotels & Lounges',  label_he: 'מלונות ולאונג\'' },
+  { cat: 'Cafés & Restaurants',     emoji: '☕', label_en: 'Cafés & Dining',    label_he: 'קפה ומסעדות'    },
+  { cat: 'Parks & Outdoors',        emoji: '🌿', label_en: 'Parks & Outdoors',  label_he: 'פארקים וטבע'    },
+  { cat: 'Activities & Experiences',emoji: '🎯', label_en: 'Activities',         label_he: 'פעילויות'       },
+  { cat: 'Museums & Culture',       emoji: '🏛', label_en: 'Museums & Culture', label_he: 'תרבות'           },
+  { cat: 'Wineries',                emoji: '🍷', label_en: 'Wineries',          label_he: 'יקבים'          },
+]
+
+const HOME_CITY_CHIPS = [
+  { city: 'Jerusalem',    label_en: 'Jerusalem',    label_he: 'ירושלים'   },
+  { city: 'Beit Shemesh', label_en: 'Beit Shemesh', label_he: 'בית שמש'   },
+  { city: 'Tel Aviv',     label_en: 'Tel Aviv',     label_he: 'תל אביב'   },
+  { city: "Modi'in",      label_en: "Modi'in",      label_he: 'מודיעין'   },
+  { city: 'Tzur Hadassah',label_en: 'Tzur Hadassah',label_he: 'צור הדסה'  },
+]
 
 function HomePage({
   lang,
@@ -858,46 +1020,119 @@ function HomePage({
   loading,
   error,
   onStartQuiz,
+  onSurpriseMe,
   onBuildYourOwnPlan,
   onOpenTonightPlan,
   onOpenExplore,
+  onBrowseByCategory,
+  onBrowseByCity,
 }) {
+  const isHe = lang === 'he'
   return (
-    <div style={{ display: 'grid', gap: 12 }}>
-      <section
-        style={{
-          background: 'linear-gradient(145deg,#171E2B 0%,#111A10 100%)',
-          border: `1px solid ${APP_BORDER}`,
-          borderRadius: 22,
-          padding: '22px 22px 20px',
-        }}
-      >
-        <h1 style={{ margin: '0 0 16px', fontSize: 30, lineHeight: 1.1 }}>{tx.planHeroTitle}</h1>
-        <button onClick={onStartQuiz} style={primaryButtonStyle}>
+    <div style={{ display: 'grid', gap: 24 }}>
+
+      {/* Hero — open section, no panel box */}
+      <section style={{ padding: '8px 0 4px' }}>
+        <div style={{ fontSize: 11, letterSpacing: '0.18em', color: APP_ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>
+          {tx.planHeroEyebrow}
+        </div>
+        <h1 style={{ margin: '0 0 12px', fontSize: 'clamp(28px, 7vw, 38px)', lineHeight: 1.12, fontWeight: 700 }}>
+          {tx.planHeroTitle}
+        </h1>
+        <p style={{ margin: '0 0 20px', color: '#B8A990', fontSize: 15, lineHeight: 1.65 }}>{tx.planHeroText}</p>
+        <button onClick={onStartQuiz} style={{ ...primaryButtonStyle, width: '100%' }}>
           {tx.planHeroAction}
+        </button>
+        <button onClick={onSurpriseMe} style={{ ...secondaryButtonStyle, width: '100%', marginTop: 10 }}>
+          {isHe ? '🎲 הפתיעו אותי הלילה' : '🎲 Surprise me tonight'}
         </button>
       </section>
 
-      <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 20, padding: 18 }}>
-        <div style={{ fontSize: 11, letterSpacing: '0.16em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
+      {/* Tonight's Pick — standalone card, no outer panel wrapper */}
+      <section>
+        <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
           {tx.tonightsPick}
         </div>
         <TonightPlanCard lang={lang} tx={tx} plan={tonightPlan} onOpenPlan={onOpenTonightPlan} onStartQuiz={onStartQuiz} />
       </section>
 
-      <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 20, padding: 18 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>
-          {lang === 'he' ? 'עיינו במקומות' : 'Browse places'}
+      {/* Browse by type — open section */}
+      <section>
+        <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
+          {isHe ? 'לפי סוג' : 'Browse by type'}
         </div>
-        <div style={{ display: 'grid', gap: 8 }}>
-          <button onClick={onOpenExplore} style={{ ...ghostButtonStyle, whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {HOME_CATEGORY_TILES.map(({ cat, emoji, label_en, label_he }) => (
+            <button
+              key={cat}
+              onClick={() => onBrowseByCategory(cat)}
+              style={{
+                background: APP_PANEL,
+                border: `1px solid ${APP_BORDER}`,
+                borderRadius: 12,
+                padding: '14px 8px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 7,
+                fontFamily: 'inherit',
+              }}
+            >
+              <span style={{ fontSize: 20 }}>{emoji}</span>
+              <span style={{ fontSize: 11, color: APP_TEXT, lineHeight: 1.25, textAlign: 'center' }}>
+                {isHe ? label_he : label_en}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Browse by city — open section */}
+      <section>
+        <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
+          {isHe ? 'לפי עיר' : 'Browse by city'}
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {HOME_CITY_CHIPS.map(({ city, label_en, label_he }) => (
+            <button
+              key={city}
+              onClick={() => onBrowseByCity(city)}
+              style={{
+                background: APP_PANEL,
+                border: `1px solid ${APP_BORDER}`,
+                borderRadius: 16,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: 13,
+                color: APP_TEXT,
+                fontFamily: 'inherit',
+              }}
+            >
+              {isHe ? label_he : label_en}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Explore footer — minimal */}
+      <section style={{ paddingBottom: 8 }}>
+        {error ? (
+          <div style={{ background: '#1A1010', border: '1px solid #5A2020', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#F87171' }}>
+            {isHe ? 'לא ניתן להתחבר לשרת, מוצגים נתוני גיבוי.' : 'Could not reach the server, showing cached data.'}
+          </div>
+        ) : null}
+        {loading ? <div style={{ padding: '10px 0', color: APP_MUTED, fontSize: 13 }}>{tx.loading}</div> : null}
+        <div style={{ display: 'grid', gap: 10 }}>
+          <button onClick={onOpenExplore} style={{ ...secondaryButtonStyle, width: '100%' }}>
             {tx.openExplore}
           </button>
-          <button onClick={onBuildYourOwnPlan} style={secondaryButtonStyle}>
+          <button onClick={onBuildYourOwnPlan} style={textLinkButtonStyle}>
             {tx.buildYourOwnPlan}
           </button>
         </div>
       </section>
+
     </div>
   )
 }
@@ -927,36 +1162,30 @@ function ExplorePage({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: '1 1 0', minHeight: 0, width: '100%' }}>
-      <section
+      <div
         style={{
-          background: APP_PANEL,
-          border: `1px solid ${APP_BORDER}`,
-          borderRadius: 16,
-          padding: '12px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          flexWrap: 'wrap',
           flexShrink: 0,
+          padding: '2px 0',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 0, flex: '1 1 160px' }}>
-            <div style={{ fontSize: 10, letterSpacing: '0.14em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 4 }}>
-              {tx.explore}
-            </div>
-            <div style={{ fontSize: 'clamp(16px, 4.2vw, 19px)', fontWeight: 600, lineHeight: 1.35 }}>{tx.exploreChooserTitle}</div>
-            <div style={{ fontSize: 13, color: '#8E97A8', lineHeight: 1.5, marginTop: 6 }}>
-              {lang === 'he' ? 'כל המקומות עדיין זמינים, אבל נתחיל בכמה חלופות רגועות במקום ברשימה ענקית.' : 'Every place is still available, but we will start with a few calm alternatives instead of a giant list.'}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <button onClick={() => setExploreMode('list')} style={exploreMode === 'list' ? primaryCompactButtonStyle : compactButtonStyle}>
-              {tx.listView}
-            </button>
-            <button onClick={() => setExploreMode('map')} style={exploreMode === 'map' ? primaryCompactButtonStyle : compactButtonStyle}>
-              {tx.map}
-            </button>
-          </div>
+        <div style={{ minWidth: 0, flex: '1 1 160px' }}>
+          <div style={{ fontSize: 'clamp(16px, 4.2vw, 19px)', fontWeight: 600, lineHeight: 1.35 }}>{tx.exploreChooserTitle}</div>
         </div>
-      </section>
+
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button onClick={() => setExploreMode('list')} style={exploreMode === 'list' ? primaryCompactButtonStyle : compactButtonStyle}>
+            {tx.listView}
+          </button>
+          <button onClick={() => setExploreMode('map')} style={exploreMode === 'map' ? primaryCompactButtonStyle : compactButtonStyle}>
+            {tx.map}
+          </button>
+        </div>
+      </div>
 
       {exploreMode === 'map' ? (
         <div
@@ -970,28 +1199,27 @@ function ExplorePage({
             background: '#0B0F17',
           }}
         >
-          <MapView
-            locations={locations}
-            lang={lang}
-            tx={tx}
-            font={font}
-            onOpenDetail={onOpenDetail}
-            showHeader={false}
-            embedded
-            bottomOffset={bottomOffset}
-          />
+          <Suspense fallback={<div style={{ flex: 1, background: '#0B0F17', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontSize: 13 }}>Loading map…</div>}>
+            <MapView
+              locations={locations}
+              lang={lang}
+              tx={tx}
+              font={font}
+              onOpenDetail={onOpenDetail}
+              showHeader={false}
+              embedded
+              bottomOffset={bottomOffset}
+            />
+          </Suspense>
         </div>
       ) : (
         <section
           style={{
-            background: APP_PANEL,
-            border: `1px solid ${APP_BORDER}`,
-            borderRadius: 20,
-            padding: 14,
             flex: '1 1 0',
             minHeight: 0,
             overflowY: 'auto',
             WebkitOverflowScrolling: 'touch',
+            padding: '4px 0 16px',
           }}
         >
           <div style={{ display: 'grid', gap: 12 }}>
@@ -1006,7 +1234,7 @@ function ExplorePage({
                 width: '100%',
                 background: '#121722',
                 border: `1px solid ${APP_BORDER}`,
-                borderRadius: 14,
+                borderRadius: 12,
                 padding: '12px 14px',
                 color: APP_TEXT,
                 fontSize: 14,
@@ -1036,7 +1264,7 @@ function ExplorePage({
                       <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>{section.title}</div>
                       <div style={{ fontSize: 13, color: '#8E97A8', lineHeight: 1.5 }}>{section.text}</div>
                     </div>
-                    <div style={{ display: 'grid', gap: 8 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
                       {section.items.map((location) => (
                         <Card
                           key={`${section.id}-${location.id}`}
@@ -1052,14 +1280,14 @@ function ExplorePage({
                   </section>
                 ))}
 
-                <button onClick={() => setExploreExpanded(true)} style={ghostButtonStyle}>
+                <button onClick={() => setExploreExpanded(true)} style={textLinkButtonStyle}>
                   {lang === 'he' ? 'עדיין לא בטוחים? פתחו את כל החלופות' : 'Still unsure? Open the full alternative list'}
                 </button>
               </div>
             ) : filteredLocations.length === 0 ? (
               <EmptyState icon="⌕" title={lang === 'he' ? 'לא נמצאו מקומות' : 'No places found'} text={tx.noResults} />
             ) : (
-              <div style={{ display: 'grid', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
                 {filteredLocations.map((location) => (
                   <Card
                     key={location.id}
@@ -1087,24 +1315,24 @@ function TonightPlanCard({ lang, tx, plan, onOpenPlan, onStartQuiz }) {
   return (
     <div
       style={{
-        background: 'linear-gradient(145deg,#121722 0%,#151C12 100%)',
-        border: '1px solid #232A39',
-        borderRadius: 18,
+        background: APP_PANEL,
+        border: `1px solid ${APP_BORDER}`,
+        borderRadius: 16,
         padding: 18,
       }}
     >
-      <div style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.1, marginBottom: 8 }}>{isHe ? plan.title_he : plan.title_en}</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+      <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.15, marginBottom: 10 }}>{isHe ? plan.title_he : plan.title_en}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
         <MiniPill>{plan.city}</MiniPill>
         <MiniPill>{isHe ? plan.start_time_text_he : plan.start_time_text_en}</MiniPill>
         <MiniPill>{isHe ? plan.duration_text_he : plan.duration_text_en}</MiniPill>
       </div>
-      <div style={{ color: '#B8A990', fontSize: 15, lineHeight: 1.6, marginBottom: 14 }}>{isHe ? plan.narrative_he : plan.narrative_en}</div>
+      <div style={{ color: '#B8A990', fontSize: 14, lineHeight: 1.65, marginBottom: 16 }}>{isHe ? plan.narrative_he : plan.narrative_en}</div>
       <div style={{ display: 'grid', gap: 8 }}>
-        <button onClick={onOpenPlan} style={primaryButtonStyle}>
+        <button onClick={onOpenPlan} style={{ ...primaryButtonStyle, width: '100%' }}>
           {tx.viewTonightsPick}
         </button>
-        <button onClick={onStartQuiz} style={secondaryButtonStyle}>
+        <button onClick={onStartQuiz} style={textLinkButtonStyle}>
           {tx.getPersonalPlan}
         </button>
       </div>
@@ -1112,7 +1340,11 @@ function TonightPlanCard({ lang, tx, plan, onOpenPlan, onStartQuiz }) {
   )
 }
 
-function SavedPage({ lang, tx, plans, places, reminderIds, feedbackByItem, onRemovePlan, onRemovePlace, onTogglePlanReminder, onSubmitFeedback, onOpenPlace, onGoHome }) {
+function SavedPage({ lang, tx, authUser, plans, places, reminderIds, feedbackByItem, onRemovePlan, onRemovePlace, onTogglePlanReminder, onSubmitFeedback, onOpenPlace, onGoHome }) {
+  if (!authUser && !plans.length && !places.length) {
+    return <SavedSignInCard lang={lang} onGoHome={onGoHome} />
+  }
+
   if (!plans.length && !places.length) {
     return <EmptyState icon="○" title={tx.savedEmptyTitle} text={tx.savedPlansEmptyText} actionLabel={tx.goHome} onAction={onGoHome} />
   }
@@ -1143,7 +1375,7 @@ function SavedPage({ lang, tx, plans, places, reminderIds, feedbackByItem, onRem
 
       <SavedSection title={tx.savedPlacesSectionTitle}>
         {places.length ? (
-          <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
             {places.map((place) => (
               <Card
                 key={place.id}
@@ -1160,6 +1392,165 @@ function SavedPage({ lang, tx, plans, places, reminderIds, feedbackByItem, onRem
           <SavedSectionEmpty text={tx.savedPlacesEmptyText} />
         )}
       </SavedSection>
+    </div>
+  )
+}
+
+const ALLOWED_REDIRECT_ORIGINS = new Set([
+  'https://hamakom.app',
+  'https://www.hamakom.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+])
+
+function getAuthRedirectUrl() {
+  const configured = import.meta.env.VITE_PUBLIC_APP_URL
+  if (configured) return configured
+  if (typeof window === 'undefined') return 'https://hamakom.app'
+  const { origin } = window.location
+  return ALLOWED_REDIRECT_ORIGINS.has(origin) ? origin : 'https://hamakom.app'
+}
+
+function SavedSignInCard({ lang, onGoHome }) {
+  const isHe = lang === 'he'
+  const [email, setEmail] = useState('')
+  const [sent, setSent] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [showEmail, setShowEmail] = useState(false)
+
+  const handleGoogle = async () => {
+    if (!supabase) return
+    setError('')
+    try {
+      const { error: err } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: getAuthRedirectUrl() },
+      })
+      if (err) setError(err.message)
+    } catch {
+      setError(isHe ? 'שגיאה בהתחברות' : 'Sign-in failed')
+    }
+  }
+
+  const handleEmailSend = async () => {
+    if (!email.trim() || !supabase) return
+    setLoading(true)
+    setError('')
+    try {
+      const { error: err } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { emailRedirectTo: getAuthRedirectUrl() },
+      })
+      if (err) setError(err.message)
+      else setSent(true)
+    } catch {
+      setError(isHe ? 'שגיאה בשליחה' : 'Failed to send')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ display: 'grid', gap: 16 }}>
+      <section
+        style={{
+          background: APP_PANEL,
+          border: `1px solid ${APP_BORDER}`,
+          borderRadius: 16,
+          padding: 24,
+          display: 'grid',
+          gap: 16,
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: APP_ACCENT, marginBottom: 10 }}>
+            {isHe ? 'שמור מקומות ותוכניות' : 'Save plans & places'}
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2, marginBottom: 10 }}>
+            {isHe ? 'היכנסו כדי לשמור את הדייטים שלכם' : 'Sign in to keep your dates'}
+          </div>
+          <div style={{ fontSize: 14, color: '#B8A990', lineHeight: 1.65 }}>
+            {isHe
+              ? 'כשתמצאו תוכנית שמרגישה נכונה, תוכלו לשמור אותה ולחזור אליה מכל מכשיר.'
+              : 'When you find a plan that feels right, save it and come back to it from any device.'}
+          </div>
+        </div>
+
+        {sent ? (
+          <div style={{ background: '#0F1F10', border: '1px solid #2D5A30', borderRadius: 12, padding: '14px 16px', fontSize: 14, color: '#86EFAC', lineHeight: 1.55 }}>
+            {isHe ? `שלחנו קישור לכניסה אל ${email}. בדקו את תיבת הדואר.` : `We sent a sign-in link to ${email}. Check your inbox.`}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: 10 }}>
+            <button
+              onClick={handleGoogle}
+              style={{
+                ...secondaryButtonStyle,
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                <path fill="none" d="M0 0h48v48H0z"/>
+              </svg>
+              {isHe ? 'כניסה עם Google' : 'Continue with Google'}
+            </button>
+
+            {!showEmail ? (
+              <button onClick={() => setShowEmail(true)} style={textLinkButtonStyle}>
+                {isHe ? 'כניסה עם אימייל' : 'Sign in with email instead'}
+              </button>
+            ) : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleEmailSend()}
+                  placeholder={isHe ? 'האימייל שלכם' : 'Your email'}
+                  style={{
+                    width: '100%',
+                    background: APP_BG,
+                    border: `1px solid ${APP_BORDER}`,
+                    borderRadius: 10,
+                    padding: '12px 14px',
+                    color: APP_TEXT,
+                    fontSize: 14,
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    textAlign: isHe ? 'right' : 'left',
+                  }}
+                />
+                <button
+                  onClick={handleEmailSend}
+                  disabled={!email.trim() || loading}
+                  style={{ ...primaryButtonStyle, width: '100%', opacity: !email.trim() || loading ? 0.55 : 1 }}
+                >
+                  {loading ? (isHe ? 'שולח...' : 'Sending…') : (isHe ? 'שלחו קישור כניסה' : 'Send sign-in link')}
+                </button>
+              </div>
+            )}
+
+            {error ? (
+              <div style={{ fontSize: 13, color: '#F87171' }}>{error}</div>
+            ) : null}
+          </div>
+        )}
+      </section>
+
+      <button onClick={onGoHome} style={textLinkButtonStyle}>
+        {isHe ? 'המשיכו בלי כניסה' : 'Continue without signing in'}
+      </button>
     </div>
   )
 }
@@ -1195,7 +1586,7 @@ function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder
   }
 
   return (
-    <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 18, padding: 18 }}>
+    <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 18 }}>
       <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.08, marginBottom: 6 }}>{isHe ? plan.title_he : plan.title_en}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
         <MiniPill>{isHe ? plan.start_time_text_he : plan.start_time_text_en}</MiniPill>
@@ -1212,11 +1603,11 @@ function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder
           {tx.shareSavedPlan}
         </button>
         {!feedback ? (
-          <button onClick={() => setShowFeedback((current) => !current)} style={ghostButtonStyle}>
+          <button onClick={() => setShowFeedback((current) => !current)} style={textLinkButtonStyle}>
             {isHe ? 'הייתם בדייט הזה?' : 'Did you go?'}
           </button>
         ) : (
-          <div style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 14, padding: 14, color: '#9CA3AF', fontSize: 13, lineHeight: 1.6 }}>
+          <div style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 12, padding: 14, color: '#9CA3AF', fontSize: 13, lineHeight: 1.6 }}>
             <div style={{ color: '#E8DCC8', fontWeight: 600, marginBottom: 4 }}>{isHe ? 'נשמר פידבק לדייט הזה' : 'Feedback saved for this date'}</div>
             <div>
               {isHe
@@ -1245,7 +1636,7 @@ function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder
             }}
           />
         ) : null}
-        <button onClick={onRemove} style={ghostButtonStyle}>
+        <button onClick={onRemove} style={textLinkButtonStyle}>
           {tx.removeSavedPlan}
         </button>
       </div>
@@ -1256,7 +1647,7 @@ function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder
 function FeedbackComposer({ lang, rating, again, onSetWent, onSetRating, onSetAgain, onSubmit }) {
   const isHe = lang === 'he'
   return (
-    <div style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 14, padding: 14, display: 'grid', gap: 10 }}>
+    <div style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 12, padding: 14, display: 'grid', gap: 10 }}>
       <div style={{ fontSize: 13, color: '#E8DCC8', fontWeight: 600 }}>{isHe ? 'עזרו לנו לדייק את ההמלצה הבאה' : 'Help us sharpen the next recommendation'}</div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button onClick={() => onSetWent(true)} style={compactButtonStyle}>{isHe ? 'כן, הלכנו' : 'Yes, we went'}</button>
@@ -1286,7 +1677,7 @@ function FeedbackComposer({ lang, rating, again, onSetWent, onSetRating, onSetAg
   )
 }
 
-function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz, onOpenSuggest, onOpenAdmin }) {
+function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz, onOpenSuggest, onOpenAdmin, onOpenPrivacy, onOpenTerms, analyticsEnabled, onToggleAnalytics, onDeleteAccount, onOpenFeedback }) {
   const cards = [
     { label: tx.profileStatsSaved, value: savedCount },
     { label: lang === 'he' ? 'כרגע' : 'Right now', value: lang === 'he' ? 'תוכנית אחת' : 'One strong plan' },
@@ -1295,14 +1686,14 @@ function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz,
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
-      <section style={{ background: 'linear-gradient(145deg,#161B27 0%,#111A10 100%)', border: `1px solid ${APP_BORDER}`, borderRadius: 20, padding: 20 }}>
+      <section style={{ background: 'linear-gradient(145deg,#161B27 0%,#111A10 100%)', border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 20 }}>
         <div style={{ fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: APP_MUTED }}>{tx.profileCardEyebrow}</div>
         <h2 style={{ fontSize: 26, margin: '6px 0 8px', lineHeight: 1.08 }}>{tx.profileCardTitle}</h2>
         <p style={{ margin: 0, color: '#B8A990', fontSize: 14 }}>{authUser?.email ? authUser.email : tx.profileGuest}</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 10, marginTop: 18 }}>
           {cards.map((card) => (
-            <div key={card.label} style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 14, padding: '14px 12px' }}>
+            <div key={card.label} style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 12, padding: '14px 12px' }}>
               <div style={{ fontSize: 24, color: APP_ACCENT, lineHeight: 1.1 }}>{card.value}</div>
               <div style={{ marginTop: 4, fontSize: 11, color: APP_MUTED, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{card.label}</div>
             </div>
@@ -1317,13 +1708,62 @@ function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz,
         <button onClick={onOpenSuggest} style={secondaryButtonStyle}>
           {tx.profileActionSuggest}
         </button>
+        <button onClick={onOpenFeedback} style={secondaryButtonStyle}>
+          {lang === 'he' ? 'דווח על בעיה / משוב' : 'Report a problem / Feedback'}
+        </button>
         <button onClick={onToggleLang} style={secondaryButtonStyle}>
           {tx.profileActionLanguage}
         </button>
-        <button onClick={onOpenAdmin} style={ghostButtonStyle}>
+        <button onClick={onOpenAdmin} style={textLinkButtonStyle}>
           {tx.profileActionAdmin}
         </button>
       </ActionCard>
+
+      <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 18 }}>
+        <h3 style={{ fontSize: 18, margin: '0 0 14px' }}>{lang === 'he' ? 'הגדרות' : 'Settings'}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: `1px solid ${APP_BORDER}` }}>
+          <div>
+            <div style={{ fontSize: 14, color: APP_TEXT }}>{lang === 'he' ? 'נתוני שימוש' : 'Usage analytics'}</div>
+            <div style={{ fontSize: 12, color: APP_MUTED, marginTop: 2 }}>{lang === 'he' ? 'עוזר לנו לשפר את ההמלצות' : 'Helps us improve recommendations'}</div>
+          </div>
+          <button
+            onClick={onToggleAnalytics}
+            style={{
+              width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+              background: analyticsEnabled ? APP_ACCENT : '#374151',
+              position: 'relative', transition: 'background 0.2s',
+            }}
+            aria-label={analyticsEnabled ? 'Disable analytics' : 'Enable analytics'}
+          >
+            <span style={{
+              position: 'absolute', top: 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
+              left: analyticsEnabled ? 23 : 3,
+            }} />
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: 16, paddingTop: 14 }}>
+          <button onClick={onOpenPrivacy} style={{ ...textLinkButtonStyle, padding: '4px 0', fontSize: 12 }}>
+            {lang === 'he' ? 'מדיניות פרטיות' : 'Privacy Policy'}
+          </button>
+          <button onClick={onOpenTerms} style={{ ...textLinkButtonStyle, padding: '4px 0', fontSize: 12 }}>
+            {lang === 'he' ? 'תנאי שירות' : 'Terms of Service'}
+          </button>
+        </div>
+
+        {authUser ? (
+          <div style={{ paddingTop: 18, borderTop: `1px solid ${APP_BORDER}`, marginTop: 14 }}>
+            <button
+              onClick={onDeleteAccount}
+              style={{ background: 'none', border: '1px solid #7F1D1D', color: '#F87171', borderRadius: 10, padding: '9px 16px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', fontWeight: 600 }}
+            >
+              {lang === 'he' ? 'מחיקת חשבון' : 'Delete Account'}
+            </button>
+            <p style={{ margin: '8px 0 0', fontSize: 11, color: APP_MUTED }}>
+              {lang === 'he' ? 'פעולה בלתי הפיכה. כל הנתונים יימחקו.' : 'Permanent. All your data will be deleted.'}
+            </p>
+          </div>
+        ) : null}
+      </section>
 
       <ActionCard title={tx.profileNotesTitle} text={tx.profileNotesText} />
     </div>
@@ -1332,7 +1772,7 @@ function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz,
 
 function ActionCard({ title, text, children }) {
   return (
-    <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 18, padding: 18 }}>
+    <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 18 }}>
       <h3 style={{ fontSize: 18, margin: '0 0 6px' }}>{title}</h3>
       <p style={{ margin: children ? '0 0 16px' : 0, color: '#9CA3AF', fontSize: 14 }}>{text}</p>
       {children ? <div style={{ display: 'grid', gap: 10 }}>{children}</div> : null}
@@ -1411,14 +1851,15 @@ function BottomNav({ tx, tab, savedCount, onSelect }) {
         right: 14,
         bottom: 'max(12px, env(safe-area-inset-bottom, 0px))',
         height: NAV_HEIGHT,
-        background: APP_BG,
+        background: APP_PANEL,
         border: `1px solid ${APP_BORDER}`,
-        borderRadius: 22,
+        borderRadius: 16,
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
-        boxShadow: '0 8px 28px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.4)',
+        boxShadow: '0 8px 28px rgba(0,0,0,0.55)',
         zIndex: 8000,
         isolation: 'isolate',
+        overflow: 'hidden',
       }}
     >
       {items.map((item) => {
@@ -1428,11 +1869,9 @@ function BottomNav({ tx, tab, savedCount, onSelect }) {
             key={item.key}
             onClick={() => onSelect(item.key)}
             style={{
-              background: active ? '#171F2E' : 'transparent',
+              background: 'transparent',
               border: 'none',
-              borderRadius: 20,
-              margin: 6,
-              color: active ? APP_ACCENT : '#9CA3AF',
+              color: active ? APP_ACCENT : APP_MUTED,
               cursor: 'pointer',
               fontFamily: 'inherit',
               display: 'flex',
@@ -1441,23 +1880,40 @@ function BottomNav({ tx, tab, savedCount, onSelect }) {
               justifyContent: 'center',
               gap: 4,
               position: 'relative',
+              paddingTop: 4,
             }}
           >
+            {/* Top accent bar for active tab */}
+            {active ? (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: '20%',
+                  right: '20%',
+                  height: 2,
+                  background: APP_ACCENT,
+                  borderRadius: '0 0 2px 2px',
+                }}
+              />
+            ) : null}
             <BottomNavIcon name={item.icon} active={active} />
-            <span style={{ fontSize: 11, fontWeight: active ? 700 : 500 }}>{item.label}</span>
+            <span style={{ fontSize: 10, fontWeight: active ? 700 : 400, letterSpacing: active ? '0.01em' : 0 }}>
+              {item.label}
+            </span>
             {item.badge ? (
               <span
                 style={{
                   position: 'absolute',
                   top: 8,
-                  right: '24%',
-                  minWidth: 18,
-                  height: 18,
-                  padding: '0 5px',
+                  right: '18%',
+                  minWidth: 16,
+                  height: 16,
+                  padding: '0 4px',
                   borderRadius: 999,
                   background: APP_ACCENT,
                   color: APP_BG,
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: 700,
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -1476,7 +1932,7 @@ function BottomNav({ tx, tab, savedCount, onSelect }) {
 
 function EmptyState({ icon, title, text, actionLabel, onAction }) {
   return (
-    <div style={{ textAlign: 'center', padding: '60px 24px', color: APP_MUTED, background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 18 }}>
+    <div style={{ textAlign: 'center', padding: '60px 24px', color: APP_MUTED, background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16 }}>
       <div style={{ fontSize: 34, marginBottom: 12 }}>{icon}</div>
       <h3 style={{ color: APP_TEXT, margin: '0 0 8px', fontSize: 20 }}>{title}</h3>
       <p style={{ margin: '0 auto', maxWidth: 360, fontStyle: 'italic' }}>{text}</p>
@@ -1493,8 +1949,8 @@ const primaryButtonStyle = {
   background: 'linear-gradient(135deg,#C9A84C 0%,#E8B84B 100%)',
   color: APP_BG,
   border: 'none',
-  borderRadius: 14,
-  padding: '13px 16px',
+  borderRadius: 12,
+  padding: '14px 18px',
   cursor: 'pointer',
   fontSize: 15,
   fontWeight: 700,
@@ -1502,10 +1958,10 @@ const primaryButtonStyle = {
 }
 
 const secondaryButtonStyle = {
-  background: '#1F2937',
+  background: APP_PANEL,
   color: APP_TEXT,
-  border: '1px solid #374151',
-  borderRadius: 14,
+  border: `1px solid ${APP_BORDER}`,
+  borderRadius: 12,
   padding: '13px 16px',
   cursor: 'pointer',
   fontSize: 14,
@@ -1514,11 +1970,11 @@ const secondaryButtonStyle = {
 }
 
 const compactButtonStyle = {
-  background: '#1F2937',
+  background: APP_PANEL,
   color: APP_TEXT,
-  border: '1px solid #374151',
-  borderRadius: 12,
-  padding: '10px 14px',
+  border: `1px solid ${APP_BORDER}`,
+  borderRadius: 8,
+  padding: '9px 14px',
   cursor: 'pointer',
   fontSize: 13,
   fontWeight: 600,
@@ -1529,22 +1985,136 @@ const primaryCompactButtonStyle = {
   background: 'linear-gradient(135deg,#C9A84C 0%,#E8B84B 100%)',
   color: APP_BG,
   border: 'none',
-  borderRadius: 12,
-  padding: '10px 14px',
+  borderRadius: 8,
+  padding: '9px 14px',
   cursor: 'pointer',
   fontSize: 13,
   fontWeight: 700,
   fontFamily: 'inherit',
 }
 
-const ghostButtonStyle = {
+
+const textLinkButtonStyle = {
   background: 'transparent',
-  color: '#9CA3AF',
-  border: '1px dashed #374151',
-  borderRadius: 14,
-  padding: '13px 16px',
+  color: APP_MUTED,
+  border: 'none',
+  borderRadius: 0,
+  padding: '10px 4px',
   cursor: 'pointer',
   fontSize: 13,
-  fontWeight: 600,
+  fontWeight: 500,
   fontFamily: 'inherit',
+  textDecoration: 'underline',
+  textDecorationColor: 'rgba(107,114,128,0.4)',
+  textUnderlineOffset: 3,
+}
+
+function ConsentBanner({ lang, font, onAccept, onDecline, onOpenPrivacy }) {
+  const isHe = lang === 'he'
+  return (
+    <div
+      dir={isHe ? 'rtl' : 'ltr'}
+      style={{
+        position: 'fixed',
+        bottom: 90,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 'calc(100% - 32px)',
+        maxWidth: 480,
+        background: '#161B27',
+        border: '1px solid #2A2F3E',
+        borderRadius: 16,
+        padding: '14px 16px',
+        zIndex: 9000,
+        fontFamily: font,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+      }}
+    >
+      <p style={{ margin: 0, fontSize: 13, color: '#C8BDA8', lineHeight: 1.55 }}>
+        {isHe
+          ? 'אנחנו משתמשים בנתוני שימוש אנונימיים לשיפור ההמלצות.'
+          : 'We use anonymous usage data to improve recommendations.'}
+        {' '}
+        <button onClick={onOpenPrivacy} style={{ background: 'none', border: 'none', color: '#C9A84C', cursor: 'pointer', fontSize: 13, fontFamily: font, padding: 0, textDecoration: 'underline' }}>
+          {isHe ? 'מדיניות פרטיות' : 'Privacy Policy'}
+        </button>
+      </p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          onClick={onAccept}
+          style={{ flex: 1, background: '#C9A84C', color: '#0D1117', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: font }}
+        >
+          {isHe ? 'אישור' : 'Accept'}
+        </button>
+        <button
+          onClick={onDecline}
+          style={{ flex: 1, background: '#1F2937', color: '#9CA3AF', border: '1px solid #374151', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: font }}
+        >
+          {isHe ? 'דחייה' : 'Decline'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function FeedbackNudge({ lang, font, plan, onRespond, onDismiss }) {
+  const isHe = lang === 'he'
+  const [step, setStep] = useState('ask')
+  const [rating, setRating] = useState(null)
+  const planTitle = plan ? (isHe ? plan.title_he : plan.title_en) : ''
+
+  if (!plan) return null
+
+  return (
+    <div
+      dir={isHe ? 'rtl' : 'ltr'}
+      style={{
+        position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)',
+        width: 'calc(100% - 32px)', maxWidth: 480,
+        background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 16,
+        padding: '16px', zIndex: 8500, fontFamily: font,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+      }}
+    >
+      {step === 'ask' ? (
+        <>
+          <p style={{ margin: '0 0 12px', fontSize: 14, color: '#C8BDA8', lineHeight: 1.5 }}>
+            {isHe ? `הלכתם ל"${planTitle}"?` : `Did you go on "${planTitle}"? 🌟`}
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setStep('rate')} style={{ flex: 1, background: '#C9A84C', color: '#0D1117', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: font }}>
+              {isHe ? 'כן!' : 'Yes!'}
+            </button>
+            <button onClick={() => onRespond({ went: false })} style={{ flex: 1, background: '#1F2937', color: '#9CA3AF', border: '1px solid #374151', borderRadius: 10, padding: '10px 0', fontSize: 13, cursor: 'pointer', fontFamily: font }}>
+              {isHe ? 'לא עדיין' : 'Not yet'}
+            </button>
+            <button onClick={onDismiss} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', padding: '10px 6px', fontSize: 13, fontFamily: font }}>✕</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p style={{ margin: '0 0 12px', fontSize: 14, color: '#C8BDA8' }}>
+            {isHe ? 'כמה כיפי היה?' : 'How was it?'}
+          </p>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button key={star} onClick={() => setRating(star)} style={{ background: 'none', border: 'none', fontSize: 26, cursor: 'pointer', opacity: rating && star > rating ? 0.35 : 1, transition: 'opacity 0.15s' }}>
+                {star <= (rating || 0) ? '⭐' : '☆'}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => rating && onRespond({ went: true, rating, again: rating >= 4 })}
+            disabled={!rating}
+            style={{ width: '100%', background: rating ? '#C9A84C' : '#374151', color: rating ? '#0D1117' : '#6B7280', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: rating ? 'pointer' : 'default', fontFamily: font, transition: 'all 0.2s' }}
+          >
+            {isHe ? 'שמרו' : 'Save'}
+          </button>
+        </>
+      )}
+    </div>
+  )
 }

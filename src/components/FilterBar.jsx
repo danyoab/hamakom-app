@@ -1,115 +1,118 @@
-import { CATEGORIES, CITIES, OCCASION_KEYS, CATEGORY_EMOJI } from '../lib/constants'
+import { CATEGORIES, CITIES, CATEGORY_EMOJI } from '../lib/constants'
+
+const ACCENT = '#C9A84C'
+const PANEL  = '#161B27'
+const BORDER = '#2A2F3E'
+const MUTED  = '#9CA3AF'
+
+const DEFAULTS = {
+  cityFilter: 'All Cities',
+  categoryFilter: 'All',
+  occasionFilter: 'all',
+  priceFilter: 0,
+  dateFilter: 'all',
+}
+
+function chipStyle(active) {
+  return {
+    background: active ? ACCENT : PANEL,
+    color: active ? '#0D1117' : MUTED,
+    border: `1px solid ${active ? ACCENT : BORDER}`,
+    borderRadius: 999,
+    padding: '7px 13px',
+    cursor: 'pointer',
+    fontSize: 12,
+    fontWeight: active ? 700 : 500,
+    fontFamily: 'inherit',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+  }
+}
 
 export default function FilterBar({ tx, filters, setFilters }) {
-  const { cityFilter, categoryFilter, occasionFilter, priceFilter, dateFilter } = filters
+  const { cityFilter, categoryFilter, priceFilter, dateFilter } = filters
   const set = (key, val) => setFilters(prev => ({ ...prev, [key]: val }))
 
-  const dateOptions = [
-    { val: 'all', label: tx.allDates },
-    { val: '1',   label: `💬 ${tx.date1}` },
-    { val: '2',   label: `😊 ${tx.date2}` },
-    { val: '3',   label: `🔥 ${tx.date3}` },
+  const cityOptions = CITIES.filter(c => c !== 'All Cities')
+  const categoryOptions = CATEGORIES.filter(c => c !== 'All')
+
+  const stageChips = [
+    { val: '1', label: `💬 ${tx.date1}` },
+    { val: '2', label: `😊 ${tx.date2}` },
+    { val: '3', label: `🔥 ${tx.date3}` },
   ]
 
+  const priceChips = [
+    { val: 1, label: '₪' },
+    { val: 2, label: '₪₪' },
+    { val: 3, label: '₪₪₪' },
+    { val: 4, label: '₪₪₪₪' },
+  ]
+
+  const hasActiveFilter =
+    cityFilter !== DEFAULTS.cityFilter ||
+    categoryFilter !== DEFAULTS.categoryFilter ||
+    dateFilter !== DEFAULTS.dateFilter ||
+    priceFilter !== DEFAULTS.priceFilter
+
+  const clearAll = () => setFilters(prev => ({ ...prev, ...DEFAULTS }))
+
   return (
-    <div style={{ marginBottom: 6, display: 'grid', gap: 10 }}>
-      <ScrollFade>
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, alignItems: 'center', scrollbarWidth: 'none' }}>
-          {dateOptions.map(({ val, label }) => (
-            <button
-              key={val}
-              onClick={() => set('dateFilter', val)}
-              style={{
-                background:   dateFilter === val ? '#C9A84C' : '#161B27',
-                color:        dateFilter === val ? '#0D1117' : '#9CA3AF',
-                border:       '1px solid ' + (dateFilter === val ? '#C9A84C' : '#2A2F3E'),
-                borderRadius: 20, padding: '6px 13px', cursor: 'pointer',
-                fontSize: 11, fontFamily: 'inherit', whiteSpace: 'nowrap',
-                fontWeight: dateFilter === val ? 600 : 400, flexShrink: 0,
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </ScrollFade>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-        <FilterSelect
-          value={cityFilter}
-          onChange={v => set('cityFilter', v)}
-          options={CITIES}
-          labels={{ 'All Cities': tx.allCities }}
-          dir={tx.dir}
-        />
-        <FilterSelect
-          value={occasionFilter}
-          onChange={v => set('occasionFilter', v)}
-          options={OCCASION_KEYS}
-          labels={Object.fromEntries(OCCASION_KEYS.map(k => [k, tx.occasions[k] || k]))}
-          dir={tx.dir}
-        />
-        <FilterSelect
-          value={priceFilter === 0 ? 'all' : String(priceFilter)}
-          onChange={v => set('priceFilter', v === 'all' ? 0 : Number(v))}
-          options={['all', '1', '2', '3', '4']}
-          labels={tx.prices}
-          dir={tx.dir}
-        />
-      </div>
-
-      <ScrollFade>
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              onClick={() => set('categoryFilter', categoryFilter === cat ? 'All' : cat)}
-              style={{
-                background:   categoryFilter === cat ? '#C9A84C' : '#161B27',
-                color:        categoryFilter === cat ? '#0D1117' : '#9CA3AF',
-                border:       '1px solid ' + (categoryFilter === cat ? '#C9A84C' : '#2A2F3E'),
-                borderRadius: 20, padding: '8px 12px', cursor: 'pointer',
-                fontSize: 11, fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
-              }}
-            >
-              {cat === 'All' ? tx.allCategories : (CATEGORY_EMOJI[cat] + ' ' + tx.categories[cat]?.split(' & ')[0])}
-            </button>
-          ))}
-        </div>
-      </ScrollFade>
-    </div>
-  )
-}
-
-function ScrollFade({ children }) {
-  return (
-    <div style={{ position: 'relative', overflow: 'hidden' }}>
-      {children}
-      <div style={{
-        position: 'absolute', top: 0, right: 0, bottom: 0, width: 32, pointerEvents: 'none',
-        background: 'linear-gradient(to right, transparent, #0D1117)',
-      }} />
-    </div>
-  )
-}
-
-function FilterSelect({ value, onChange, options, labels = {}, dir }) {
-  return (
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value)}
+    <div
       style={{
-        width: '100%',
-        minWidth: 0,
-        background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 12,
-        padding: '10px 10px', color: '#E8DCC8', fontSize: 11,
-        fontFamily: 'inherit', cursor: 'pointer', outline: 'none',
-        direction: dir, flexShrink: 0,
+        display: 'flex',
+        gap: 6,
+        overflowX: 'auto',
+        paddingBottom: 6,
+        scrollbarWidth: 'none',
+        alignItems: 'center',
       }}
     >
-      {options.map(opt => (
-        <option key={opt} value={opt}>{labels[opt] || opt}</option>
+      {hasActiveFilter ? (
+        <button onClick={clearAll} style={{ ...chipStyle(false), color: ACCENT, borderColor: ACCENT }}>
+          {tx.dir === 'rtl' ? 'נקה' : 'Clear'} ✕
+        </button>
+      ) : null}
+
+      {stageChips.map(({ val, label }) => (
+        <button
+          key={`stage-${val}`}
+          onClick={() => set('dateFilter', dateFilter === val ? 'all' : val)}
+          style={chipStyle(dateFilter === val)}
+        >
+          {label}
+        </button>
       ))}
-    </select>
+
+      {cityOptions.map(city => (
+        <button
+          key={`city-${city}`}
+          onClick={() => set('cityFilter', cityFilter === city ? 'All Cities' : city)}
+          style={chipStyle(cityFilter === city)}
+        >
+          📍 {tx.cities?.[city] || city}
+        </button>
+      ))}
+
+      {categoryOptions.map(cat => (
+        <button
+          key={`cat-${cat}`}
+          onClick={() => set('categoryFilter', categoryFilter === cat ? 'All' : cat)}
+          style={chipStyle(categoryFilter === cat)}
+        >
+          {CATEGORY_EMOJI[cat]} {tx.categories[cat]?.split(' & ')[0]}
+        </button>
+      ))}
+
+      {priceChips.map(({ val, label }) => (
+        <button
+          key={`price-${val}`}
+          onClick={() => set('priceFilter', priceFilter === val ? 0 : val)}
+          style={chipStyle(priceFilter === val)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
   )
 }

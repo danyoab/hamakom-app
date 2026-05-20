@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ADMIN_PIN } from '../lib/constants'
 import { supabase } from '../lib/supabase'
-import { getDeploymentWarnings } from '../lib/appConfig'
+import { getDeploymentWarnings, isAdminUser } from '../lib/appConfig'
 import { usePending } from '../hooks/usePending'
 import { SEED_LOCATIONS } from '../data/locations'
 
@@ -60,15 +59,12 @@ function makeEmptyPlan() {
 export default function AdminView({
   font,
   onBack,
+  authUser,
   totalLocations,
   datePlans = [],
   onSaveDatePlans,
   onResetDatePlans,
 }) {
-  const [unlocked, setUnlocked] = useState(false)
-  const [pin, setPin] = useState('')
-  const [pinAttempts, setPinAttempts] = useState(0)
-  const [lockedUntil, setLockedUntil] = useState(null)
   const [adminTab, setAdminTab] = useState('plans')
   const [toast, setToast] = useState(null)
   const [syncing, setSyncing] = useState(false)
@@ -94,6 +90,8 @@ export default function AdminView({
     outcomes: [],
     feedback: [],
   })
+  const [reports, setReports] = useState([])
+  const [reportsLoading, setReportsLoading] = useState(false)
   const deploymentWarnings = getDeploymentWarnings()
 
   const { pending, approved, loading, approveSub, rejectSub } = usePending()
@@ -174,6 +172,20 @@ export default function AdminView({
   }, [adminTab])
 
   useEffect(() => {
+    if (adminTab !== 'reports' || !supabase) return
+    setReportsLoading(true)
+    supabase
+      .from('problem_reports')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200)
+      .then(({ data, error }) => {
+        if (!error) setReports(data || [])
+        setReportsLoading(false)
+      })
+  }, [adminTab])
+
+  useEffect(() => {
     if (!datePlans.length) {
       setSelectedPlanId(null)
       setPlanDraft(null)
@@ -243,6 +255,16 @@ export default function AdminView({
 
   async function handleUpload(loc, file) {
     if (!supabase) return showToast('Supabase not connected - images tab requires live DB', 'error')
+
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+    const MAX_SIZE_MB = 5
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return showToast('Only JPG, PNG, or WebP images are allowed.', 'error')
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      return showToast(`File must be under ${MAX_SIZE_MB}MB.`, 'error')
+    }
+
     setUploading((state) => ({ ...state, [loc.id]: true }))
     try {
       const ext = file.name.split('.').pop().toLowerCase() || 'jpg'
@@ -383,112 +405,15 @@ export default function AdminView({
     setPlanDraft(clone(nextPlan))
   }
 
-  const searchPartnerCandidates = async (query) => {
-    if (!supabase || !query) { setPartnerCandidates([]); return }
-    const { data } = await supabase
-      .from('locations')
-      .select('id, name, city, category, is_partner')
-      .ilike('name', `%${query}%`)
-      .limit(10)
-    setPartnerCandidates(data || [])
-  }
-
-  const savePartnerFields = async (loc) => {
-    if (!supabase) return showToast('Supabase not connected', 'error')
-    const { error } = await supabase
-      .from('locations')
-      .update({
-        is_partner: loc.is_partner,
-        partner_tier: loc.partner_tier,
-        reservation_url: loc.reservation_url || null,
-        partner_contact: loc.partner_contact || null,
-      })
-      .eq('id', loc.id)
-    if (error) return showToast(error.message, 'error')
-    showToast(`Saved partner "${loc.name}"`)
-    setPartnerLocs((prev) => prev.map((item) => (item.id === loc.id ? loc : item)))
-  }
-
-  const removePartner = async (id, name) => {
-    if (!supabase) return showToast('Supabase not connected', 'error')
-    if (!window.confirm(`Remove "${name}" from partner program?`)) return
-    const { error } = await supabase
-      .from('locations')
-      .update({ is_partner: false, partner_tier: null })
-      .eq('id', id)
-    if (error) return showToast(error.message, 'error')
-    setPartnerLocs((prev) => prev.filter((item) => item.id !== id))
-    showToast(`"${name}" removed from partners`)
-  }
-
-  const addPartner = async (loc) => {
-    if (!supabase) return showToast('Supabase not connected', 'error')
-    const { error } = await supabase
-      .from('locations')
-      .update({ is_partner: true, partner_tier: 'basic' })
-      .eq('id', loc.id)
-    if (error) return showToast(error.message, 'error')
-    setPartnerLocs((prev) => [...prev, { ...loc, is_partner: true, partner_tier: 'basic', reservation_url: '', partner_contact: '' }])
-    setPartnerCandidates([])
-    setPartnerSearch('')
-    showToast(`"${loc.name}" added as partner`)
-  }
-
-  const MAX_PIN_ATTEMPTS = 5
-  const LOCKOUT_MS = 5 * 60 * 1000 // 5 minutes
-
-  function tryPin() {
-    const now = Date.now()
-    if (lockedUntil && now < lockedUntil) return
-    if (pin === ADMIN_PIN) {
-      setPinAttempts(0)
-      setLockedUntil(null)
-      setUnlocked(true)
-    } else {
-      const next = pinAttempts + 1
-      setPinAttempts(next)
-      setPin('')
-      if (next >= MAX_PIN_ATTEMPTS) {
-        setLockedUntil(now + LOCKOUT_MS)
-      }
-    }
-  }
-
-  if (!unlocked) {
-    const now = Date.now()
-    const isLocked = lockedUntil && now < lockedUntil
-    const remaining = isLocked ? Math.ceil((lockedUntil - now) / 60000) : 0
+  if (!isAdminUser(authUser)) {
     return (
       <div style={{ minHeight: '100vh', background: '#0D1117', color: '#E8DCC8', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
         <div style={{ fontSize: 40, marginBottom: 20 }}>🔐</div>
         <h2 style={{ fontSize: 22, fontWeight: 400, marginBottom: 8 }}>Admin Access</h2>
-        <p style={{ color: '#6B7280', fontSize: 13, marginBottom: 28 }}>Enter your PIN to continue</p>
-        {isLocked ? (
-          <p style={{ color: '#F87171', fontSize: 14, marginBottom: 24, textAlign: 'center' }}>
-            Too many incorrect attempts. Try again in {remaining} minute{remaining !== 1 ? 's' : ''}.
-          </p>
-        ) : (
-          <>
-            <input
-              type="password"
-              value={pin}
-              onChange={(event) => setPin(event.target.value)}
-              onKeyDown={(event) => event.key === 'Enter' && tryPin()}
-              placeholder="PIN"
-              disabled={isLocked}
-              style={{ ...inputStyle, width: 160, letterSpacing: '0.3em', textAlign: 'center', marginBottom: 12 }}
-            />
-            <button onClick={tryPin} style={btnStyle()}>
-              Enter
-            </button>
-            {pinAttempts > 0 && (
-              <p style={{ color: '#F87171', fontSize: 13, marginTop: 12 }}>
-                Incorrect PIN. {MAX_PIN_ATTEMPTS - pinAttempts} attempt{MAX_PIN_ATTEMPTS - pinAttempts !== 1 ? 's' : ''} remaining.
-              </p>
-            )}
-          </>
-        )}
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', marginTop: 20, fontSize: 13, fontFamily: font }}>
+        <p style={{ color: '#6B7280', fontSize: 13, marginBottom: 28 }}>
+          {authUser ? 'Your account does not have admin access.' : 'Sign in with an admin account to continue.'}
+        </p>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: 13, fontFamily: font }}>
           ← Back
         </button>
       </div>
@@ -500,7 +425,7 @@ export default function AdminView({
     ['analytics', 'Analytics'],
     ['pending', `Pending (${pending.length})`],
     ['approved', `Approved (${approved.length})`],
-    ['partners', `Partners (${partnerLocs.length})`],
+    ['reports', 'Reports'],
     ['sync', 'Sync DB'],
     ['images', 'Images'],
     ['sql', 'SQL'],
@@ -987,11 +912,46 @@ export default function AdminView({
                       <div style={{ fontSize: 14, fontWeight: 500 }}>{sub.name}</div>
                       <div style={{ fontSize: 12, color: '#6B7280' }}>{sub.city} · {sub.category}</div>
                     </div>
-                    <span style={{ background: '#1A3A2A', color: '#4ADE80', fontSize: 11, padding: '3px 10px', borderRadius: 20 }}>Live</span>
+                    <span style={{ background: '#1A3A2A', color: '#4ADE80', fontSize: 11, padding: '3px 10px', borderRadius: 16 }}>Live</span>
                   </div>
                 ))}
               </div>
           : null}
+
+        {adminTab === 'reports' ? (
+          reportsLoading
+            ? <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280' }}>Loading…</div>
+            : reports.length === 0
+              ? <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280', fontStyle: 'italic' }}>No reports yet.</div>
+              : <div style={{ display: 'grid', gap: 8 }}>
+                  {reports.map((r) => (
+                    <div key={r.id} style={{ background: '#161B27', border: `1px solid ${r.resolved ? '#1A3A2A' : '#2A2F3E'}`, borderLeft: `3px solid ${r.resolved ? '#4ADE80' : '#F59E0B'}`, borderRadius: 10, padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
+                        <div>
+                          <span style={{ background: '#2A2010', color: '#F59E0B', fontSize: 11, padding: '2px 8px', borderRadius: 8, fontWeight: 600 }}>{r.type}</span>
+                          {r.location_name ? <span style={{ fontSize: 12, color: '#6B7280', marginLeft: 8 }}>📍 {r.location_name}</span> : null}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: 11, color: '#6B7280' }}>{new Date(r.created_at).toLocaleDateString()}</span>
+                          {!r.resolved ? (
+                            <button
+                              onClick={async () => {
+                                await supabase.from('problem_reports').update({ resolved: true }).eq('id', r.id)
+                                setReports((prev) => prev.map((rep) => rep.id === r.id ? { ...rep, resolved: true } : rep))
+                              }}
+                              style={{ ...btnStyle('#1A3A2A'), color: '#4ADE80', border: '1px solid #2D6A4F', fontSize: 11, padding: '3px 10px', borderRadius: 8 }}
+                            >
+                              Resolve
+                            </button>
+                          ) : <span style={{ fontSize: 11, color: '#4ADE80' }}>✓ Resolved</span>}
+                        </div>
+                      </div>
+                      {r.message ? <p style={{ fontSize: 13, color: '#C8BDA8', margin: '4px 0 0', lineHeight: 1.5 }}>{r.message}</p> : null}
+                      {r.email ? <p style={{ fontSize: 11, color: '#6B7280', margin: '4px 0 0' }}>↩ {r.email}</p> : null}
+                    </div>
+                  ))}
+                </div>
+        ) : null}
 
         {adminTab === 'sync' ? (
           <div style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 10, padding: 24 }}>

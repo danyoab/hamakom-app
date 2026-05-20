@@ -1,6 +1,6 @@
 -- ─────────────────────────────────────────────
 -- HaMakom — Supabase schema
--- Run once in the Supabase SQL editor or via psql
+-- Idempotent: safe to run multiple times
 -- ─────────────────────────────────────────────
 
 -- ── Tables ────────────────────────────────────
@@ -42,7 +42,6 @@ create table if not exists pending_submissions (
   submitted_at timestamptz default now()
 );
 
--- Stores quiz answers per authenticated user (one row per quiz attempt)
 create table if not exists user_quiz_results (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid references auth.users(id) on delete cascade,
@@ -50,77 +49,156 @@ create table if not exists user_quiz_results (
   created_at timestamptz default now()
 );
 
-alter table user_quiz_results enable row level security;
+-- ── Row-Level Security ────────────────────────
+
+alter table locations           enable row level security;
+alter table pending_submissions  enable row level security;
+alter table user_quiz_results    enable row level security;
+
+-- locations
+drop policy if exists "public_read_approved"      on locations;
+drop policy if exists "admin_read_all_locations"   on locations;
+drop policy if exists "admin_insert_locations"     on locations;
+drop policy if exists "admin_update_locations"     on locations;
+drop policy if exists "admin_delete_locations"     on locations;
+-- legacy permissive policies (removed in security audit)
+drop policy if exists "anon_insert_locations"      on locations;
+drop policy if exists "anon_update_locations"      on locations;
+
+create policy "public_read_approved"
+  on locations for select
+  using (status = 'approved');
+
+create policy "admin_read_all_locations"
+  on locations for select
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+create policy "admin_insert_locations"
+  on locations for insert
+  to authenticated
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+create policy "admin_update_locations"
+  on locations for update
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+create policy "admin_delete_locations"
+  on locations for delete
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- pending_submissions
+drop policy if exists "anon_insert_submissions"  on pending_submissions;
+drop policy if exists "admin_read_submissions"   on pending_submissions;
+drop policy if exists "admin_update_submissions" on pending_submissions;
+-- legacy
+drop policy if exists "anon_read_submissions"    on pending_submissions;
+drop policy if exists "anon_update_submissions"  on pending_submissions;
+
+create policy "anon_insert_submissions"
+  on pending_submissions for insert
+  with check (true);
+
+create policy "admin_read_submissions"
+  on pending_submissions for select
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+create policy "admin_update_submissions"
+  on pending_submissions for update
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- user_quiz_results
+drop policy if exists "users_own_quiz_results" on user_quiz_results;
 
 create policy "users_own_quiz_results"
   on user_quiz_results for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- ── Row-Level Security ────────────────────────
+-- ── Analytics & Feedback Tables ───────────────
 
-alter table locations          enable row level security;
-alter table pending_submissions enable row level security;
+create table if not exists analytics_events (
+  id          uuid primary key default gen_random_uuid(),
+  session_id  text,
+  user_id     uuid references auth.users(id) on delete set null,
+  event_name  text not null,
+  item_type   text,
+  item_id     text,
+  properties  jsonb default '{}',
+  created_at  timestamptz default now()
+);
 
--- locations: public can read approved; writes require service_role (admin ops use service key)
-create policy "public_read_approved"
-  on locations for select
-  using (status = 'approved');
+alter table analytics_events enable row level security;
 
--- SECURITY NOTE: insert/update on locations must use the service_role key (server-side only).
--- The anon key used by the browser client cannot write to this table.
--- Admin panel calls that need to write locations must be routed through a server function
--- or Supabase edge function that presents the service_role key.
--- Do NOT re-add anon insert/update policies — client-side PIN gates are not security.
+drop policy if exists "anon_insert_events" on analytics_events;
+drop policy if exists "admin_read_events"  on analytics_events;
 
--- pending_submissions: public insert (anyone can suggest a venue)
-create policy "anon_insert_submissions"
-  on pending_submissions for insert
+create policy "anon_insert_events"
+  on analytics_events for insert
   with check (true);
 
--- pending_submissions read/update restricted to service_role
--- (admin panel reads/updates via service key, not anon key)
--- If your admin panel still uses the anon client, add these temporarily and remove before production:
--- create policy "anon_read_submissions"  on pending_submissions for select using (true);
--- create policy "anon_update_submissions" on pending_submissions for update using (true);
+create policy "admin_read_events"
+  on analytics_events for select
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
--- ── Analytics tables ──────────────────────────
-create table if not exists analytics_events (
-  id         bigint generated by default as identity primary key,
-  session_id text,
-  user_id    uuid references auth.users(id) on delete set null,
-  event_name text not null,
-  item_type  text,
-  item_id    text,
-  properties jsonb default '{}',
-  created_at timestamptz default now()
-);
+-- ──────────────────────────────────────────────
 
 create table if not exists recommendation_impressions (
-  id               bigint generated by default as identity primary key,
-  session_id       text,
-  user_id          uuid references auth.users(id) on delete set null,
-  quiz_answers     jsonb,
-  primary_plan_id  text,
+  id                  uuid primary key default gen_random_uuid(),
+  session_id          text,
+  user_id             uuid references auth.users(id) on delete set null,
+  quiz_answers        jsonb,
+  primary_plan_id     text,
   backup_location_ids text[],
-  created_at       timestamptz default now()
+  created_at          timestamptz default now()
 );
+
+alter table recommendation_impressions enable row level security;
+
+drop policy if exists "anon_insert_impressions" on recommendation_impressions;
+drop policy if exists "admin_read_impressions"  on recommendation_impressions;
+
+create policy "anon_insert_impressions"
+  on recommendation_impressions for insert
+  with check (true);
+
+create policy "admin_read_impressions"
+  on recommendation_impressions for select
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- ──────────────────────────────────────────────
 
 create table if not exists recommendation_outcomes (
-  id                           bigint generated by default as identity primary key,
-  recommendation_impression_id bigint references recommendation_impressions(id) on delete cascade,
-  saved                        boolean default false,
-  reminder_set                 boolean default false,
-  maps_opened                  boolean default false,
-  shared                       boolean default false,
-  went                         boolean,
-  rating                       int,
-  would_do_again               boolean,
-  updated_at                   timestamptz default now()
+  id                             uuid primary key default gen_random_uuid(),
+  recommendation_impression_id   uuid references recommendation_impressions(id) on delete cascade,
+  saved                          boolean default false,
+  shared                         boolean default false,
+  maps_opened                    boolean default false,
+  reminder_set                   boolean default false,
+  went                           boolean,
+  rating                         int,
+  would_do_again                 boolean,
+  updated_at                     timestamptz default now()
 );
 
+alter table recommendation_outcomes enable row level security;
+
+drop policy if exists "anon_upsert_outcomes" on recommendation_outcomes;
+
+create policy "anon_upsert_outcomes"
+  on recommendation_outcomes for all
+  with check (true);
+
+-- ──────────────────────────────────────────────
+
 create table if not exists user_feedback (
-  id             bigint generated by default as identity primary key,
+  id             uuid primary key default gen_random_uuid(),
   user_id        uuid references auth.users(id) on delete set null,
   item_type      text,
   item_id        text,
@@ -128,23 +206,206 @@ create table if not exists user_feedback (
   rating         int,
   would_do_again boolean,
   notes          text,
-  created_at     timestamptz default now()
+  updated_at     timestamptz default now()
 );
 
--- Analytics tables: public insert (session tracking), no public read
-alter table analytics_events            enable row level security;
-alter table recommendation_impressions  enable row level security;
-alter table recommendation_outcomes     enable row level security;
-alter table user_feedback               enable row level security;
+alter table user_feedback enable row level security;
 
-create policy "anon_insert_events"   on analytics_events           for insert with check (true);
-create policy "anon_insert_impressions" on recommendation_impressions for insert with check (true);
-create policy "anon_insert_outcomes" on recommendation_outcomes     for insert with check (true);
-create policy "anon_upsert_feedback" on user_feedback               for insert with check (true);
-create policy "users_own_feedback"   on user_feedback               for select using (auth.uid() = user_id);
-create policy "users_update_feedback" on user_feedback              for update using (auth.uid() = user_id);
+drop policy if exists "users_own_feedback"  on user_feedback;
+drop policy if exists "admin_read_feedback" on user_feedback;
+
+create policy "users_own_feedback"
+  on user_feedback for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "admin_read_feedback"
+  on user_feedback for select
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- ── Admin Audit Log ────────────────────────────
+
+create table if not exists admin_audit_log (
+  id            uuid primary key default gen_random_uuid(),
+  admin_user_id uuid references auth.users(id) on delete set null,
+  action        text not null,
+  target_table  text,
+  target_id     text,
+  old_value     jsonb,
+  new_value     jsonb,
+  created_at    timestamptz default now()
+);
+
+alter table admin_audit_log enable row level security;
+
+drop policy if exists "admin_insert_audit" on admin_audit_log;
+drop policy if exists "admin_read_audit"   on admin_audit_log;
+
+create policy "admin_insert_audit"
+  on admin_audit_log for insert
+  to authenticated
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+create policy "admin_read_audit"
+  on admin_audit_log for select
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- ── Indexes ────────────────────────────────────
+
+create index if not exists idx_locations_status      on locations(status);
+create index if not exists idx_locations_status_city on locations(status, city);
+create index if not exists idx_locations_category    on locations(category);
+create index if not exists idx_locations_featured    on locations(featured) where featured = true;
+create index if not exists idx_locations_occasions   on locations using gin(occasion);
+create index if not exists idx_locations_date_stage  on locations using gin(date_stage);
+create unique index if not exists idx_locations_slug on locations(slug) where slug is not null;
+
+create index if not exists idx_analytics_session on analytics_events(session_id);
+create index if not exists idx_analytics_created on analytics_events(created_at desc);
+create index if not exists idx_analytics_event   on analytics_events(event_name);
+
+create index if not exists idx_impressions_session on recommendation_impressions(session_id);
+create index if not exists idx_impressions_created on recommendation_impressions(created_at desc);
+
+-- ── Cloud Save Sync ────────────────────────────
+
+create table if not exists saved_plans (
+  id       uuid primary key default gen_random_uuid(),
+  user_id  uuid references auth.users(id) on delete cascade not null,
+  plan_id  text not null,
+  saved_at timestamptz default now(),
+  unique(user_id, plan_id)
+);
+
+alter table saved_plans enable row level security;
+
+drop policy if exists "users_own_saved_plans" on saved_plans;
+
+create policy "users_own_saved_plans" on saved_plans for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table if not exists saved_places (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid references auth.users(id) on delete cascade not null,
+  location_id bigint references locations(id) on delete cascade not null,
+  saved_at    timestamptz default now(),
+  unique(user_id, location_id)
+);
+
+alter table saved_places enable row level security;
+
+drop policy if exists "users_own_saved_places" on saved_places;
+
+create policy "users_own_saved_places" on saved_places for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ── User Preferences ───────────────────────────
+
+create table if not exists user_preferences (
+  user_id    uuid references auth.users(id) on delete cascade primary key,
+  lang       text default 'en',
+  last_city  text,
+  updated_at timestamptz default now()
+);
+
+alter table user_preferences enable row level security;
+
+drop policy if exists "users_own_preferences" on user_preferences;
+
+create policy "users_own_preferences" on user_preferences for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ── Subscription Foundation ────────────────────
+
+create table if not exists user_subscriptions (
+  id                     uuid primary key default gen_random_uuid(),
+  user_id                uuid references auth.users(id) on delete cascade unique,
+  tier                   text default 'free',
+  stripe_customer_id     text,
+  stripe_subscription_id text,
+  current_period_end     timestamptz,
+  created_at             timestamptz default now()
+);
+
+alter table user_subscriptions enable row level security;
+
+drop policy if exists "users_own_subscription" on user_subscriptions;
+
+create policy "users_own_subscription" on user_subscriptions for select
+  using (auth.uid() = user_id);
+
+-- ── Problem Reports / Feedback ────────────────
+
+create table if not exists problem_reports (
+  id            uuid primary key default gen_random_uuid(),
+  type          text not null,
+  message       text,
+  email         text,
+  location_id   bigint references locations(id) on delete set null,
+  location_name text,
+  resolved      boolean default false,
+  created_at    timestamptz default now()
+);
+
+alter table problem_reports enable row level security;
+
+drop policy if exists "anon_insert_reports" on problem_reports;
+drop policy if exists "admin_read_reports"  on problem_reports;
+drop policy if exists "admin_update_reports" on problem_reports;
+
+create policy "anon_insert_reports"
+  on problem_reports for insert
+  with check (true);
+
+create policy "admin_read_reports"
+  on problem_reports for select
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+create policy "admin_update_reports"
+  on problem_reports for update
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- ── Analytics Views ────────────────────────────
+
+create or replace view analytics_summary as
+select
+  event_name,
+  count(*)                      as total,
+  count(distinct session_id)    as unique_sessions,
+  date_trunc('day', created_at) as day
+from analytics_events
+group by event_name, date_trunc('day', created_at)
+order by day desc, total desc;
+
+create or replace view plan_popularity as
+select
+  item_id                                                   as plan_id,
+  count(*) filter (where event_name = 'plan_saved')         as saves,
+  count(*) filter (where event_name = 'plan_shared')        as shares,
+  count(*) filter (where event_name = 'plan_maps_opened')   as maps_opens,
+  count(distinct session_id)                                as unique_sessions
+from analytics_events
+where item_type = 'plan'
+group by item_id
+order by saves desc;
+
+create or replace view location_popularity as
+select
+  item_id                                             as location_id,
+  count(*) filter (where event_name = 'place_saved')  as saves,
+  count(*) filter (where event_name = 'place_viewed') as views,
+  count(distinct session_id)                          as unique_sessions
+from analytics_events
+where item_type = 'location'
+group by item_id
+order by saves desc;
 
 -- ── Migrations (safe to run on existing DB) ────
+
 do $$ begin
   if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='slug') then
     alter table locations add column slug text;
@@ -158,29 +419,26 @@ do $$ begin
   if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='image_url') then
     alter table locations add column image_url text;
   end if;
-  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='is_partner') then
-    alter table locations add column is_partner boolean default false;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='partner_tier') then
-    alter table locations add column partner_tier text default null;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='reservation_url') then
-    alter table locations add column reservation_url text default null;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='partner_contact') then
-    alter table locations add column partner_contact text default null;
-  end if;
   if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='lat') then
-    alter table locations add column lat double precision default null;
+    alter table locations add column lat double precision;
   end if;
   if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='lng') then
-    alter table locations add column lng double precision default null;
+    alter table locations add column lng double precision;
   end if;
-  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='avg_rating') then
-    alter table locations add column avg_rating numeric(3,1) default null;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='opening_hours') then
+    alter table locations add column opening_hours jsonb;
   end if;
-  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='review_count') then
-    alter table locations add column review_count int default 0;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='phone') then
+    alter table locations add column phone text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='website') then
+    alter table locations add column website text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='google_rating') then
+    alter table locations add column google_rating numeric(2,1);
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='locations' and column_name='google_price_level') then
+    alter table locations add column google_price_level int;
   end if;
 end $$;
 

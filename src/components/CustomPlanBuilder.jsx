@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { CATEGORY_EMOJI, getCategoryColor, getMapsUrl } from '../lib/constants'
+import { getDistanceKm, formatWalkTime } from '../lib/distance'
+
+const PlanRouteMap = lazy(() => import('./PlanRouteMap'))
 
 const SURFACE = '#161B27'
 const PANEL = '#121722'
@@ -9,7 +12,7 @@ const TEXT = '#E8DCC8'
 const MUTED = '#9CA3AF'
 
 function normalizeCategory(category) {
-  if (category === 'CafÃ©s & Restaurants' || category === 'Cafés & Restaurants') return 'CafÃ©s & Restaurants'
+  if (category === 'CafÃ©s & Restaurants') return 'Cafés & Restaurants'
   return category
 }
 
@@ -28,12 +31,22 @@ function getOverlapScore(left = [], right = []) {
   return leftItems.filter((item) => rightItems.includes(item)).length
 }
 
-function getCompatibilityScore(firstStop, candidate, isNearby) {
+function getCompatibilityScore(firstStop, candidate) {
   let score = 0
 
   if (candidate.id === firstStop.id) return -1
-  if (isNearby) score += 5
-  if (candidate.city === firstStop.city) score += 4
+
+  // Distance-based scoring (overrides city match when coords available)
+  if (firstStop.lat && firstStop.lng && candidate.lat && candidate.lng) {
+    const km = getDistanceKm(firstStop.lat, firstStop.lng, candidate.lat, candidate.lng)
+    if (km < 0.5) score += 10       // same block — ideal
+    else if (km < 1.5) score += 7   // walkable
+    else if (km < 3) score += 4     // nearby
+    else if (km > 5) score -= 5     // too far apart
+  } else if (candidate.city === firstStop.city) {
+    score += 4                       // fallback: same city
+  }
+
   if (normalizeCategory(candidate.category) !== normalizeCategory(firstStop.category)) score += 3
   score += getOverlapScore(firstStop.occasion, candidate.occasion) * 2
   score += getOverlapScore(firstStop.date_stage, candidate.date_stage) * 2
@@ -55,7 +68,7 @@ function buildCollection(locations, firstStop, selectedCity, scope) {
   return pool
     .map((location) => ({
       location,
-      score: getCompatibilityScore(firstStop, location, scope === 'nearby'),
+      score: getCompatibilityScore(firstStop, location),
     }))
     .filter((entry) => entry.score >= 0)
     .sort((left, right) => right.score - left.score || left.location.name.localeCompare(right.location.name))
@@ -159,7 +172,7 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
       </div>
 
       <div style={{ maxWidth: 940, margin: '0 auto', padding: '20px 20px 40px', display: 'grid', gap: 16 }}>
-        <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 18 }}>
+        <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
           <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepArea}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             <button
@@ -177,7 +190,7 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
         </section>
 
         <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-          <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 18 }}>
+          <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
             <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepOne}</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{tx.buildPlanFirstStop}</div>
             <input
@@ -210,7 +223,7 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
             </div>
           </section>
 
-          <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 18 }}>
+          <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
             <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepTwo}</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{tx.buildPlanSecondStop}</div>
 
@@ -247,6 +260,7 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
                       actionLabel={tx.addThisStop}
                       onSelect={() => setSecondStop(location)}
                       onOpenDetail={() => onOpenDetail(location)}
+                      distanceFrom={firstStop}
                     />
                   ))}
                 </div>
@@ -255,13 +269,21 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
           </section>
         </div>
 
-        <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 18 }}>
+        <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
           <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanPreview}</div>
           <div style={{ display: 'grid', gap: 12 }}>
             <PlanSummaryStop index={1} label={tx.buildPlanFirstStop} location={firstStop} lang={lang} />
             <PlanSummaryStop index={2} label={tx.buildPlanSecondStop} location={secondStop} lang={lang} />
           </div>
           <p style={{ margin: '14px 0 0', color: '#B8A990', lineHeight: 1.6 }}>{summaryText || tx.buildPlanPreviewPrompt}</p>
+
+          {firstStop && secondStop ? (
+            <div style={{ marginTop: 16, borderRadius: 12, overflow: 'hidden', height: 240, border: `1px solid ${BORDER}` }}>
+              <Suspense fallback={<div style={{ height: '100%', background: '#0B0F17', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>Loading map…</div>}>
+                <PlanRouteMap stops={[firstStop, secondStop]} lang={lang} />
+              </Suspense>
+            </div>
+          ) : null}
 
           <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
             <button onClick={handleShare} disabled={!firstStop || !secondStop} style={!firstStop || !secondStop ? disabledButtonStyle : primaryButtonStyle}>
@@ -283,11 +305,19 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
   )
 }
 
-function SelectableLocationCard({ location, lang, tx, selected, actionLabel, onSelect, onOpenDetail }) {
+function SelectableLocationCard({ location, lang, tx, selected, actionLabel, onSelect, onOpenDetail, distanceFrom }) {
   const text = getLocalizedLocation(location, lang)
   const category = normalizeCategory(location.category)
   const color = getCategoryColor(category)
   const mapsUrl = getMapsUrl(location.maps_query)
+
+  const walkLabel = distanceFrom?.lat && distanceFrom?.lng && location.lat && location.lng
+    ? (() => {
+        const km = getDistanceKm(distanceFrom.lat, distanceFrom.lng, location.lat, location.lng)
+        const dist = km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`
+        return `${dist} · ${formatWalkTime(km)}`
+      })()
+    : null
 
   return (
     <div style={{ background: PANEL, border: `1px solid ${selected ? ACCENT : BORDER}`, borderRadius: 16, padding: 14 }}>
@@ -312,7 +342,10 @@ function SelectableLocationCard({ location, lang, tx, selected, actionLabel, onS
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
             <div>
               <div style={{ fontSize: 17, fontWeight: 600 }}>{text.name}</div>
-              <div style={{ fontSize: 12, color: ACCENT, marginTop: 3 }}>{text.city}</div>
+              <div style={{ fontSize: 12, color: ACCENT, marginTop: 3 }}>
+                {text.city}
+                {walkLabel ? <span style={{ color: MUTED, marginLeft: 8 }}>{walkLabel}</span> : null}
+              </div>
             </div>
             {selected ? <span style={{ fontSize: 12, color: '#4ADE80' }}>{tx.selectedLabel}</span> : null}
           </div>
@@ -403,7 +436,7 @@ const primaryButtonStyle = {
   background: 'linear-gradient(135deg,#C9A84C 0%,#E8B84B 100%)',
   color: '#0D1117',
   border: 'none',
-  borderRadius: 14,
+  borderRadius: 12,
   padding: '14px 16px',
   cursor: 'pointer',
   fontSize: 15,
@@ -421,7 +454,7 @@ const secondaryButtonStyle = {
   background: '#1F2937',
   color: TEXT,
   border: '1px solid #374151',
-  borderRadius: 14,
+  borderRadius: 12,
   padding: '14px 16px',
   cursor: 'pointer',
   fontSize: 14,
@@ -471,7 +504,7 @@ function inputStyle(dir) {
     width: '100%',
     background: PANEL,
     border: `1px solid ${BORDER}`,
-    borderRadius: 14,
+    borderRadius: 12,
     padding: '12px 14px',
     color: TEXT,
     fontSize: 14,

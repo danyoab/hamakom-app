@@ -26,7 +26,7 @@ export default function PlanPreviewPage({ lang, font, plan, title, onBack, onPla
       </div>
 
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px 20px 40px' }}>
-        <section style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 20, padding: 18, marginBottom: 14 }}>
+        <section style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 16, padding: 18, marginBottom: 14 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 16 }}>
             <FactCard label={isHe ? 'תקציב' : 'Budget'} value={isHe ? plan.budget_text_he : plan.budget_text_en} />
             <FactCard label={isHe ? 'אזור' : 'Area'} value={plan.region || plan.city} />
@@ -50,7 +50,7 @@ export default function PlanPreviewPage({ lang, font, plan, title, onBack, onPla
               background: 'linear-gradient(135deg,#C9A84C 0%,#E8B84B 100%)',
               color: '#0D1117',
               border: 'none',
-              borderRadius: 14,
+              borderRadius: 12,
               padding: '14px 16px',
               fontSize: 15,
               fontWeight: 700,
@@ -76,7 +76,7 @@ function Pill({ children }) {
 
 function FactCard({ label, value }) {
   return (
-    <div style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 14, padding: '12px 14px' }}>
+    <div style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 12, padding: '12px 14px' }}>
       <div style={{ fontSize: 10, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 15, color: '#E8DCC8' }}>{value}</div>
     </div>

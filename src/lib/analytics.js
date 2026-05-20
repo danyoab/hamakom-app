@@ -1,6 +1,25 @@
 import { supabase } from './supabase'
 
 const SESSION_KEY = 'hamakom-analytics-session-id'
+const CONSENT_KEY = 'hamakom-analytics-consent'
+
+export function hasAnalyticsConsent() {
+  if (typeof window === 'undefined') return false
+  return window.localStorage.getItem(CONSENT_KEY) === 'true'
+}
+
+export function grantAnalyticsConsent() {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(CONSENT_KEY, 'true')
+  }
+}
+
+export function revokeAnalyticsConsent() {
+  if (typeof window !== 'undefined') {
+    window.localStorage.removeItem(CONSENT_KEY)
+    window.localStorage.removeItem(SESSION_KEY)
+  }
+}
 
 function getSessionId() {
   if (typeof window === 'undefined') return 'server'
@@ -23,7 +42,7 @@ function getUserId(userId) {
 }
 
 export async function trackEvent(eventName, { userId = null, itemType = null, itemId = null, properties = {} } = {}) {
-  if (!supabase || !eventName) return null
+  if (!supabase || !eventName || !hasAnalyticsConsent()) return null
 
   const payload = {
     session_id: getSessionId(),
@@ -49,7 +68,7 @@ export async function createRecommendationImpression({
   primaryPlanId = null,
   backupLocationIds = [],
 } = {}) {
-  if (!supabase || !primaryPlanId) return null
+  if (!supabase || !primaryPlanId || !hasAnalyticsConsent()) return null
 
   const payload = {
     session_id: getSessionId(),

@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getInviteUrl, getMapsUrl, getWhatsAppUrl } from '../lib/constants'
-import { useLocationReviews } from '../hooks/useReviews'
+import FeedbackModal from './FeedbackModal'
 
 export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true }) {
   const { reviews } = useLocationReviews(loc.id)
   const [imgFailed, setImgFailed] = useState(false)
+  const [showReport, setShowReport] = useState(false)
   const name = lang === 'he' ? loc.name_he || loc.name : loc.name
   const city = lang === 'he' ? loc.city_he || loc.city : loc.city
   const desc = lang === 'he' ? loc.description_he || loc.description : loc.description
@@ -158,7 +159,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
           <div style={{ fontSize: 10, letterSpacing: '0.15em', color: '#6B7280', marginBottom: 8, textTransform: 'uppercase' }}>{tx.goodFor}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {loc.occasion?.map((tag) => (
-              <span key={tag} style={{ background: '#1F2937', border: '1px solid #374151', borderRadius: 20, padding: '4px 12px', fontSize: 12, color: '#9CA3AF' }}>
+              <span key={tag} style={{ background: '#1F2937', border: '1px solid #374151', borderRadius: 16, padding: '4px 12px', fontSize: 12, color: '#9CA3AF' }}>
                 {tx.occasions[tag] || tag}
               </span>
             ))}
@@ -170,37 +171,23 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
           <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0, lineHeight: 1.6 }}>{tx.kashrusNote}</p>
         </div>
 
-        {reviews.length > 0 && (
-          <div style={{ marginTop: 24 }}>
-            <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 12 }}>
-              {lang === 'he' ? 'מה אנשים אמרו' : 'What people said'}
-            </div>
-            <div style={{ display: 'grid', gap: 10 }}>
-              {reviews.map((r) => (
-                <div key={r.id} style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 12, padding: '12px 14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: r.body ? 6 : 0 }}>
-                    <span style={{ color: '#C9A84C', fontSize: 15, letterSpacing: 1 }}>
-                      {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
-                    </span>
-                    <span style={{ fontSize: 11, color: '#4B5563' }}>
-                      {new Date(r.created_at).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', { month: 'short', year: 'numeric' })}
-                    </span>
-                  </div>
-                  {r.body ? <p style={{ margin: 0, fontSize: 13, color: '#D0D5DD', lineHeight: 1.55 }}>{r.body}</p> : null}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {loc.avg_rating && loc.review_count >= 1 ? (
-          <div style={{ marginTop: 10, fontSize: 12, color: '#6B7280', textAlign: 'center', paddingBottom: 8 }}>
-            {lang === 'he'
-              ? `${loc.avg_rating} ★ · ${loc.review_count} ביקורות מהקהילה`
-              : `${loc.avg_rating} ★ · ${loc.review_count} community ${loc.review_count === 1 ? 'review' : 'reviews'}`}
-          </div>
-        ) : null}
+        <button
+          onClick={() => setShowReport(true)}
+          style={{ background: 'none', border: 'none', color: '#4B5563', cursor: 'pointer', fontSize: 12, fontFamily: font, marginTop: 24, padding: '4px 0', textDecoration: 'underline', textDecorationColor: 'rgba(75,85,99,0.4)', textUnderlineOffset: 3 }}
+        >
+          {lang === 'he' ? 'דווח על בעיה במקום זה' : 'Report a problem with this place'}
+        </button>
       </div>
+
+      {showReport ? (
+        <FeedbackModal
+          lang={lang}
+          font={font}
+          locationName={name}
+          locationId={loc.id}
+          onClose={() => setShowReport(false)}
+        />
+      ) : null}
     </div>
   )
 }

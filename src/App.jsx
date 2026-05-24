@@ -91,6 +91,10 @@ function mergeDatePlansWithDefaults(currentPlans) {
 
 export default function App() {
   const [lang, setLang] = useState('en')
+  useEffect(() => {
+    document.documentElement.lang = lang
+    document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr'
+  }, [lang])
   const [tab, setTab] = useState('home')
   const [overlay, setOverlay] = useState(null)
   const [selectedLocation, setSelectedLocation] = useState(null)

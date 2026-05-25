@@ -369,6 +369,43 @@ create policy "admin_update_reports"
   to authenticated
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
+-- Telegram notification on new report (via pg_net → notify-report Edge Function).
+-- Requires WEBHOOK_SECRET to match the value stored in the function's env.
+create extension if not exists pg_net with schema extensions;
+
+create or replace function public.notify_problem_report()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, net
+as $$
+declare
+  fn_url text := 'https://kyenbpkgxnjrknebbiyr.supabase.co/functions/v1/notify-report';
+  webhook_secret text := 'hmk_8f3e2a9c4b1d7e6f0a2c5b8d3e7f1a4c9b6d2e5f8a1c4b7d';
+begin
+  perform net.http_post(
+    url := fn_url,
+    body := jsonb_build_object(
+      'type', 'INSERT',
+      'table', 'problem_reports',
+      'schema', 'public',
+      'record', to_jsonb(NEW)
+    ),
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-webhook-secret', webhook_secret
+    ),
+    timeout_milliseconds := 5000
+  );
+  return NEW;
+end;
+$$;
+
+drop trigger if exists problem_reports_notify on problem_reports;
+create trigger problem_reports_notify
+  after insert on problem_reports
+  for each row execute function public.notify_problem_report();
+
 -- ── Analytics Views ────────────────────────────
 
 create or replace view analytics_summary as

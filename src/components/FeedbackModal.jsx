@@ -54,7 +54,7 @@ export default function FeedbackModal({ lang, font, locationName, locationId, on
   return (
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 2000,
+        position: 'fixed', inset: 0, zIndex: 9500,
         background: 'rgba(8,11,17,0.85)', backdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         fontFamily: font,

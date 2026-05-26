@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getInviteUrl, getMapsUrl, getWhatsAppUrl } from '../lib/constants'
 import FeedbackModal from './FeedbackModal'
+import FeedbackStrip from './FeedbackStrip'
 
-export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true }) {
+export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true, dateFeedback, setDateFeedback }) {
   const [imgFailed, setImgFailed] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const name = lang === 'he' ? loc.name_he || loc.name : loc.name
@@ -169,6 +170,10 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
           <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.1em', marginBottom: 6, textTransform: 'uppercase' }}>{tx.importantNote}</div>
           <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0, lineHeight: 1.6 }}>{tx.kashrusNote}</p>
         </div>
+
+        {setDateFeedback ? (
+          <FeedbackStrip lang={lang} font={font} loc={loc} dateFeedback={dateFeedback} setDateFeedback={setDateFeedback} />
+        ) : null}
 
         <button
           onClick={() => setShowReport(true)}

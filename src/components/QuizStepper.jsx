@@ -23,8 +23,29 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
   const isHe = lang === 'he'
   const dir  = isHe ? 'rtl' : 'ltr'
 
-  // 4 questions — no "when" (removed), seriousness moved to Q1
+  // Quiz order is intentional:
+  //   1. city — hardest constraint, scoped everything downstream
+  //   2. seriousness — sets the whole evening's tone
+  //   3. focus — refines what the night should deliver
+  //   4. length — optional pacing override (skippable: engine infers it
+  //      from focus + seriousness when omitted)
   const questions = useMemo(() => [
+    {
+      id: 'city',
+      en: 'Which city?',
+      he: 'איזו עיר?',
+      suben: 'Pick local if distance matters.',
+      subhe: 'בחרו מקומי אם מרחק חשוב.',
+      type: 'city',
+      options: [
+        ...cityOptions.map(city => ({
+          value: city,
+          en: t.en.cities?.[city] || city,
+          he: t.he.cities?.[city] || city,
+        })),
+        { value: 'flexible', en: 'Anywhere', he: 'גמיש/ה' },
+      ],
+    },
     {
       id: 'seriousness',
       en: 'Where are you two at?',
@@ -53,28 +74,13 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
       ],
     },
     {
-      id: 'city',
-      en: 'Which city?',
-      he: 'איזו עיר?',
-      suben: 'Pick local if distance matters.',
-      subhe: 'בחרו מקומי אם מרחק חשוב.',
-      type: 'city',
-      options: [
-        ...cityOptions.map(city => ({
-          value: city,
-          en: t.en.cities?.[city] || city,
-          he: t.he.cities?.[city] || city,
-        })),
-        { value: 'flexible', en: 'Anywhere', he: 'גמיש/ה' },
-      ],
-    },
-    {
       id: 'length',
-      en: 'How long?',
-      he: 'כמה זמן?',
-      suben: 'Be honest about what your evening can hold.',
-      subhe: 'היו כנים לגבי כמה זמן יש לכם.',
+      en: 'How long? (optional)',
+      he: 'כמה זמן? (אופציונלי)',
+      suben: 'Skip if you trust us to pace it.',
+      subhe: 'דלגו אם אתם סומכים עלינו על הקצב.',
       type: 'standard',
+      skippable: true,
       options: [
         { value: 'short',   en: 'Quick and easy',          he: 'קצר וקליל',         suben: '1–2 hours — no overcommitting',          subhe: '1–2 שעות — בלי התחייבות גדולה' },
         { value: 'medium',  en: 'A proper evening',        he: 'ערב מסודר',          suben: '2–3 hours — a real plan with flow',      subhe: '2–3 שעות — תוכנית אמיתית עם זרימה' },
@@ -108,7 +114,16 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
     else onBack()
   }
 
-  const isCityStep = question.id === 'city'
+  const handleSkip = () => {
+    if (!question.skippable || chosen !== null) return
+    const nextAnswers = { ...answers } // no value for this question
+    if (step < total - 1) {
+      setAnswers(nextAnswers)
+      setStep(s => s + 1)
+    } else {
+      onComplete({ ...nextAnswers, when: 'planning-ahead' })
+    }
+  }
 
   return (
     <div
@@ -165,6 +180,18 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
               {isHe ? question.subhe : question.suben}
             </p>
           </div>
+
+          {question.skippable ? (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+              <button
+                onClick={handleSkip}
+                disabled={chosen !== null}
+                style={{ background: 'none', border: 'none', color: MUTED, fontSize: 13, cursor: chosen !== null ? 'default' : 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
+              >
+                {isHe ? 'דלג — אנחנו נחליט' : 'Skip — let us pace it'}
+              </button>
+            </div>
+          ) : null}
 
           {/* City photo grid */}
           {question.type === 'city' ? (

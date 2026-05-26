@@ -3,6 +3,10 @@ import { supabase } from '../lib/supabase'
 import { getDeploymentWarnings, isAdminUser } from '../lib/appConfig'
 import { usePending } from '../hooks/usePending'
 import { SEED_LOCATIONS } from '../data/locations'
+import CurateCard, { curationCompleteness, isRecommendationReady } from './CurateCard'
+import RecommendDebug from './RecommendDebug'
+import PlanComposeDebug from './PlanComposeDebug'
+import CuratorQueue from './CuratorQueue'
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value))
@@ -80,6 +84,10 @@ export default function AdminView({
   const [partnerSearch, setPartnerSearch] = useState('')
   const [partnerCandidates, setPartnerCandidates] = useState([])
 
+  const [curateQueue, setCurateQueue] = useState([])
+  const [curateLoading, setCurateLoading] = useState(false)
+  const [curateStats, setCurateStats] = useState({ ready: 0, partial: 0, untouched: 0, total: 0 })
+
   const [planSearch, setPlanSearch] = useState('')
   const [selectedPlanId, setSelectedPlanId] = useState(datePlans[0]?.id || null)
   const [planDraft, setPlanDraft] = useState(datePlans[0] ? clone(datePlans[0]) : null)
@@ -129,6 +137,82 @@ export default function AdminView({
         setPartnerLoading(false)
       })
   }, [adminTab])
+
+  async function loadCurateQueue() {
+    if (!supabase) return
+    setCurateLoading(true)
+    // Priority order: never curated first, then by confidence asc (medium-confidence rows
+    // are usually the most predictive to curate next), then newest first.
+    const { data, error } = await supabase
+      .from('locations')
+      .select('id, name, city, category, image_url, description, price, confidence_score, google_rating, business_status, manual_edits, last_curated_at, curated_by, vibe_tags, indoor_outdoor, best_time, weather_fit, romantic_score, conversation_score, energy_score, quietness_score, activity_vs_food_score, group_vs_intimate_score, duration_min, duration_max, notes_internal')
+      .eq('status', 'approved')
+      .or('vibe_tags.is.null,vibe_tags.eq.{}')
+      .order('last_curated_at', { ascending: true, nullsFirst: true })
+      .order('confidence_score', { ascending: true })
+      .order('id', { ascending: false })
+      .limit(20)
+    if (error) { showToast(error.message, 'error'); setCurateLoading(false); return }
+    setCurateQueue(data || [])
+    setCurateLoading(false)
+
+    // Stats: rough breakdown across all approved rows
+    const { data: all } = await supabase
+      .from('locations')
+      .select('vibe_tags, indoor_outdoor, romantic_score, energy_score')
+      .eq('status', 'approved')
+    if (all) {
+      const stats = { ready: 0, partial: 0, untouched: 0, total: all.length }
+      for (const r of all) {
+        if (isRecommendationReady(r))            stats.ready++
+        else if ((r.vibe_tags || []).length > 0) stats.partial++
+        else                                      stats.untouched++
+      }
+      setCurateStats(stats)
+    }
+  }
+
+  useEffect(() => {
+    if (adminTab !== 'curate') return
+    if (curateQueue.length > 0) return
+    loadCurateQueue()
+  }, [adminTab])
+
+  async function handleCurateSave(id, patch, changedKeys) {
+    if (!supabase) return
+    // Find the existing row to merge manual_edits.fields
+    const row = curateQueue.find(r => r.id === id)
+    const prevLocked = new Set(row?.manual_edits?.fields || [])
+    for (const k of changedKeys) prevLocked.add(k)
+    const newManualEdits = { ...(row?.manual_edits || {}), fields: Array.from(prevLocked) }
+
+    const finalPatch = {
+      ...patch,
+      manual_edits:     newManualEdits,
+      last_curated_at:  new Date().toISOString(),
+      curated_by:       authUser?.id || null,
+      // bump confidence to reflect curated state
+      confidence_score: Math.min(100, (row?.confidence_score ?? 0) + 5 * changedKeys.length),
+    }
+    const { error } = await supabase.from('locations').update(finalPatch).eq('id', id)
+    if (error) return showToast(error.message, 'error')
+    setCurateQueue((q) => q.filter(r => r.id !== id))
+    showToast(`Saved ${row?.name} (${changedKeys.length} fields)`)
+  }
+
+  async function handleCurateSkip(id) {
+    setCurateQueue((q) => q.filter(r => r.id !== id))
+  }
+
+  async function handleCurateFlag(id) {
+    if (!supabase) return
+    const { error } = await supabase.from('locations')
+      .update({ verification_status: 'flagged', last_curated_at: new Date().toISOString(), curated_by: authUser?.id || null })
+      .eq('id', id)
+    if (error) return showToast(error.message, 'error')
+    setCurateQueue((q) => q.filter(r => r.id !== id))
+    showToast('Flagged for review')
+  }
 
   useEffect(() => {
     if (adminTab !== 'analytics' || !supabase) return
@@ -422,6 +506,10 @@ export default function AdminView({
 
   const tabs = [
     ['plans', `Date Plans (${datePlans.length})`],
+    ['curate', 'Curate'],
+    ['queue', 'Curator Queue'],
+    ['debug', 'Debug'],
+    ['compose', 'Plan Compose'],
     ['analytics', 'Analytics'],
     ['pending', `Pending (${pending.length})`],
     ['approved', `Approved (${approved.length})`],
@@ -1067,6 +1155,77 @@ export default function AdminView({
               </>
             )}
           </div>
+        ) : null}
+
+        {adminTab === 'curate' ? (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
+              <div style={{ background: '#0F1A0F', border: '1px solid #2D6A4F', borderRadius: 10, padding: 12 }}>
+                <div style={{ fontSize: 10, color: '#4ADE80', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Recommendation-ready</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#4ADE80', marginTop: 4 }}>{curateStats.ready}</div>
+                <div style={{ fontSize: 10, color: '#6B7280' }}>of {curateStats.total} locations</div>
+              </div>
+              <div style={{ background: '#1A1505', border: '1px solid #C9A84C', borderRadius: 10, padding: 12 }}>
+                <div style={{ fontSize: 10, color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Partially curated</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#C9A84C', marginTop: 4 }}>{curateStats.partial}</div>
+                <div style={{ fontSize: 10, color: '#6B7280' }}>need more fields</div>
+              </div>
+              <div style={{ background: '#1F2937', border: '1px solid #374151', borderRadius: 10, padding: 12 }}>
+                <div style={{ fontSize: 10, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Untouched</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#E8DCC8', marginTop: 4 }}>{curateStats.untouched}</div>
+                <div style={{ fontSize: 10, color: '#6B7280' }}>never curated</div>
+              </div>
+              <div style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 10, padding: 12 }}>
+                <div style={{ fontSize: 10, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em' }}>This batch</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#E8DCC8', marginTop: 4 }}>{curateQueue.length}</div>
+                <div style={{ fontSize: 10, color: '#6B7280' }}>rows queued</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+              <button onClick={() => { setCurateQueue([]); loadCurateQueue() }} style={btnStyle()}>
+                {curateLoading ? 'Loading…' : 'Load next batch (20)'}
+              </button>
+              <div style={{ fontSize: 11, color: '#6B7280' }}>
+                Prioritized by: never-curated → low confidence → newest. Save patches only the fields you change and locks them via <code style={{ color: '#C9A84C' }}>manual_edits.fields</code>.
+              </div>
+            </div>
+
+            {curateLoading && curateQueue.length === 0 ? (
+              <div style={{ color: '#9CA3AF', textAlign: 'center', padding: 60 }}>Loading queue…</div>
+            ) : curateQueue.length === 0 ? (
+              <div style={{ color: '#4ADE80', textAlign: 'center', padding: 60 }}>
+                Batch complete — load the next one when you're ready.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 14 }}>
+                {curateQueue.map((loc) => (
+                  <CurateCard
+                    key={loc.id}
+                    loc={loc}
+                    inputStyle={inputStyle}
+                    btnStyle={btnStyle}
+                    ghostBtnStyle={ghostBtnStyle}
+                    onSave={handleCurateSave}
+                    onSkip={handleCurateSkip}
+                    onFlag={handleCurateFlag}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {adminTab === 'debug' ? (
+          <RecommendDebug inputStyle={inputStyle} btnStyle={btnStyle} />
+        ) : null}
+
+        {adminTab === 'compose' ? (
+          <PlanComposeDebug inputStyle={inputStyle} datePlans={datePlans} />
+        ) : null}
+
+        {adminTab === 'queue' ? (
+          <CuratorQueue />
         ) : null}
 
         {adminTab === 'sql' ? (

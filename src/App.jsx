@@ -101,6 +101,7 @@ export default function App() {
   const [detailReturnOverlay, setDetailReturnOverlay] = useState(null)
   const [quizAnswers, setQuizAnswers] = useState(null)
   const [resultIndex, setResultIndex] = useState(0)
+  const [suggestPrefillCity, setSuggestPrefillCity] = useState('')
   const [authUser, setAuthUser] = useState(null)
   const [savedPlanIds, setSavedPlanIds] = useLocalStorage('hamakom-saved-plans', [])
   const [savedPlaceIds, setSavedPlaceIds] = useLocalStorage('hamakom-saved-places', [])
@@ -599,6 +600,8 @@ export default function App() {
         saved={savedPlaceIds.includes(selectedLocation.id)}
         onToggleSave={() => handleToggleSavePlace(selectedLocation, { returnOverlay: 'detail' })}
         showSave
+        dateFeedback={dateFeedback}
+        setDateFeedback={setDateFeedback}
         onBack={() => {
           setOverlay(detailReturnOverlay)
           setSelectedLocation(null)
@@ -610,7 +613,7 @@ export default function App() {
   }
 
   if (overlay === 'suggest') {
-    return <SuggestView lang={lang} tx={tx} font={font} onBack={() => setOverlay(null)} />
+    return <SuggestView lang={lang} tx={tx} font={font} initialCity={suggestPrefillCity} onBack={() => { setSuggestPrefillCity(''); setOverlay(null) }} />
   }
 
   if (overlay === 'privacy') {
@@ -722,6 +725,15 @@ export default function App() {
           onSetReminder={() => handleTogglePlanReminder(currentPlan.id)}
           onRetakeQuiz={openQuiz}
           onBuildYourOwnPlan={openCustomPlanBuilder}
+          cityLocationCount={
+            quizAnswers?.city && quizAnswers.city !== 'flexible'
+              ? locations.filter((l) => l.city === quizAnswers.city).length
+              : null
+          }
+          onSuggestPlace={() => {
+            setSuggestPrefillCity(quizAnswers?.city && quizAnswers.city !== 'flexible' ? quizAnswers.city : '')
+            setOverlay('suggest')
+          }}
         />
         </div>
         <BottomNav tx={tx} tab={tab} savedCount={savedCount} onSelect={selectTab} />

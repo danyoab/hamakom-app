@@ -149,6 +149,8 @@ export const t = {
       'Ein Zivan': 'Ein Zivan',
       'Mitzpe Netofa': 'Mitzpe Netofa',
       'Kibbutz Tzuba': 'Kibbutz Tzuba',
+      'Petach Tikva': 'Petach Tikva',
+      'Givat Shmuel': 'Givat Shmuel',
       Various: 'Various',
     },
     occasions: {
@@ -376,6 +378,8 @@ export const t = {
       'Ein Zivan': 'עין זיוון',
       'Mitzpe Netofa': 'מצפה נטופה',
       'Kibbutz Tzuba': 'קיבוץ צובה',
+      'Petach Tikva': 'פתח תקווה',
+      'Givat Shmuel': 'גבעת שמואל',
       Various: 'מקומות שונים',
     },
     occasions: {

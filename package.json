@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "enrich": "node --env-file=.env scripts/enrich-locations.mjs",
+    "enrich:dry": "node --env-file=.env scripts/enrich-locations.mjs --dry-run --limit=5",
+    "cache:photos": "node --env-file=.env scripts/cache-photos.mjs",
+    "cache:photos:dry": "node --env-file=.env scripts/cache-photos.mjs --dry-run --limit=5",
+    "plans:audit": "node scripts/audit-plan-coherence.mjs",
+    "plans:audit:full": "node scripts/audit-plan-coverage.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.53.1",

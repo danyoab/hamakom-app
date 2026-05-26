@@ -41,13 +41,17 @@ export function scorePlan(plan, answers, ctx = {}) {
 
   // City — penalty scales with how much coverage the chosen city has.
   // Why: if the chosen city only has 1–2 plans, a hard -12 buries every
-  // alternative and leaves users staring at a single mediocre match.
+  // alternative. But the previous softening (−4 / −7) let curated plans
+  // from another city win outright in low-coverage cases, producing
+  // "coffee in Jerusalem + dessert in Tel Aviv" feels. We keep a graceful
+  // floor (-10) — cross-city plans can still show, but no longer beat
+  // mediocre same-city options by default.
   if (answers.city && answers.city !== 'flexible') {
     if (plan.city === answers.city) {
       score += 6
     } else {
       const coverage = ctx.cityPlanCount ?? 99
-      const penalty = coverage >= 3 ? -12 : coverage === 2 ? -7 : -4
+      const penalty = coverage >= 3 ? -12 : coverage === 2 ? -10 : -10
       score += penalty
     }
   }
@@ -155,6 +159,8 @@ export function getPlanFitSummary(plan, answers, lang) {
     'Herzliya':        { en: 'near Herzliya',       he: 'ליד הרצליה' },
     "Ra'anana":        { en: "near Ra'anana",       he: 'ליד רעננה' },
     'Netanya':         { en: 'near Netanya',        he: 'ליד נתניה' },
+    'Petach Tikva':     { en: 'near Petach Tikva',    he: 'ליד פתח תקווה' },
+    'Givat Shmuel':    { en: 'near Givat Shmuel',   he: 'ליד גבעת שמואל' },
     'Zichron Yaakov':  { en: 'near Zichron Yaakov', he: 'ליד זכרון יעקב' },
     'Caesarea':        { en: 'near Caesarea',       he: 'ליד קיסריה' },
   }

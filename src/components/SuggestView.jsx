@@ -5,9 +5,9 @@ import { DATE_STAGE_BADGE, CATEGORIES } from '../lib/constants'
 const WHY_MAX = 300
 const SUBMIT_COOLDOWN_MS = 5 * 60 * 1000
 
-export default function SuggestView({ tx, font, onBack }) {
+export default function SuggestView({ tx, font, onBack, initialCity = '' }) {
   const [form, setForm] = useState({
-    name: '', city: '', category: '', kashrus: '', why: '',
+    name: '', city: initialCity, category: '', kashrus: '', why: '',
     whatsapp: '', dateStage: [], price: 2,
     _hp: '',
   })

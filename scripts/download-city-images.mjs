@@ -40,6 +40,8 @@ const CITIES = [
   { name: 'Herzliya',      query: 'Herzliya Marina Israel' },
   { name: 'Netanya',       query: 'Netanya beach Israel' },
   { name: "Ra'anana",      query: "Ra'anana park Israel" },
+  { name: 'Petach Tikva',   query: 'Petach Tikva Em HaMoshavot Park Israel' },
+  { name: 'Givat Shmuel',  query: 'Givat Shmuel Israel city center' },
   { name: 'Eilat',         query: 'Eilat Red Sea Israel' },
   { name: 'Tiberias',      query: 'Tiberias Sea of Galilee Israel' },
   { name: 'Zichron Yaakov',query: 'Zichron Yaakov winery Israel' },

@@ -15,38 +15,20 @@ function pickFromTop(items, rng, topN = 6) {
   return pool[Math.floor(rng() * pool.length)]
 }
 
-// ─── Proximity ─────────────────────────────────────────────────────────────
+// ─── Proximity & coherence ─────────────────────────────────────────────────
+// Geographic and emotional coherence helpers live in planCoherence.js so
+// both engines (this one and planRecommendations.js) share the same scoring
+// scale and the same vibe/time heuristics.
 
-import { CITY_COORDS } from './constants.js'
-
-function haversineKm(lat1, lon1, lat2, lon2) {
-  const R = 6371
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-function coordsOf(loc) {
-  if (loc.lat && loc.lng) return [loc.lat, loc.lng]
-  const c = CITY_COORDS[loc.city]
-  return c || null
-}
-
-function proximityBonus(loc, anchor) {
-  if (!anchor) return 0
-  const a = coordsOf(anchor)
-  const b = coordsOf(loc)
-  if (!a || !b) return 0
-  const km = haversineKm(a[0], a[1], b[0], b[1])
-  if (km <= 0.5) return 6   // same block / 5-min walk
-  if (km <= 1.5) return 4   // 10-15 min walk
-  if (km <= 3)   return 2   // short drive / rideshare
-  if (km <= 6)   return 0
-  return -2                  // clearly different part of city
-}
+import {
+  coordsOf,
+  proximityScore as proximityBonus,
+  sameLocale,
+  isVariousChain,
+  flowCompatibility,
+  timeFitForStopIndex,
+  buildComposeMetadata,
+} from './planCoherence.js'
 
 // ─── Stop slot definitions ─────────────────────────────────────────────────
 // Each slot has: allowed categories, optional price bounds, preferred occasions.
@@ -116,7 +98,7 @@ const SLOT_DEFS = {
 
 // ─── Scoring ───────────────────────────────────────────────────────────────
 
-function scoreForSlot(loc, slotDef, preferOccasions, anchor) {
+function scoreForSlot(loc, slotDef, preferOccasions, anchor, stopIndex = 0, totalStops = 3) {
   let score = 0
 
   // Category match — hard filter baked into pool selection, but soft-boost too
@@ -140,7 +122,12 @@ function scoreForSlot(loc, slotDef, preferOccasions, anchor) {
   }
 
   // Proximity to anchor stop
-  score += proximityBonus(loc, anchor)
+  score += proximityBonus(anchor, loc)
+
+  // Emotional flow vs. the previous stop (if any) and time-of-day fit
+  // for this slot position.
+  if (anchor) score += flowCompatibility(anchor, loc).delta
+  score += timeFitForStopIndex(loc, stopIndex, totalStops)
 
   return score
 }
@@ -305,20 +292,29 @@ export function assembleDynamicPlan(locations, answers) {
   const usedIds = new Set()
   const selectedLocs = []
 
-  // 3. Pick each stop in sequence, using the previous stop as proximity anchor
+  // 3. Pick each stop in sequence, using the previous stop as proximity anchor.
+  //    If we can't fill a slot from the same locale, we'd rather return a
+  //    shorter plan than mix cities — break the loop instead of crossing town.
   for (let i = 0; i < stopCount; i++) {
     const slotDef = slotDefs[i]
     if (!slotDef) break
 
     const anchor = selectedLocs[selectedLocs.length - 1] || null
-    const pool = filterForSlot(eligible, slotDef).filter(l => !usedIds.has(l.id))
+    const localeOk = (l) => !anchor || sameLocale(anchor, l)
+    const pool = filterForSlot(eligible, slotDef)
+      .filter(l => !usedIds.has(l.id))
+      .filter(localeOk)
 
     if (!pool.length) {
-      // Fallback: relax category constraint
-      const relaxed = eligible.filter(l => !usedIds.has(l.id))
+      // Fallback: relax category constraint, but keep locale coherence.
+      // If that empties the pool, stop here — a 2-stop plan beats a
+      // 3-stop plan that drags the user across town.
+      const relaxed = eligible
+        .filter(l => !usedIds.has(l.id))
+        .filter(localeOk)
       if (!relaxed.length) break
       const scored = relaxed
-        .map(l => ({ ...l, _s: scoreForSlot(l, slotDef, slotDef.preferOccasions, anchor) }))
+        .map(l => ({ ...l, _s: scoreForSlot(l, slotDef, slotDef.preferOccasions, anchor, i, stopCount) }))
         .sort((a, b) => b._s - a._s)
       const picked = pickFromTop(scored, rng, 6)
       if (!picked) break
@@ -328,7 +324,7 @@ export function assembleDynamicPlan(locations, answers) {
     }
 
     const scored = pool
-      .map(l => ({ ...l, _s: scoreForSlot(l, slotDef, slotDef.preferOccasions, anchor) }))
+      .map(l => ({ ...l, _s: scoreForSlot(l, slotDef, slotDef.preferOccasions, anchor, i, stopCount) }))
       .sort((a, b) => b._s - a._s)
 
     const picked = pickFromTop(scored, rng, 6)
@@ -339,17 +335,27 @@ export function assembleDynamicPlan(locations, answers) {
 
   if (selectedLocs.length < 2) return null
 
+  // City label: prefer the first non-Various stop. If the user asked for a
+  // specific city and the resolved label doesn't match, refuse to render
+  // rather than mislabel a cross-city plan.
+  const firstReal = selectedLocs.find(l => !isVariousChain(l))
+  const city = firstReal?.city || answers.city || 'flexible'
+  if (answers.city && answers.city !== 'flexible' && city !== answers.city) {
+    return null
+  }
+
   const stops = selectedLocs.map((loc, i) => toStop(loc, i, focus))
   const budget = budgetText(stops)
-
-  const city =
-    selectedLocs[0].city !== 'Various' ? selectedLocs[0].city :
-    selectedLocs[1]?.city !== 'Various' ? selectedLocs[1].city :
-    (answers.city || 'flexible')
 
   const key = `${focus}:${answers.seriousness}`
   const titleObj    = TITLES[key]    || { en: 'Your Evening Plan',            he: 'תוכנית הערב שלכם' }
   const narrativeObj = NARRATIVES[key] || { en: 'A plan built for your answers.', he: 'תוכנית שנבנתה לתשובות שלכם.' }
+
+  const _compose = buildComposeMetadata(selectedLocs, {
+    engine: 'dynamic',
+    templateUsed: `SLOT_DEFS.${focus}`,
+    length,
+  })
 
   return {
     id:                 `dynamic-${seed}`,
@@ -373,5 +379,7 @@ export function assembleDynamicPlan(locations, answers) {
     seriousness_tags:   [answers.seriousness],
     when_tags:          [],
     stops,
+    _compose,
+    _flowWarnings:      _compose.flowWarnings,
   }
 }

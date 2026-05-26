@@ -1,5 +1,11 @@
-import { getMatchedPlans } from './quiz'
-import { scoreLocation } from './locationRecommendations'
+import { getMatchedPlans } from './quiz.js'
+import { scoreLocation } from './locationRecommendations.js'
+import {
+  proximityScore,
+  flowCompatibility,
+  timeFitForStopIndex,
+  buildComposeMetadata,
+} from './planCoherence.js'
 
 // Variety knobs — see /plans/the-plans-feel-limited-quiet-moon.md
 const SCORE_BAND_WIDTH = 2.5
@@ -320,9 +326,23 @@ function getCitySequenceProfile(city, focus) {
 }
 
 function getDesiredStopCount(length) {
+  // We always *try* for 3 stops. If the data can't support it the loop in
+  // buildSupportStops breaks gracefully at score>1 and we return 2 stops.
+  // 'short' used to mechanically cap to 2 even when a great third stop
+  // existed — that's the "felt random" failure mode. Length now flows into
+  // scoring + copy only.
   if (length === 'short') return 2
-  if (length === 'long') return 3
   return 3
+}
+
+function inferLength(answers) {
+  if (answers.length) return answers.length
+  // No user-provided length → infer from focus + seriousness so downstream
+  // copy and scoring still get a coherent value.
+  if (answers.seriousness === 'just-met') return 'short'
+  if (answers.seriousness === 'getting-serious') return 'long'
+  if (answers.focus === 'food-drink' || answers.focus === 'outdoors') return 'medium'
+  return 'medium'
 }
 
 function isVeryDisliked(location, usageProfile) {
@@ -347,7 +367,7 @@ function scorePrimaryBoost(location, answers, usageProfile) {
   return score
 }
 
-function scoreSupportStop(primary, candidate, answers, usageProfile, stopIndex, selectedIds = []) {
+function scoreSupportStop(primary, candidate, answers, usageProfile, stopIndex, selectedIds = [], totalStops = 3, prevStop = null) {
   if (candidate.id === primary.id) return -Infinity
   if (candidate.city !== primary.city) return -Infinity
   if (selectedIds.includes(candidate.id)) return -Infinity
@@ -372,6 +392,13 @@ function scoreSupportStop(primary, candidate, answers, usageProfile, stopIndex, 
   if (candidateOccasions.has('first date') && answers.seriousness === 'just-met') score += 0.9
   if (candidateOccasions.has('upscale') && answers.seriousness === 'getting-serious') score += 0.75
 
+  // Coherence: proximity, emotional flow, time-of-day fit relative to the
+  // immediately previous stop (or the primary anchor if this is stop 2).
+  const anchor = prevStop || primary
+  score += proximityScore(anchor, candidate)
+  score += flowCompatibility(anchor, candidate).delta
+  score += timeFitForStopIndex(candidate, stopIndex, totalStops)
+
   return score
 }
 
@@ -381,10 +408,14 @@ function buildSupportStops(primary, locations, answers, usageProfile) {
   const selectedIds = [primary.id]
 
   while (chosen.length < desiredCount - 1) {
+    const prevStop = chosen.length ? chosen[chosen.length - 1] : null
     const next = [...locations]
       .map((candidate) => ({
         candidate,
-        score: scoreSupportStop(primary, candidate, answers, usageProfile, chosen.length + 1, selectedIds),
+        score: scoreSupportStop(
+          primary, candidate, answers, usageProfile,
+          chosen.length + 1, selectedIds, desiredCount, prevStop,
+        ),
       }))
       .filter((entry) => entry.score > 1)
       .sort((left, right) => right.score - left.score)[0]
@@ -536,12 +567,20 @@ function buildGeneratedShareSummary(primary, supportStops, lang) {
 function buildGeneratedPlan(location, locations, answers, behavior, usageProfile) {
   if (isVeryDisliked(location, usageProfile)) return null
 
+  // Length is optional in the quiz now; infer when missing.
+  const effectiveAnswers = answers.length ? answers : { ...answers, length: inferLength(answers) }
+  answers = effectiveAnswers
+
   const locationScore = scoreLocation(location, answers, behavior)
   const focusTags = deriveFocusTags(location)
   const seriousnessTags = deriveSeriousnessTags(location)
   const whenTags = deriveWhenTags(location)
   const lengthTags = deriveLengthTags(location)
   const supportLocations = buildSupportStops(location, locations, answers, usageProfile)
+  // A one-stop "plan" is not a plan — it's a place. Drop so the caller can
+  // either pick the next anchor or, if every anchor fails, surface an
+  // explicit "not enough strong options yet" fallback.
+  if (supportLocations.length === 0) return null
   const focus = focusTags.includes(answers.focus) ? answers.focus : focusTags[0]
   const seriousness = seriousnessTags.includes(answers.seriousness) ? answers.seriousness : seriousnessTags[0]
   const chosenLength = lengthTags.includes(answers.length) ? answers.length : lengthTags[0]
@@ -552,6 +591,18 @@ function buildGeneratedPlan(location, locations, answers, behavior, usageProfile
   const narrative_he = buildGeneratedNarrative(location, { ...answers, focus, seriousness, length: chosenLength }, 'he')
   const stops = [buildPrimaryStop(location), ...supportLocations.map((stop, index) => buildFollowUpStop(stop, index + 2))]
   const supportScore = supportLocations.reduce((sum, stop) => sum + Math.max(usageProfile.locationWeights[String(stop.id)] || 0, 0), 0)
+
+  // Coherence metadata: same source rows the engine actually scored against
+  // so the debug surface reflects reality.
+  const composeStops = [location, ...supportLocations]
+  const cityProfile = getCitySequenceProfile(location.city, answers.focus)
+  const _compose = buildComposeMetadata(composeStops, {
+    engine: 'generated-location',
+    templateUsed: `CITY_SEQUENCE_PROFILES.${location.city}.${answers.focus}`,
+    length: chosenLength,
+    sequence: cityProfile.sequence,
+  })
+  const flowPenalty = _compose.flowWarnings.length * 1.5
 
   return {
     id: `generated-location-plan-${location.id}`,
@@ -581,7 +632,17 @@ function buildGeneratedPlan(location, locations, answers, behavior, usageProfile
     stops,
     source_type: 'generated-location',
     source_location_ids: [location.id, ...supportLocations.map((item) => item.id)],
-    _score: locationScore + scorePrimaryBoost(location, answers, usageProfile) + supportScore + supportLocations.length * 0.9,
+    _compose,
+    _flowWarnings: _compose.flowWarnings,
+    _cityMismatch: Boolean(
+      answers.city && answers.city !== 'flexible' && location.city !== answers.city
+    ),
+    _score:
+      locationScore +
+      scorePrimaryBoost(location, answers, usageProfile) +
+      supportScore +
+      supportLocations.length * 0.9 -
+      flowPenalty,
   }
 }
 
@@ -590,9 +651,30 @@ export function getSmartMatchedPlans(curatedPlans, locations, answers, count = 2
   const curated = getMatchedPlans(curatedPlans, answers, curatedPlans.length, behavior).map((plan) => ({
     ...plan,
     source_type: plan.source_type || 'curated',
+    _compose: plan._compose || { engine: 'curated', flowWarnings: [], legs: [], flowDeltas: [], derivedVibes: [] },
+    _flowWarnings: plan._flowWarnings || [],
   }))
 
-  const generated = (locations || [])
+  // City-scoped anchor pool: when the user picked a real city, only that
+  // city's rows can anchor a generated plan. Prevents cross-city anchors
+  // from competing with same-city plans on raw score. Curated plans still
+  // flow through getMatchedPlans above with their existing soft penalty so
+  // a thoughtful Tel Aviv plan can still show for a Jerusalem user if no
+  // generated plan beats it.
+  let anchorPool = (answers.city && answers.city !== 'flexible')
+    ? (locations || []).filter((l) => l.city === answers.city)
+    : (locations || [])
+
+  // Focus-scoped anchor pool: prefer anchors that carry the user's stated
+  // focus. Without this, a high-curation cafe can out-score the city's only
+  // park even when the user picked focus=outdoors. Falls back to the full
+  // city pool when nothing in-focus exists so sparse cities still get plans.
+  if (answers.focus) {
+    const focusMatched = anchorPool.filter((l) => deriveFocusTags(l).includes(answers.focus))
+    if (focusMatched.length > 0) anchorPool = focusMatched
+  }
+
+  const generated = anchorPool
     .map((location) => buildGeneratedPlan(location, locations || [], answers, behavior, usageProfile))
     .filter(Boolean)
 

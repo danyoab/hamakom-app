@@ -35,6 +35,7 @@ export default function ResultsPage({
   saved,
   reminderSet,
   userId,
+  cityLocationCount = null,
   onBrowseAll,
   onNextPlan,
   onToggleBackupOptions,
@@ -45,6 +46,7 @@ export default function ResultsPage({
   onSetReminder,
   onRetakeQuiz,
   onBuildYourOwnPlan,
+  onSuggestPlace,
 }) {
   const [showBackups, setShowBackups] = useState(false)
   const isHe  = lang === 'he'
@@ -96,6 +98,14 @@ export default function ResultsPage({
           <p style={{ margin: 0, fontSize: 14, color: SOFT, lineHeight: 1.6, fontStyle: 'italic' }}>
             {fitSummary}
           </p>
+
+          {plan._cityMismatch && plan.city ? (
+            <div style={{ marginTop: 10, padding: '8px 12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, fontSize: 12, color: '#F59E0B' }}>
+              {isHe
+                ? `שימו לב — התוכנית הזו ב${plan.city}, לא ב${answers.city || ''}.`
+                : `Heads up — this plan is in ${plan.city}, not ${answers.city || 'your selected city'}.`}
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -220,6 +230,23 @@ export default function ResultsPage({
                 ))}
               </div>
             ) : null}
+          </div>
+        ) : null}
+
+        {/* ── Empty-city CTA: invite a recommendation ──────────── */}
+        {onSuggestPlace && answers?.city && answers.city !== 'flexible' && cityLocationCount === 0 ? (
+          <div style={{ background: '#161B27', border: `1px dashed ${ACCENT}`, borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
+            <div style={{ fontSize: 13, color: SOFT, lineHeight: 1.5, marginBottom: 10 }}>
+              {isHe
+                ? `עוד אין לנו הרבה מקומות ב${answers.city} — מכירים מקום טוב?`
+                : `We don't have many date spots in ${answers.city} yet — know one?`}
+            </div>
+            <button
+              onClick={onSuggestPlace}
+              style={{ background: ACCENT, color: BG, border: 'none', borderRadius: 10, padding: '10px 14px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: font }}
+            >
+              {isHe ? 'הציעו מקום' : 'Recommend a place'} →
+            </button>
           </div>
         ) : null}
 

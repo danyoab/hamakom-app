@@ -180,7 +180,7 @@ export default function ResultsPage({
             onClick={onSetReminder}
             style={reminderSet ? { ...secondaryBtn(font), color: '#4ADE80', borderColor: '#2E6E45', background: '#18261D' } : secondaryBtn(font)}
           >
-            {reminderSet ? (isHe ? '✓ תזכורת' : '✓ Reminder') : isHe ? 'תזכורת' : 'Reminder'}
+            {reminderSet ? (isHe ? '✓ מתכנן' : '✓ Planning this') : isHe ? 'מתכנן לצאת' : 'Planning this'}
           </button>
 
           {firstStopMaps ? (
@@ -191,7 +191,7 @@ export default function ResultsPage({
               onClick={() => onOpenPlanMaps?.()}
               style={{ ...secondaryBtn(font), gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
             >
-              {isHe ? 'פתח במפות' : 'Open in Maps'} →
+              {isHe ? '← פתח במפות' : 'Open in Maps →'}
             </a>
           ) : null}
         </div>
@@ -242,7 +242,7 @@ export default function ResultsPage({
               onClick={onSuggestPlace}
               style={{ background: ACCENT, color: BG, border: 'none', borderRadius: 10, padding: '10px 14px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: font }}
             >
-              {isHe ? 'הציעו מקום' : 'Recommend a place'} →
+              {isHe ? '← הציעו מקום' : 'Recommend a place →'}
             </button>
           </div>
         ) : null}
@@ -304,7 +304,7 @@ function StopCard({ stop, index, lang, total }) {
         ) : null}
         {mapsUrl ? (
           <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8, fontSize: 12, color: ACCENT, textDecoration: 'none' }}>
-            {isHe ? 'פתח במפות ←' : '→ Open in Maps'}
+            {isHe ? '← פתח במפות' : 'Open in Maps →'}
           </a>
         ) : null}
       </div>
@@ -326,7 +326,7 @@ function CompactStop({ stop, lang }) {
         {instruction ? <span style={{ fontSize: 13, color: MUTED, marginLeft: 6 }}>{instruction}</span> : null}
         {mapsUrl ? (
           <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: 4, fontSize: 12, color: ACCENT, textDecoration: 'none' }}>
-            {isHe ? 'פתח במפות' : '→ Maps'}
+            {isHe ? '← פתח במפות' : 'Maps →'}
           </a>
         ) : null}
       </div>

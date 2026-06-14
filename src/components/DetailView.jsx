@@ -130,7 +130,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
             }}
           >
             <span>💬 {tx.whatsapp}</span>
-            <span style={{ fontSize: 18 }}>→</span>
+            <span style={{ fontSize: 18 }}>{lang === 'he' ? '←' : '→'}</span>
           </a>
           <a
             href={inviteUrl}
@@ -151,7 +151,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
             }}
           >
             <span>💌 {tx.inviteToDate}</span>
-            <span style={{ fontSize: 18 }}>→</span>
+            <span style={{ fontSize: 18 }}>{lang === 'he' ? '←' : '→'}</span>
           </a>
         </div>
 

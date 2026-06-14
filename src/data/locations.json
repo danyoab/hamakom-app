@@ -37,7 +37,7 @@
     "occasion": [
       "first date",
       "casual",
-      "nature"
+      "active"
     ],
     "price": 1,
     "date_stage": [
@@ -173,8 +173,7 @@
     "category": "Parks & Outdoors",
     "occasion": [
       "casual",
-      "nature",
-      "relaxed"
+      "active"
     ],
     "price": 2,
     "date_stage": [
@@ -228,7 +227,7 @@
     "category": "Parks & Outdoors",
     "occasion": [
       "casual",
-      "nature"
+      "active"
     ],
     "price": 1,
     "date_stage": [
@@ -418,7 +417,7 @@
     "occasion": [
       "casual",
       "evening",
-      "scenic"
+      "views"
     ],
     "price": 1,
     "date_stage": [
@@ -472,7 +471,7 @@
     "category": "Parks & Outdoors",
     "occasion": [
       "romantic",
-      "nature",
+      "active",
       "unique"
     ],
     "price": 1,
@@ -689,7 +688,7 @@
     "category": "Hotels & Lounges",
     "occasion": [
       "upscale",
-      "classic",
+      "casual",
       "views"
     ],
     "price": 4,
@@ -718,7 +717,7 @@
     "occasion": [
       "upscale",
       "evening",
-      "modern"
+      "unique"
     ],
     "price": 4,
     "date_stage": [
@@ -851,7 +850,6 @@
     "category": "Museums & Culture",
     "occasion": [
       "first date",
-      "intellectual",
       "unique"
     ],
     "price": 2,
@@ -879,7 +877,6 @@
     "category": "Museums & Culture",
     "occasion": [
       "fun",
-      "interactive",
       "unique"
     ],
     "price": 2,
@@ -906,8 +903,7 @@
     "city_he": "ירושלים",
     "category": "Museums & Culture",
     "occasion": [
-      "unique",
-      "intellectual"
+      "unique"
     ],
     "price": 2,
     "date_stage": [
@@ -933,8 +929,7 @@
     "category": "Museums & Culture",
     "occasion": [
       "unique",
-      "frum-friendly",
-      "intellectual"
+      "frum-friendly"
     ],
     "price": 3,
     "date_stage": [
@@ -988,7 +983,6 @@
     "category": "Museums & Culture",
     "occasion": [
       "frum-friendly",
-      "educational",
       "unique"
     ],
     "price": 2,
@@ -1015,7 +1009,7 @@
     "city_he": "ירושלים",
     "category": "Museums & Culture",
     "occasion": [
-      "intellectual",
+      "unique",
       "casual",
       "first date"
     ],
@@ -1072,7 +1066,6 @@
     "category": "Activities & Experiences",
     "occasion": [
       "unique",
-      "nature",
       "active"
     ],
     "price": 2,
@@ -1100,7 +1093,6 @@
     "category": "Activities & Experiences",
     "occasion": [
       "fun",
-      "sweet",
       "casual"
     ],
     "price": 2,
@@ -1127,9 +1119,7 @@
     "city_he": "מקומות שונים",
     "category": "Activities & Experiences",
     "occasion": [
-      "fun",
-      "interactive",
-      "group"
+      "fun"
     ],
     "price": 3,
     "date_stage": [
@@ -1265,8 +1255,7 @@
     "category": "Activities & Experiences",
     "occasion": [
       "casual",
-      "fun",
-      "group"
+      "fun"
     ],
     "price": 2,
     "date_stage": [
@@ -1402,8 +1391,7 @@
     "category": "Activities & Experiences",
     "occasion": [
       "adventurous",
-      "active",
-      "outdoors"
+      "active"
     ],
     "price": 3,
     "date_stage": [
@@ -1429,8 +1417,7 @@
     "category": "Activities & Experiences",
     "occasion": [
       "adventurous",
-      "active",
-      "outdoors"
+      "active"
     ],
     "price": 3,
     "date_stage": [
@@ -1483,8 +1470,7 @@
     "category": "Activities & Experiences",
     "occasion": [
       "active",
-      "adventurous",
-      "nature"
+      "adventurous"
     ],
     "price": 3,
     "date_stage": [
@@ -1509,7 +1495,6 @@
     "city_he": "עין גדי",
     "category": "Activities & Experiences",
     "occasion": [
-      "nature",
       "active",
       "adventurous"
     ],
@@ -1538,7 +1523,6 @@
     "category": "Activities & Experiences",
     "occasion": [
       "unique",
-      "educational",
       "active"
     ],
     "price": 3,
@@ -1566,7 +1550,6 @@
     "category": "Activities & Experiences",
     "occasion": [
       "unique",
-      "educational",
       "frum-friendly"
     ],
     "price": 2,
@@ -1595,7 +1578,7 @@
     "occasion": [
       "unique",
       "fun",
-      "nature"
+      "active"
     ],
     "price": 3,
     "date_stage": [
@@ -1703,8 +1686,7 @@
     "city_he": "מקומות שונים",
     "category": "Activities & Experiences",
     "occasion": [
-      "fun",
-      "group"
+      "fun"
     ],
     "price": 2,
     "date_stage": [
@@ -1730,8 +1712,7 @@
     "category": "Activities & Experiences",
     "occasion": [
       "casual",
-      "fun",
-      "group"
+      "fun"
     ],
     "price": 2,
     "date_stage": [
@@ -1786,7 +1767,7 @@
     "category": "Activities & Experiences",
     "occasion": [
       "casual",
-      "nature",
+      "active",
       "fun"
     ],
     "price": 2,
@@ -1840,8 +1821,7 @@
     "category": "Activities & Experiences",
     "occasion": [
       "creative",
-      "unique",
-      "hands-on"
+      "unique"
     ],
     "price": 3,
     "date_stage": [
@@ -1867,7 +1847,7 @@
     "category": "Activities & Experiences",
     "occasion": [
       "creative",
-      "relaxed",
+      "casual",
       "fun"
     ],
     "price": 2,
@@ -1896,7 +1876,7 @@
     "occasion": [
       "creative",
       "casual",
-      "intimate"
+      "romantic"
     ],
     "price": 1,
     "date_stage": [
@@ -1948,7 +1928,7 @@
     "city_he": "ירושלים",
     "category": "Activities & Experiences",
     "occasion": [
-      "meaningful",
+      "romantic",
       "frum-friendly",
       "unique"
     ],
@@ -2086,8 +2066,7 @@
     "category": "Activities & Experiences",
     "occasion": [
       "casual",
-      "fun",
-      "relaxed"
+      "fun"
     ],
     "price": 2,
     "date_stage": [
@@ -2141,8 +2120,7 @@
     "category": "Activities & Experiences",
     "occasion": [
       "casual",
-      "evening",
-      "chill"
+      "evening"
     ],
     "price": 2,
     "date_stage": [
@@ -2194,8 +2172,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -2248,8 +2225,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "casual",
-      "dinner"
+      "casual"
     ],
     "price": 3,
     "date_stage": [
@@ -2276,7 +2252,7 @@
     "occasion": [
       "views",
       "romantic",
-      "dinner"
+      "casual"
     ],
     "price": 3,
     "date_stage": [
@@ -2304,7 +2280,7 @@
     "occasion": [
       "casual",
       "romantic",
-      "garden"
+      "views"
     ],
     "price": 2,
     "date_stage": [
@@ -2331,8 +2307,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -2358,7 +2333,6 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "coffee",
       "first date"
     ],
     "price": 2,
@@ -2386,7 +2360,7 @@
     "occasion": [
       "romantic",
       "unique",
-      "scenic"
+      "views"
     ],
     "price": 3,
     "date_stage": [
@@ -2413,8 +2387,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -2440,7 +2413,6 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "coffee",
       "first date"
     ],
     "price": 1,
@@ -2495,8 +2467,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "fun",
-      "dessert"
+      "fun"
     ],
     "price": 1,
     "date_stage": [
@@ -2550,7 +2521,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "nature",
+      "active",
       "romantic",
       "casual"
     ],
@@ -2578,7 +2549,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "classic",
+      "casual",
       "romantic",
       "upscale"
     ],
@@ -2633,7 +2604,6 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "fun",
-      "dessert",
       "casual"
     ],
     "price": 2,
@@ -2660,7 +2630,6 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dairy",
       "casual",
       "first date"
     ],
@@ -2688,7 +2657,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
+      "casual",
       "romantic",
       "upscale"
     ],
@@ -2716,7 +2685,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
+      "casual",
       "upscale",
       "romantic"
     ],
@@ -2744,7 +2713,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "wine",
+      "upscale",
       "romantic",
       "evening"
     ],
@@ -2772,8 +2741,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "casual",
-      "dinner"
+      "casual"
     ],
     "price": 2,
     "date_stage": [
@@ -2799,8 +2767,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
-      "meaty",
+      "casual",
       "upscale"
     ],
     "price": 3,
@@ -2827,7 +2794,6 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dessert",
       "casual",
       "fun"
     ],
@@ -2855,7 +2821,6 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "coffee",
       "casual"
     ],
     "price": 2,
@@ -2882,9 +2847,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dairy",
-      "casual",
-      "dinner"
+      "casual"
     ],
     "price": 2,
     "date_stage": [
@@ -2911,8 +2874,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "upscale",
-      "dairy",
-      "dinner"
+      "casual"
     ],
     "price": 3,
     "date_stage": [
@@ -2964,9 +2926,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dessert",
-      "casual",
-      "sweet"
+      "casual"
     ],
     "price": 1,
     "date_stage": [
@@ -2992,7 +2952,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "upscale",
-      "dessert",
+      "casual",
       "romantic"
     ],
     "price": 3,
@@ -3019,7 +2979,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
+      "casual",
       "romantic",
       "upscale"
     ],
@@ -3047,9 +3007,8 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
-      "upscale",
-      "meaty"
+      "casual",
+      "upscale"
     ],
     "price": 4,
     "date_stage": [
@@ -3074,8 +3033,7 @@
     "city_he": "ירושלים",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "casual",
-      "dinner"
+      "casual"
     ],
     "price": 2,
     "date_stage": [
@@ -3179,7 +3137,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "upscale",
-      "dinner"
+      "casual"
     ],
     "price": 3,
     "date_stage": [
@@ -3207,8 +3165,8 @@
     "occasion": [
       "romantic",
       "unique",
-      "scenic",
-      "dinner"
+      "views",
+      "casual"
     ],
     "price": 4,
     "date_stage": [
@@ -3234,8 +3192,8 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "romantic",
-      "winery",
-      "scenic"
+      "upscale",
+      "views"
     ],
     "price": 3,
     "date_stage": [
@@ -3261,7 +3219,6 @@
     "city_he": "מבשרת ציון",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dairy",
       "casual"
     ],
     "price": 2,
@@ -3288,8 +3245,7 @@
     "city_he": "מבשרת ציון",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
-      "meaty"
+      "casual"
     ],
     "price": 3,
     "date_stage": [
@@ -3314,7 +3270,6 @@
     "city_he": "מבשרת ציון",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dessert",
       "casual"
     ],
     "price": 1,
@@ -3340,8 +3295,7 @@
     "city_he": "מודיעין",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dairy",
-      "dinner"
+      "casual"
     ],
     "price": 2,
     "date_stage": [
@@ -3367,8 +3321,7 @@
     "city_he": "מודיעין",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "casual",
-      "coffee"
+      "casual"
     ],
     "price": 2,
     "date_stage": [
@@ -3394,7 +3347,6 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "coffee",
       "first date"
     ],
     "price": 2,
@@ -3420,7 +3372,7 @@
     "city_he": "מודיעין",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
+      "casual",
       "upscale"
     ],
     "price": 3,
@@ -3448,7 +3400,6 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "coffee",
       "first date"
     ],
     "price": 2,
@@ -3526,8 +3477,7 @@
     "city_he": "בית שמש",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "casual",
-      "dinner"
+      "casual"
     ],
     "price": 2,
     "date_stage": [
@@ -3553,7 +3503,7 @@
     "city_he": "בית שמש",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dessert",
+      "casual",
       "fun"
     ],
     "price": 1,
@@ -3579,7 +3529,7 @@
     "city_he": "בית שמש",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
+      "casual",
       "upscale"
     ],
     "price": 3,
@@ -3606,8 +3556,7 @@
     "city_he": "בית שמש",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
-      "meaty"
+      "casual"
     ],
     "price": 3,
     "date_stage": [
@@ -3633,9 +3582,8 @@
     "city_he": "תל אביב",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
-      "upscale",
-      "meaty"
+      "casual",
+      "upscale"
     ],
     "price": 3,
     "date_stage": [
@@ -3662,8 +3610,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "unique",
-      "food market"
+      "unique"
     ],
     "price": 2,
     "date_stage": [
@@ -3716,8 +3663,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "views",
-      "casual",
-      "scenic"
+      "casual"
     ],
     "price": 2,
     "date_stage": [
@@ -3768,7 +3714,7 @@
     "city_he": "הרצליה",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
+      "casual",
       "upscale"
     ],
     "price": 4,
@@ -3794,7 +3740,6 @@
     "city_he": "נתניה",
     "category": "Cafés & Restaurants",
     "occasion": [
-      "dinner",
       "casual"
     ],
     "price": 2,
@@ -3875,7 +3820,7 @@
     "city_he": "ירושלים",
     "category": "Parks & Outdoors",
     "occasion": [
-      "nature",
+      "active",
       "unique",
       "romantic"
     ],
@@ -3902,9 +3847,8 @@
     "city_he": "ירושלים",
     "category": "Parks & Outdoors",
     "occasion": [
-      "nature",
-      "unique",
-      "active"
+      "active",
+      "unique"
     ],
     "price": 1,
     "date_stage": [
@@ -3929,7 +3873,7 @@
     "city_he": "ירושלים",
     "category": "Parks & Outdoors",
     "occasion": [
-      "nature",
+      "active",
       "romantic",
       "unique"
     ],
@@ -3957,8 +3901,8 @@
     "category": "Parks & Outdoors",
     "occasion": [
       "romantic",
-      "nature",
-      "scenic"
+      "active",
+      "views"
     ],
     "price": 1,
     "date_stage": [
@@ -3985,7 +3929,7 @@
     "occasion": [
       "romantic",
       "casual",
-      "scenic"
+      "views"
     ],
     "price": 1,
     "date_stage": [
@@ -4011,7 +3955,7 @@
     "category": "Parks & Outdoors",
     "occasion": [
       "romantic",
-      "nature",
+      "active",
       "evening"
     ],
     "price": 1,
@@ -4039,7 +3983,7 @@
     "occasion": [
       "unique",
       "romantic",
-      "scenic"
+      "views"
     ],
     "price": 2,
     "date_stage": [
@@ -4120,7 +4064,7 @@
     "occasion": [
       "unique",
       "adventurous",
-      "scenic"
+      "views"
     ],
     "price": 3,
     "date_stage": [
@@ -4145,7 +4089,7 @@
     "city_he": "עמק החולה",
     "category": "Parks & Outdoors",
     "occasion": [
-      "nature",
+      "active",
       "unique",
       "casual"
     ],
@@ -4306,8 +4250,7 @@
     "category": "Museums & Culture",
     "occasion": [
       "unique",
-      "frum-friendly",
-      "educational"
+      "frum-friendly"
     ],
     "price": 2,
     "date_stage": [
@@ -4332,7 +4275,7 @@
     "city_he": "תל אביב",
     "category": "Museums & Culture",
     "occasion": [
-      "educational",
+      "unique",
       "casual",
       "first date"
     ],
@@ -4359,7 +4302,7 @@
     "city_he": "תל אביב",
     "category": "Museums & Culture",
     "occasion": [
-      "intellectual",
+      "unique",
       "first date",
       "casual"
     ],
@@ -4387,8 +4330,7 @@
     "category": "Museums & Culture",
     "occasion": [
       "unique",
-      "adventurous",
-      "educational"
+      "adventurous"
     ],
     "price": 2,
     "date_stage": [
@@ -4414,8 +4356,7 @@
     "category": "Museums & Culture",
     "occasion": [
       "unique",
-      "adventurous",
-      "educational"
+      "adventurous"
     ],
     "price": 2,
     "date_stage": [
@@ -4441,8 +4382,7 @@
     "category": "Museums & Culture",
     "occasion": [
       "unique",
-      "scenic",
-      "educational"
+      "views"
     ],
     "price": 2,
     "date_stage": [
@@ -4521,9 +4461,9 @@
     "city_he": "ירושלים",
     "category": "Museums & Culture",
     "occasion": [
-      "meaningful",
+      "romantic",
       "frum-friendly",
-      "educational"
+      "unique"
     ],
     "price": 1,
     "date_stage": [
@@ -4710,7 +4650,7 @@
     "occasion": [
       "romantic",
       "adventurous",
-      "nature"
+      "active"
     ],
     "price": 3,
     "date_stage": [
@@ -4842,7 +4782,6 @@
     "city_he": "עין גדי",
     "category": "Activities & Experiences",
     "occasion": [
-      "nature",
       "active",
       "romantic"
     ],
@@ -4870,8 +4809,7 @@
     "category": "Activities & Experiences",
     "occasion": [
       "unique",
-      "casual",
-      "relaxed"
+      "casual"
     ],
     "price": 2,
     "date_stage": [
@@ -5003,7 +4941,6 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "romantic",
-      "wine",
       "upscale"
     ],
     "price": 3,
@@ -5031,7 +4968,7 @@
     "occasion": [
       "upscale",
       "unique",
-      "dinner"
+      "casual"
     ],
     "price": 4,
     "date_stage": [
@@ -5056,7 +4993,6 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "dinner",
       "first date"
     ],
     "price": 2,
@@ -5110,8 +5046,8 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "unique",
-      "dinner",
-      "scenic"
+      "casual",
+      "views"
     ],
     "price": 3,
     "date_stage": [
@@ -5137,8 +5073,8 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "romantic",
-      "scenic",
-      "dinner"
+      "views",
+      "casual"
     ],
     "price": 3,
     "date_stage": [
@@ -5164,8 +5100,8 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "romantic",
-      "scenic",
-      "dinner"
+      "views",
+      "casual"
     ],
     "price": 3,
     "date_stage": [
@@ -5246,7 +5182,7 @@
     "occasion": [
       "upscale",
       "unique",
-      "dinner"
+      "casual"
     ],
     "price": 3,
     "date_stage": [
@@ -5272,8 +5208,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "unique",
-      "food market"
+      "unique"
     ],
     "price": 2,
     "date_stage": [
@@ -5299,7 +5234,6 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "coffee",
       "first date"
     ],
     "price": 2,
@@ -5325,8 +5259,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -5378,8 +5311,7 @@
     "category": "Cafés & Restaurants",
     "occasion": [
       "casual",
-      "first date",
-      "dinner"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -5409,8 +5341,7 @@
       "romantic",
       "views",
       "upscale",
-      "unique",
-      "winery"
+      "unique"
     ],
     "price": 3,
     "date_stage": [
@@ -5441,8 +5372,7 @@
       "romantic",
       "views",
       "upscale",
-      "unique",
-      "winery"
+      "unique"
     ],
     "price": 3,
     "date_stage": [
@@ -5473,7 +5403,7 @@
       "romantic",
       "casual",
       "unique",
-      "winery"
+      "upscale"
     ],
     "price": 2,
     "date_stage": [
@@ -5504,8 +5434,7 @@
     "occasion": [
       "romantic",
       "upscale",
-      "unique",
-      "winery"
+      "unique"
     ],
     "price": 2,
     "date_stage": [
@@ -5536,7 +5465,7 @@
       "romantic",
       "unique",
       "casual",
-      "winery"
+      "upscale"
     ],
     "price": 2,
     "date_stage": [
@@ -5567,7 +5496,7 @@
       "romantic",
       "views",
       "unique",
-      "winery"
+      "upscale"
     ],
     "price": 2,
     "date_stage": [
@@ -5598,7 +5527,7 @@
       "romantic",
       "views",
       "unique",
-      "winery"
+      "upscale"
     ],
     "price": 2,
     "date_stage": [
@@ -5628,8 +5557,7 @@
     "occasion": [
       "romantic",
       "unique",
-      "upscale",
-      "winery"
+      "upscale"
     ],
     "price": 3,
     "date_stage": [
@@ -5660,7 +5588,7 @@
       "romantic",
       "unique",
       "casual",
-      "winery"
+      "upscale"
     ],
     "price": 2,
     "date_stage": [
@@ -5691,7 +5619,7 @@
       "romantic",
       "unique",
       "casual",
-      "winery"
+      "upscale"
     ],
     "price": 2,
     "date_stage": [
@@ -5722,8 +5650,7 @@
       "romantic",
       "views",
       "upscale",
-      "unique",
-      "winery"
+      "unique"
     ],
     "price": 4,
     "date_stage": [
@@ -5752,9 +5679,8 @@
     "slug": "somek-estate-winery",
     "occasion": [
       "romantic",
-      "scenic",
-      "upscale",
-      "winery"
+      "views",
+      "upscale"
     ],
     "price": 3,
     "date_stage": [
@@ -5785,7 +5711,7 @@
       "romantic",
       "casual",
       "unique",
-      "winery"
+      "upscale"
     ],
     "price": 2,
     "date_stage": [
@@ -5814,9 +5740,9 @@
     "slug": "galil-mountain-winery",
     "occasion": [
       "romantic",
-      "scenic",
+      "views",
       "casual",
-      "winery"
+      "upscale"
     ],
     "price": 2,
     "date_stage": [
@@ -5848,7 +5774,7 @@
       "views",
       "unique",
       "adventurous",
-      "winery"
+      "upscale"
     ],
     "price": 3,
     "date_stage": [
@@ -5878,9 +5804,8 @@
     "occasion": [
       "romantic",
       "views",
-      "scenic",
       "unique",
-      "winery"
+      "upscale"
     ],
     "price": 2,
     "date_stage": [
@@ -5911,7 +5836,7 @@
       "romantic",
       "views",
       "unique",
-      "winery"
+      "upscale"
     ],
     "price": 2,
     "date_stage": [
@@ -5940,8 +5865,7 @@
     "slug": "belle-charlie-modiin",
     "occasion": [
       "first date",
-      "casual",
-      "coffee"
+      "casual"
     ],
     "price": 2,
     "date_stage": [
@@ -6513,8 +6437,7 @@
     "slug": "luciana-rishon",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -6632,8 +6555,7 @@
     "slug": "alina-rishon",
     "occasion": [
       "casual",
-      "romantic",
-      "coffee"
+      "romantic"
     ],
     "price": 2,
     "date_stage": [
@@ -6685,7 +6607,7 @@
     "id": 246,
     "name": "Patrick's Petah Tikva",
     "name_he": "פטריק'ס פתח תקווה",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Hotels & Lounges",
     "region": "Sharon",
@@ -6805,7 +6727,7 @@
     "id": 250,
     "name": "Memphis Petah Tikva",
     "name_he": "ממפיס פתח תקווה",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Hotels & Lounges",
     "region": "Sharon",
@@ -6835,7 +6757,7 @@
     "id": 251,
     "name": "Jem's Petah Tikva",
     "name_he": "ג'מס פתח תקווה",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
@@ -6902,8 +6824,7 @@
     "slug": "cafe-lyon-or-yehuda",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -6985,15 +6906,14 @@
     "id": 256,
     "name": "Café Gan Sipur Petah Tikva",
     "name_he": "קפה גן סיפור פתח תקווה",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
     "slug": "gan-sipur-petah-tikva",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -7022,8 +6942,7 @@
     "slug": "gan-sipur-rishon",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -7045,7 +6964,7 @@
     "id": 258,
     "name": "Pitmaster",
     "name_he": "פיטמאסטר",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
@@ -7075,15 +6994,14 @@
     "id": 259,
     "name": "Kalma",
     "name_he": "קלמא",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
     "slug": "kalma-petah-tikva",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -7105,15 +7023,14 @@
     "id": 260,
     "name": "Baba Challa",
     "name_he": "בבא חלה",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
     "slug": "baba-challa-petah-tikva",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 1,
     "date_stage": [
@@ -7134,15 +7051,14 @@
     "id": 261,
     "name": "Tamara",
     "name_he": "תמרה",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
     "slug": "tamara-petah-tikva",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -7164,15 +7080,14 @@
     "id": 262,
     "name": "Café Lago",
     "name_he": "קפה לאגו",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
     "slug": "cafe-lago-petah-tikva",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -7202,7 +7117,6 @@
     "occasion": [
       "casual",
       "first date",
-      "coffee",
       "unique"
     ],
     "price": 1,
@@ -7224,7 +7138,7 @@
     "id": 264,
     "name": "Dreamery",
     "name_he": "דרימרי",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
@@ -7254,7 +7168,7 @@
     "id": 265,
     "name": "Nini Choo",
     "name_he": "ניני צו",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
@@ -7262,7 +7176,6 @@
     "occasion": [
       "casual",
       "first date",
-      "coffee",
       "creative"
     ],
     "price": 2,
@@ -7285,7 +7198,7 @@
     "id": 266,
     "name": "Marionella",
     "name_he": "מריונלה",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
@@ -7315,7 +7228,7 @@
     "id": 267,
     "name": "VIVINO Wine Bar",
     "name_he": "ויוינו",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Hotels & Lounges",
     "region": "Sharon",
@@ -7345,7 +7258,7 @@
     "id": 268,
     "name": "Bukeria",
     "name_he": "בוקריה",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
@@ -7375,15 +7288,14 @@
     "id": 269,
     "name": "Bleecker Bakery",
     "name_he": "בליקר בייקרי",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
     "slug": "bleecker-bakery",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 1,
     "date_stage": [
@@ -7404,15 +7316,14 @@
     "id": 270,
     "name": "Café Be'alma",
     "name_he": "קפה בעלמא",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
     "slug": "cafe-bealma-petah-tikva",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -7434,7 +7345,7 @@
     "id": 271,
     "name": "Yarkafe",
     "name_he": "ירקפה",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
@@ -7442,7 +7353,6 @@
     "occasion": [
       "casual",
       "first date",
-      "coffee",
       "creative"
     ],
     "price": 2,
@@ -7465,7 +7375,7 @@
     "id": 272,
     "name": "EATALIA",
     "name_he": "איטליה",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
@@ -7495,7 +7405,7 @@
     "id": 273,
     "name": "Margaux Brasserie",
     "name_he": "מרגו בראסרי",
-    "city": "Petah Tikva",
+    "city": "Petach Tikva",
     "city_he": "פתח תקווה",
     "category": "Cafés & Restaurants",
     "region": "Sharon",
@@ -7592,8 +7502,7 @@
     "slug": "cafe-shaket-ramat-gan",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -7622,8 +7531,7 @@
     "slug": "gana-ramat-gan",
     "occasion": [
       "casual",
-      "romantic",
-      "coffee"
+      "romantic"
     ],
     "price": 2,
     "date_stage": [
@@ -7653,8 +7561,7 @@
     "occasion": [
       "casual",
       "first date",
-      "unique",
-      "coffee"
+      "unique"
     ],
     "price": 1,
     "date_stage": [
@@ -8011,8 +7918,7 @@
     "slug": "miss-mr-jerusalem",
     "occasion": [
       "casual",
-      "first date",
-      "coffee"
+      "first date"
     ],
     "price": 2,
     "date_stage": [
@@ -8072,7 +7978,7 @@
       "casual",
       "romantic",
       "views",
-      "outdoors"
+      "active"
     ],
     "price": 1,
     "date_stage": [
@@ -8190,7 +8096,7 @@
     "occasion": [
       "casual",
       "views",
-      "outdoors",
+      "active",
       "unique"
     ],
     "price": 1,
@@ -8424,7 +8330,7 @@
     "occasion": [
       "casual",
       "views",
-      "outdoors",
+      "active",
       "romantic"
     ],
     "price": 2,
@@ -8542,7 +8448,7 @@
     "occasion": [
       "casual",
       "unique",
-      "outdoors"
+      "active"
     ],
     "price": 1,
     "date_stage": [
@@ -8747,7 +8653,7 @@
       "casual",
       "unique",
       "views",
-      "outdoors"
+      "active"
     ],
     "price": 1,
     "date_stage": [
@@ -8864,7 +8770,7 @@
     "occasion": [
       "casual",
       "unique",
-      "outdoors"
+      "active"
     ],
     "price": 1,
     "date_stage": [
@@ -8894,7 +8800,7 @@
       "casual",
       "unique",
       "adventurous",
-      "outdoors"
+      "active"
     ],
     "price": 1,
     "date_stage": [
@@ -8981,7 +8887,7 @@
     "occasion": [
       "casual",
       "unique",
-      "outdoors",
+      "active",
       "adventurous"
     ],
     "price": 1,

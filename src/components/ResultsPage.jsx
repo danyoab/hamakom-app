@@ -194,9 +194,6 @@ export default function ResultsPage({
               {isHe ? 'פתח במפות' : 'Open in Maps'} →
             </a>
           ) : null}
-          {userId && stop._locationId ? (
-            <StopRating locationId={stop._locationId} userId={userId} lang={lang} />
-          ) : null}
         </div>
 
         {/* ── Backup options ────────────────────────────────────── */}

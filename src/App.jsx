@@ -38,6 +38,7 @@ import CustomPlanBuilder from './components/CustomPlanBuilder'
 import PrivacyPage from './components/PrivacyPage'
 import TermsPage from './components/TermsPage'
 import FeedbackModal from './components/FeedbackModal'
+import LoadingScreen from './components/LoadingScreen'
 const AdminView = lazy(() => import('./components/AdminView'))
 const MapView = lazy(() => import('./components/MapView'))
 
@@ -120,6 +121,7 @@ export default function App() {
   const [analyticsEnabled, setAnalyticsEnabled] = useState(() => hasAnalyticsConsent())
   const [feedbackNudgePlanId, setFeedbackNudgePlanId] = useState(null)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [previewPlan, setPreviewPlan] = useState(null)
 
   const tx = t[lang]
   const font =
@@ -420,7 +422,7 @@ export default function App() {
     setQuizAnswers(seeded)
     setResultIndex(0)
     saveAnswersToSession(seeded)
-    setOverlay('quiz-results')
+    setOverlay('loading-results')
     void trackEvent('quiz_completed', {
       userId: authUser?.id,
       properties: { ...answers, lang },
@@ -579,6 +581,7 @@ export default function App() {
   }
 
   const openPlanPreview = () => {
+    setPreviewPlan(null)
     setOverlay('plan-preview')
   }
 
@@ -588,6 +591,10 @@ export default function App() {
 
   if (overlay === 'quiz') {
     return <QuizStepper lang={lang} font={font} cityOptions={availablePlanCities} onComplete={handleQuizComplete} onBack={() => setOverlay(null)} />
+  }
+
+  if (overlay === 'loading-results') {
+    return <LoadingScreen lang={lang} font={font} onComplete={() => setOverlay('quiz-results')} />
   }
 
   if (overlay === 'detail' && selectedLocation) {
@@ -642,13 +649,13 @@ export default function App() {
     )
   }
 
-  if (overlay === 'plan-preview' && tonightPlan) {
+  if (overlay === 'plan-preview' && (previewPlan || tonightPlan)) {
     return (
       <PlanPreviewPage
         lang={lang}
         font={font}
-        plan={tonightPlan}
-        title={tx.tonightsPick}
+        plan={previewPlan || tonightPlan}
+        title={previewPlan ? (lang === 'he' ? 'הפתעה שלך' : 'Your Surprise') : tx.tonightsPick}
         onBack={() => setOverlay(null)}
         onPlanMyOwnDate={openQuiz}
       />
@@ -665,6 +672,26 @@ export default function App() {
         onBack={() => setOverlay(null)}
         onOpenDetail={openDetail}
       />
+    )
+  }
+
+  if ((overlay === 'quiz-results' || overlay === 'save-gate') && !currentPlan && overlay !== 'save-gate') {
+    return (
+      <div style={{ minHeight: '100vh', background: APP_BG, color: APP_TEXT, fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 28px', textAlign: 'center' }}>
+        <div style={{ fontSize: 40, marginBottom: 20 }}>🔍</div>
+        <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>
+          {lang === 'he' ? 'לא מצאנו תוכנית לאזור הזה עדיין' : 'No plan found for that area yet'}
+        </div>
+        <div style={{ fontSize: 14, color: APP_MUTED, marginBottom: 32, lineHeight: 1.6, maxWidth: 280 }}>
+          {lang === 'he' ? 'נסו עיר אחרת או "גמיש" כדי לראות תוכניות ממקומות קרובים.' : 'Try another city or choose "flexible" to see plans from nearby areas.'}
+        </div>
+        <button onClick={() => setOverlay('quiz')} style={{ background: APP_ACCENT, color: APP_BG, border: 'none', borderRadius: 14, padding: '14px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: font, marginBottom: 12 }}>
+          {lang === 'he' ? 'נסה שוב' : 'Try again'}
+        </button>
+        <button onClick={() => setOverlay(null)} style={{ background: 'none', border: 'none', color: APP_MUTED, fontSize: 14, cursor: 'pointer', fontFamily: font }}>
+          {lang === 'he' ? 'חזרה לבית' : 'Back home'}
+        </button>
+      </div>
     )
   }
 
@@ -823,6 +850,7 @@ export default function App() {
                 const pick = pool[Math.floor(Math.random() * pool.length)] || datePlans[0]
                 if (!pick) return
                 void trackEvent('surprise_me_clicked', { userId: authUser?.id, properties: { city: randomCity } })
+                setPreviewPlan(pick)
                 setOverlay('plan-preview')
               }}
               onBuildYourOwnPlan={openCustomPlanBuilder}

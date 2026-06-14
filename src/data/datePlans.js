@@ -34,8 +34,8 @@ export const DATE_PLANS = [
         order_tip_en: 'Skip a full meal here. Keep room for the walk and dessert.',
         order_tip_he: 'אל תסגרו ארוחה מלאה כאן. תשאירו מקום להליכה ולקינוח.',
         maps_query: 'Wine and Friends Mahane Yehuda Jerusalem',
-        lat: 32.07412730000001,
-        lng: 34.7994436,
+        lat: 31.7839,
+        lng: 35.2122,
       },
       {
         name_en: 'Nachlaot Walk',

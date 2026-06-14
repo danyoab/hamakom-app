@@ -71,6 +71,25 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
           >
             {isHe ? 'מומלץ' : 'Featured'}
           </div>
+        ) : loc.hidden_gem ? (
+          <div
+            style={{
+              position: 'absolute',
+              top: 8,
+              [isHe ? 'right' : 'left']: 8,
+              background: 'rgba(13,17,23,0.75)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              color: '#A78BFA',
+              fontSize: 10,
+              fontWeight: 600,
+              padding: '3px 8px',
+              borderRadius: 999,
+              border: '1px solid rgba(167,139,250,0.35)',
+            }}
+          >
+            💎 {isHe ? 'גם ידוע' : 'Hidden Gem'}
+          </div>
         ) : null}
 
         {showSave ? (

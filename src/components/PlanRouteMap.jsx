@@ -5,6 +5,7 @@ import L from 'leaflet'
 import { CITY_COORDS } from '../lib/constants'
 import { getDistanceKm, formatWalkTime } from '../lib/distance'
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { getDistanceKm, formatWalkTime }
 
 const ACCENT = '#C9A84C'

@@ -28,10 +28,12 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [otpCooldownUntil, setOtpCooldownUntil] = useState(0)
+  const [resendCountdown, setResendCountdown] = useState(0)
   const isHe = lang === 'he'
   const dir = isHe ? 'rtl' : 'ltr'
   const isPlace = itemType === 'place'
   const authRedirectUrl = getAuthRedirectUrl()
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   const previewTitle = itemTitle || (plan ? (isHe ? plan.title_he : plan.title_en) : '')
   const previewSubtitle = itemSubtitle || (plan ? (isHe ? plan.start_time_text_he : plan.start_time_text_en) : '')
@@ -288,7 +290,17 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
           <div style={{ textAlign: 'center', paddingTop: 6 }}>
             <div style={{ fontSize: 38, marginBottom: 10, color: '#C9A84C' }}>✉</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6, color: '#F5EBD8' }}>{isHe ? 'בדקו את תיבת המייל' : 'Check your inbox'}</div>
-            <div style={{ fontSize: 14, color: '#C8BDA8', lineHeight: 1.5 }}>{isHe ? `שלחנו קישור ל-${email}` : `We sent a link to ${email}`}</div>
+            <div style={{ fontSize: 14, color: '#C8BDA8', lineHeight: 1.5, marginBottom: 14 }}>{isHe ? `שלחנו קישור ל-${email}` : `We sent a link to ${email}`}</div>
+            <button
+              onClick={handleResend}
+              disabled={loading || resendCountdown > 0}
+              style={{ background: 'none', border: 'none', color: resendCountdown > 0 ? '#6B7280' : '#C9A84C', fontSize: 13, cursor: resendCountdown > 0 ? 'default' : 'pointer', fontFamily: 'inherit' }}
+            >
+              {resendCountdown > 0
+                ? (isHe ? `שלחו שוב בעוד ${resendCountdown}ש` : `Resend in ${resendCountdown}s`)
+                : (isHe ? 'לא קיבלתי — שלחו שוב' : 'Didn\'t get it — resend')}
+            </button>
+            {error ? <div style={{ fontSize: 12, color: '#F87171', marginTop: 8 }}>{error}</div> : null}
           </div>
         )}
       </div>

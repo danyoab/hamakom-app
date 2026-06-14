@@ -73,7 +73,7 @@ function scorePlanBehaviorBoost(plan, behavior = {}) {
   const planIndex = behavior.planIndex || {}
   let score = 0
 
-  entries.forEach(([key, feedback]) => {
+  entries.forEach(([key]) => {
     if (!key.startsWith('plan:')) return
     const pastPlan = planIndex[key.replace('plan:', '')]
     if (!pastPlan) return

@@ -120,6 +120,7 @@ function missingCritical(draft) {
   })
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function curationCompleteness(loc) {
   const checks = [
     loc.vibe_tags?.length > 0,
@@ -137,6 +138,7 @@ export function curationCompleteness(loc) {
   return Math.round((checks.filter(Boolean).length / checks.length) * 100)
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function isRecommendationReady(loc) {
   return loc.vibe_tags?.length > 0
     && loc.indoor_outdoor != null

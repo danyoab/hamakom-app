@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { getDeploymentWarnings, isAdminUser } from '../lib/appConfig'
 import { usePending } from '../hooks/usePending'
 import { SEED_LOCATIONS } from '../data/locations'
-import CurateCard, { curationCompleteness, isRecommendationReady } from './CurateCard'
+import CurateCard, { isRecommendationReady } from './CurateCard'
 import RecommendDebug from './RecommendDebug'
 import PlanComposeDebug from './PlanComposeDebug'
 import CuratorQueue from './CuratorQueue'
@@ -176,7 +176,7 @@ export default function AdminView({
     if (adminTab !== 'curate') return
     if (curateQueue.length > 0) return
     loadCurateQueue()
-  }, [adminTab])
+  }, [adminTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleCurateSave(id, patch, changedKeys) {
     if (!supabase) return
@@ -393,6 +393,45 @@ export default function AdminView({
     if (error) showToast(`Sync failed: ${error.message}`, 'error')
     else showToast(`${rows.length} locations synced to Supabase`)
     setSyncing(false)
+  }
+
+  async function searchPartnerCandidates(query) {
+    if (!supabase || query.trim().length < 2) { setPartnerCandidates([]); return }
+    const { data } = await supabase
+      .from('locations')
+      .select('id, name, city, category, is_partner')
+      .ilike('name', `%${query}%`)
+      .eq('status', 'approved')
+      .limit(10)
+    setPartnerCandidates(data || [])
+  }
+
+  async function addPartner(loc) {
+    if (!supabase) return
+    const { error } = await supabase.from('locations').update({ is_partner: true }).eq('id', loc.id)
+    if (error) return showToast(error.message, 'error')
+    setPartnerCandidates(prev => prev.map(c => c.id === loc.id ? { ...c, is_partner: true } : c))
+    const { data } = await supabase.from('locations')
+      .select('id, name, city, category, is_partner, partner_tier, reservation_url, partner_contact')
+      .eq('id', loc.id).single()
+    if (data) setPartnerLocs(prev => [...prev, data])
+    showToast(`${loc.name} added to partners`)
+  }
+
+  async function savePartnerFields(loc, fields) {
+    if (!supabase) return
+    const { error } = await supabase.from('locations').update(fields).eq('id', loc.id)
+    if (error) return showToast(error.message, 'error')
+    setPartnerLocs(prev => prev.map(p => p.id === loc.id ? { ...p, ...fields } : p))
+    showToast(`${loc.name} updated`)
+  }
+
+  async function removePartner(loc) {
+    if (!supabase || !window.confirm(`Remove ${loc.name} from partners?`)) return
+    const { error } = await supabase.from('locations').update({ is_partner: false }).eq('id', loc.id)
+    if (error) return showToast(error.message, 'error')
+    setPartnerLocs(prev => prev.filter(p => p.id !== loc.id))
+    showToast(`${loc.name} removed from partners`)
   }
 
   const updateDraft = (key, value) => {

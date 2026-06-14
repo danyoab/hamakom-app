@@ -30,6 +30,7 @@ export default function FeedbackStrip({ lang, loc, dateFeedback, setDateFeedback
         ...current,
         tags: [...next],
         vibe_tags: loc.vibe_tags || current.vibe_tags || [],
+        // eslint-disable-next-line react-hooks/purity
         ts: Date.now(),
       },
     })

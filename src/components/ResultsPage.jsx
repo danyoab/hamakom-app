@@ -28,16 +28,12 @@ export default function ResultsPage({
   lang,
   font,
   plan,
-  planIndex = 0,
-  planCount = 1,
   backupLocations = [],
   answers,
   saved,
   reminderSet,
-  userId,
   cityLocationCount = null,
   onBrowseAll,
-  onNextPlan,
   onToggleBackupOptions,
   onOpenBackupLocation,
   onOpenPlanMaps,
@@ -193,9 +189,6 @@ export default function ResultsPage({
             >
               {isHe ? 'פתח במפות' : 'Open in Maps'} →
             </a>
-          ) : null}
-          {userId && stop._locationId ? (
-            <StopRating locationId={stop._locationId} userId={userId} lang={lang} />
           ) : null}
         </div>
 

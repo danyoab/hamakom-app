@@ -1870,8 +1870,8 @@
     "id": 69,
     "name": "Bake or Cook Together",
     "name_he": "אפייה או בישול ביחד",
-    "city": "Home",
-    "city_he": "בית",
+    "city": "Various",
+    "city_he": "שונות",
     "category": "Activities & Experiences",
     "occasion": [
       "creative",
@@ -9333,7 +9333,7 @@
     "id": 339,
     "name": "Acre (Akko) Old City",
     "name_he": "עכו העתיקה",
-    "city": "Acre",
+    "city": "Akko",
     "city_he": "עכו",
     "category": "Museums & Culture",
     "occasion": [

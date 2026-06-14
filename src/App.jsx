@@ -16,6 +16,7 @@ import {
   upsertRecommendationOutcome,
 } from './lib/analytics'
 import { getRecommendedLocations } from './lib/locationRecommendations'
+import { isAdminUser } from './lib/appConfig'
 import { getSmartMatchedPlans, recordPlanImpression } from './lib/planRecommendations'
 import {
   clearAnswersFromSession,
@@ -354,7 +355,7 @@ export default function App() {
     if (overlay === 'detail' && selectedLocation) {
       title = `${selectedLocation.name} · HaMakom`
       desc = selectedLocation.description || desc
-    } else if ((overlay === 'quiz-results' || overlay === 'results') && currentPlan) {
+    } else if (overlay === 'quiz-results' && currentPlan) {
       title = `${currentPlan.title_en} · HaMakom`
       desc = currentPlan.narrative_en?.slice(0, 140) || desc
     } else if (overlay === 'privacy') {
@@ -631,7 +632,7 @@ export default function App() {
     return <TermsPage lang={lang} font={font} onBack={() => setOverlay(null)} />
   }
 
-  if (overlay === 'admin') {
+  if (overlay === 'admin' && isAdminUser(authUser)) {
     return (
       <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0D1117' }} />}>
       <AdminView
@@ -675,7 +676,7 @@ export default function App() {
     )
   }
 
-  if ((overlay === 'quiz-results' || overlay === 'save-gate') && !currentPlan && overlay !== 'save-gate') {
+  if (overlay === 'quiz-results' && !currentPlan) {
     return (
       <div style={{ minHeight: '100vh', background: APP_BG, color: APP_TEXT, fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 28px', textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 20 }}>🔍</div>
@@ -920,7 +921,7 @@ export default function App() {
               onToggleLang={() => setLang((current) => (current === 'en' ? 'he' : 'en'))}
               onOpenQuiz={openQuiz}
               onOpenSuggest={() => setOverlay('suggest')}
-              onOpenAdmin={() => setOverlay('admin')}
+              onOpenAdmin={isAdminUser(authUser) ? () => setOverlay('admin') : undefined}
               onOpenFeedback={() => setShowFeedbackModal(true)}
               onOpenPrivacy={() => setOverlay('privacy')}
               onOpenTerms={() => setOverlay('terms')}
@@ -1758,9 +1759,11 @@ function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz,
         <button onClick={onToggleLang} style={secondaryButtonStyle}>
           {tx.profileActionLanguage}
         </button>
-        <button onClick={onOpenAdmin} style={textLinkButtonStyle}>
-          {tx.profileActionAdmin}
-        </button>
+        {onOpenAdmin ? (
+          <button onClick={onOpenAdmin} style={textLinkButtonStyle}>
+            {tx.profileActionAdmin}
+          </button>
+        ) : null}
       </ActionCard>
 
       <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 18 }}>

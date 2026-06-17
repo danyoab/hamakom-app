@@ -57,11 +57,18 @@ console.log(`  ${locations.length} approved locations\n`)
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-const FOOD_CATS = new Set(['Cafes & Restaurants', 'Cafés & Restaurants'])
-const ACTIVITY_CATS = new Set(['Activities & Experiences'])
-const OUTDOORS_CATS = new Set(['Parks & Outdoors'])
-const ATMOSPHERE_CATS = new Set(['Hotels & Lounges', 'Wineries'])
-const CULTURE_CATS = new Set(['Museums & Culture'])
+// Mirror planRecommendations.deriveFocusTags so the classifier accepts
+// exactly the same focus → category mappings the engine uses.
+function focusTagsFor(stop) {
+  const c = (stop?.category || '').toLowerCase()
+  const occ = new Set((stop?.occasion || []).map(o => String(o).toLowerCase()))
+  const tags = new Set()
+  if (c.includes('caf') || c.includes('restaurant') || c.includes('winer') || c.includes('lounge') || c.includes('hotel')) tags.add('food-drink')
+  if (c.includes('activ') || c.includes('experience') || c.includes('museum') || c.includes('culture')) tags.add('activity')
+  if (c.includes('park')) tags.add('outdoors')
+  if (c.includes('lounge') || c.includes('hotel') || occ.has('romantic') || occ.has('views') || occ.has('evening')) tags.add('atmosphere')
+  return tags
+}
 
 function stopCategory(stop) {
   return stop?.category || stop?._category || stop?._cat || null
@@ -125,18 +132,16 @@ function classifyPlan(plan, answers, locationsById) {
     }
   }
 
-  // 5. Focus alignment — does ANY stop honor the user's stated focus?
-  const cats = stops.map(stopCategory)
-  const matchesFocus = (focus) => {
-    if (focus === 'food-drink')   return cats.some(c => FOOD_CATS.has(c))
-    if (focus === 'activity')     return cats.some(c => ACTIVITY_CATS.has(c) || CULTURE_CATS.has(c))
-    if (focus === 'outdoors')     return cats.some(c => OUTDOORS_CATS.has(c))
-    if (focus === 'atmosphere')   return cats.some(c => ATMOSPHERE_CATS.has(c) || FOOD_CATS.has(c)) // food can carry atmosphere
-    return true
-  }
-  if (plan.source_type === 'generated-location' && !matchesFocus(answers.focus)) {
+  // 5. Focus alignment — at least one stop should carry the requested focus
+  // tag (engine's deriveFocusTags semantics). Anchors are now focus-filtered
+  // upstream, so this surfaces real failures (e.g. focus=outdoors picking
+  // food-only because the city has no parks at all).
+  const stopsWithSource = stops.map(s => ({ ...s, occasion: locationsById.get(s.id)?.occasion || [] }))
+  const allTags = stopsWithSource.flatMap(s => [...focusTagsFor(s)])
+  if (plan.source_type === 'generated-location' && answers.focus && !allTags.includes(answers.focus)) {
     checks.focusOk = false
-    reasons.push(`stops [${cats.filter(Boolean).join(',')}] don't match focus=${answers.focus}`)
+    const cats = stops.map(stopCategory).filter(Boolean)
+    reasons.push(`stops [${cats.join(',')}] don't carry focus=${answers.focus}`)
   }
 
   // 6. Data integrity — names present, coords present where claimed

@@ -7,6 +7,7 @@ import CurateCard, { curationCompleteness, isRecommendationReady } from './Curat
 import RecommendDebug from './RecommendDebug'
 import PlanComposeDebug from './PlanComposeDebug'
 import CuratorQueue from './CuratorQueue'
+import PlanCoverageMatrix from './PlanCoverageMatrix'
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value))
@@ -508,6 +509,7 @@ export default function AdminView({
     ['plans', `Date Plans (${datePlans.length})`],
     ['curate', 'Curate'],
     ['queue', 'Curator Queue'],
+    ['coverage', 'Coverage Matrix'],
     ['debug', 'Debug'],
     ['compose', 'Plan Compose'],
     ['analytics', 'Analytics'],
@@ -1226,6 +1228,10 @@ export default function AdminView({
 
         {adminTab === 'queue' ? (
           <CuratorQueue />
+        ) : null}
+
+        {adminTab === 'coverage' ? (
+          <PlanCoverageMatrix datePlans={datePlans} />
         ) : null}
 
         {adminTab === 'sql' ? (

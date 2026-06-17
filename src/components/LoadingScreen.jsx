@@ -65,7 +65,7 @@ export default function LoadingScreen({ lang, font, onComplete }) {
     <div
       dir={isHe ? 'rtl' : 'ltr'}
       style={{
-        minHeight: '100vh', background: '#0D1117', color: '#E8DCC8',
+        minHeight: '100vh', background: '#F7F2E8', color: '#241E16',
         fontFamily: font, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', padding: '0 28px',
       }}
@@ -82,17 +82,17 @@ export default function LoadingScreen({ lang, font, onComplete }) {
         }} />
 
         <div style={{
-          fontSize: 17, color: '#E8DCC8', marginBottom: 6, minHeight: 26,
+          fontFamily: "'Spectral','Frank Ruhl Libre',Georgia,serif", fontSize: 19, color: '#241E16', marginBottom: 6, minHeight: 26,
           transition: 'opacity 0.25s ease',
         }}>
           {steps[msgIdx]}
         </div>
-        <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 36 }}>
+        <div style={{ fontSize: 13, color: '#8A7F6C', marginBottom: 36 }}>
           {isHe ? 'מכין את התוצאות האישיות שלך' : 'Preparing your personalized results'}
         </div>
 
         {/* Progress bar */}
-        <div style={{ width: '100%', height: 4, background: '#1F2937', borderRadius: 2 }}>
+        <div style={{ width: '100%', height: 4, background: '#E7DECB', borderRadius: 2 }}>
           <div style={{
             height: '100%',
             background: 'linear-gradient(90deg, #C9A84C 0%, #E8B84B 100%)',
@@ -102,7 +102,7 @@ export default function LoadingScreen({ lang, font, onComplete }) {
           }} />
         </div>
 
-        <div style={{ fontSize: 12, color: '#4B5563', marginTop: 8 }}>
+        <div style={{ fontSize: 12, color: '#A99A85', marginTop: 8 }}>
           {Math.round(progress)}%
         </div>
       </div>

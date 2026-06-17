@@ -4,6 +4,7 @@ import { useLocations } from './hooks/useLocations'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useSyncSaves } from './hooks/useSyncSaves'
 import { supabase } from './lib/supabase'
+import { getAuthRedirectUrl } from './lib/authRedirect'
 import { DATE_PLANS } from './data/datePlans'
 import { QUIZ_CITIES } from './lib/constants'
 import {
@@ -42,12 +43,20 @@ const AdminView = lazy(() => import('./components/AdminView'))
 const MapView = lazy(() => import('./components/MapView'))
 
 const PRIMARY_TABS = ['home', 'explore', 'saved', 'profile']
-const APP_BG = '#0D1117'
-const APP_PANEL = '#161B27'
-const APP_BORDER = '#2A2F3E'
-const APP_TEXT = '#E8DCC8'
-const APP_ACCENT = '#C9A84C'
-const APP_MUTED = '#6B7280'
+// Cream "editorial" palette (matches the HaMakom redesign prototype).
+const APP_BG = '#F7F2E8'      // app background
+const APP_PANEL = '#FFFFFF'   // cards / surfaces
+const APP_BORDER = '#EBE2D0'  // hairline borders
+const APP_TEXT = '#241E16'    // primary ink
+const APP_ACCENT = '#9A7A28'  // gold for eyebrows / links (readable on cream)
+const APP_MUTED = '#8A7F6C'   // muted text
+const APP_SOFT = '#6E6450'    // body copy
+const APP_INK = '#241E16'     // dark pill / primary button background
+
+// Per-glyph fallback covers both languages from one stack:
+// Hanken Grotesk (Latin) + Heebo (Hebrew) for UI, Spectral (Latin) +
+// Frank Ruhl Libre (Hebrew) for headlines.
+const SERIF = "'Spectral','Frank Ruhl Libre',Georgia,serif"
 const NAV_HEIGHT = 82
 const INITIAL_FILTERS = {
   cityFilter: 'All Cities',
@@ -122,10 +131,7 @@ export default function App() {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
 
   const tx = t[lang]
-  const font =
-    lang === 'he'
-      ? "'Heebo','David','Frank Ruhl Libre',system-ui,sans-serif"
-      : "'Palatino Linotype',Palatino,Georgia,serif"
+  const font = "'Hanken Grotesk','Heebo',system-ui,-apple-system,sans-serif"
 
   const { locations, loading, error: locError } = useLocations()
 
@@ -626,7 +632,7 @@ export default function App() {
 
   if (overlay === 'admin') {
     return (
-      <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0D1117' }} />}>
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F7F2E8' }} />}>
       <AdminView
         lang={lang}
         font={font}
@@ -665,6 +671,44 @@ export default function App() {
         onBack={() => setOverlay(null)}
         onOpenDetail={openDetail}
       />
+    )
+  }
+
+  // Empty-state fallback: the user finished the quiz but the engine found
+  // no plan that meets the geographic + focus bar for their answers. We'd
+  // rather say "not enough strong options yet" than fabricate a plan that
+  // ignores what they asked for.
+  if (overlay === 'quiz-results' && !currentPlan && quizAnswers) {
+    const isHe = lang === 'he'
+    const cityLabel = quizAnswers.city && quizAnswers.city !== 'flexible' ? quizAnswers.city : null
+    return (
+      <div style={{ minHeight: '100dvh', background: '#F7F2E8', color: '#241E16', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', textAlign: 'center' }}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>🌒</div>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 12px', maxWidth: 420, lineHeight: 1.25 }}>
+          {isHe
+            ? cityLabel ? `אין לנו עדיין מספיק אופציות חזקות ב${cityLabel}` : 'אין לנו עדיין מספיק אופציות חזקות לדייט הזה'
+            : cityLabel ? `Not enough strong options in ${cityLabel} yet` : 'Not enough strong options for this date yet'}
+        </h1>
+        <p style={{ fontSize: 14, color: '#8A7F6C', maxWidth: 420, lineHeight: 1.55, margin: '0 0 22px' }}>
+          {isHe
+            ? 'אנחנו מעדיפים להגיד את האמת מאשר להמציא ערב שלא יעבוד. נסו לבחור עיר אחרת או להחליף את סוג החוויה.'
+            : 'We\'d rather be honest than fake an evening that won\'t work. Try a different city, or pick a different kind of experience.'}
+        </p>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <button
+            onClick={() => setOverlay('quiz')}
+            style={{ background: '#241E16', color: '#F4ECD8', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            {isHe ? 'נסו שוב' : 'Try different answers'}
+          </button>
+          <button
+            onClick={() => { setOverlay(null); setTab('explore'); setExploreExpanded(true) }}
+            style={{ background: 'transparent', color: '#241E16', border: '1px solid #EBE2D0', borderRadius: 10, padding: '10px 18px', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            {isHe ? 'עיינו במקומות' : 'Browse all locations'}
+          </button>
+        </div>
+      </div>
     )
   }
 
@@ -984,10 +1028,10 @@ function AppHeader({ lang, onToggleLang }) {
             alt="HaMakom"
             style={{ width: 28, height: 28, objectFit: 'contain', display: 'block', flexShrink: 0 }}
           />
-          <span style={{ fontSize: 18, fontWeight: 700, color: APP_TEXT, letterSpacing: '-0.01em' }}>
+          <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 600, color: APP_TEXT, letterSpacing: '-0.01em' }}>
             HaMakom
           </span>
-          <span style={{ fontSize: 13, color: APP_MUTED, marginInlineStart: 2 }}>המקום</span>
+          <span style={{ fontSize: 13, color: APP_ACCENT, marginInlineStart: 2 }}>המקום</span>
         </div>
 
         <button
@@ -1049,19 +1093,40 @@ function HomePage({
 
       {/* Hero — open section, no panel box */}
       <section style={{ padding: '8px 0 4px' }}>
-        <div style={{ fontSize: 11, letterSpacing: '0.18em', color: APP_ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: APP_ACCENT, textTransform: 'uppercase', marginBottom: 14 }}>
           {tx.planHeroEyebrow}
         </div>
-        <h1 style={{ margin: '0 0 12px', fontSize: 'clamp(28px, 7vw, 38px)', lineHeight: 1.12, fontWeight: 700 }}>
+        <h1 style={{ fontFamily: SERIF, margin: '0 0 14px', fontSize: 'clamp(30px, 8vw, 40px)', lineHeight: 1.08, fontWeight: 600, letterSpacing: '-0.01em' }}>
           {tx.planHeroTitle}
         </h1>
-        <p style={{ margin: '0 0 20px', color: '#B8A990', fontSize: 15, lineHeight: 1.65 }}>{tx.planHeroText}</p>
-        <button onClick={onStartQuiz} style={{ ...primaryButtonStyle, width: '100%' }}>
-          {tx.planHeroAction}
+        <p style={{ margin: '0 0 22px', color: APP_SOFT, fontSize: 15.5, lineHeight: 1.6, maxWidth: '32ch' }}>{tx.planHeroText}</p>
+
+        {/* Trust chips */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+          {(isHe
+            ? ['חידון של 60 שניות', 'מסלולים מובחרים', 'מודע לכשרות']
+            : ['60-second quiz', 'Curated routes', 'Kosher-aware']
+          ).map((label) => (
+            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 7, background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 999, padding: '7px 13px' }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#C9A84C', flexShrink: 0 }} />
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: '#5A5142' }}>{label}</span>
+            </span>
+          ))}
+        </div>
+
+        <button onClick={onStartQuiz} style={{ ...primaryButtonStyle, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
+          {tx.planHeroAction} <span style={{ color: '#E0BE58' }}>→</span>
         </button>
-        <button onClick={onSurpriseMe} style={{ ...secondaryButtonStyle, width: '100%', marginTop: 10 }}>
-          {isHe ? '🎲 הפתיעו אותי הלילה' : '🎲 Surprise me tonight'}
-        </button>
+        <div style={{ textAlign: 'center', margin: '15px 0 4px' }}>
+          <span style={{ fontSize: 13.5, color: '#9A8F7C' }}>
+            {isHe ? 'בערך דקה · 4 הקשות מהירות' : 'Takes about a minute · 4 quick taps'}
+          </span>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <button onClick={onSurpriseMe} style={{ ...textLinkButtonStyle, fontSize: 13 }}>
+            {isHe ? '🎲 הפתיעו אותי הלילה' : '🎲 Surprise me tonight'}
+          </button>
+        </div>
       </section>
 
       {/* Tonight's Pick — standalone card, no outer panel wrapper */}
@@ -1212,10 +1277,10 @@ function ExplorePage({
             borderRadius: 16,
             overflow: 'hidden',
             border: `1px solid ${APP_BORDER}`,
-            background: '#0B0F17',
+            background: '#EDE7D9',
           }}
         >
-          <Suspense fallback={<div style={{ flex: 1, background: '#0B0F17', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontSize: 13 }}>Loading map…</div>}>
+          <Suspense fallback={<div style={{ flex: 1, background: '#EDE7D9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A99A85', fontSize: 13 }}>Loading map…</div>}>
             <MapView
               locations={locations}
               lang={lang}
@@ -1248,7 +1313,7 @@ function ExplorePage({
               placeholder={tx.searchPlaceholder}
               style={{
                 width: '100%',
-                background: '#121722',
+                background: '#FBF7EE',
                 border: `1px solid ${APP_BORDER}`,
                 borderRadius: 12,
                 padding: '12px 14px',
@@ -1333,17 +1398,33 @@ function TonightPlanCard({ lang, tx, plan, onOpenPlan, onStartQuiz }) {
       style={{
         background: APP_PANEL,
         border: `1px solid ${APP_BORDER}`,
-        borderRadius: 16,
-        padding: 18,
+        borderRadius: 22,
+        padding: 20,
+        boxShadow: '0 10px 30px -20px rgba(40,30,12,0.5)',
       }}
     >
-      <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.15, marginBottom: 10 }}>{isHe ? plan.title_he : plan.title_en}</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-        <MiniPill>{plan.city}</MiniPill>
-        <MiniPill>{isHe ? plan.start_time_text_he : plan.start_time_text_en}</MiniPill>
-        <MiniPill>{isHe ? plan.duration_text_he : plan.duration_text_en}</MiniPill>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+        <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', color: APP_ACCENT, textTransform: 'uppercase' }}>
+          {plan.city ? `${isHe ? 'בחירת הערב' : "Tonight's pick"} · ${plan.city}` : (isHe ? 'בחירת הערב' : "Tonight's pick")}
+        </span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#4F7144', background: '#E9F0E4', borderRadius: 999, padding: '4px 9px', whiteSpace: 'nowrap' }}>
+          {isHe ? 'התאמה חזקה' : 'Strong match'}
+        </span>
       </div>
-      <div style={{ color: '#B8A990', fontSize: 14, lineHeight: 1.65, marginBottom: 16 }}>{isHe ? plan.narrative_he : plan.narrative_en}</div>
+      <div style={{ fontFamily: SERIF, fontSize: 23, fontWeight: 600, lineHeight: 1.12, marginBottom: 8, color: APP_TEXT }}>{isHe ? plan.title_he : plan.title_en}</div>
+      <div style={{ color: APP_SOFT, fontSize: 13.5, lineHeight: 1.5, marginBottom: 14 }}>{isHe ? plan.narrative_he : plan.narrative_en}</div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', borderTop: `1px solid #F0E9DA`, paddingTop: 13, marginBottom: 16 }}>
+        {[isHe ? plan.start_time_text_he : plan.start_time_text_en,
+          isHe ? plan.duration_text_he : plan.duration_text_en,
+          `${(plan.stops || []).length} ${isHe ? 'תחנות' : 'stops'}`]
+          .filter(Boolean)
+          .map((meta, i, arr) => (
+            <span key={meta} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 12.5, color: '#7E7361', fontWeight: 600 }}>{meta}</span>
+              {i < arr.length - 1 ? <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#D8CCB2' }} /> : null}
+            </span>
+          ))}
+      </div>
       <div style={{ display: 'grid', gap: 8 }}>
         <button onClick={onOpenPlan} style={{ ...primaryButtonStyle, width: '100%' }}>
           {tx.viewTonightsPick}
@@ -1412,22 +1493,6 @@ function SavedPage({ lang, tx, authUser, plans, places, reminderIds, feedbackByI
   )
 }
 
-const ALLOWED_REDIRECT_ORIGINS = new Set([
-  'https://hamakom.app',
-  'https://www.hamakom.app',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-])
-
-function getAuthRedirectUrl() {
-  const configured = import.meta.env.VITE_PUBLIC_APP_URL
-  if (configured) return configured
-  if (typeof window === 'undefined') return 'https://hamakom.app'
-  const { origin } = window.location
-  return ALLOWED_REDIRECT_ORIGINS.has(origin) ? origin : 'https://hamakom.app'
-}
-
 function SavedSignInCard({ lang, onGoHome }) {
   const isHe = lang === 'he'
   const [email, setEmail] = useState('')
@@ -1487,7 +1552,7 @@ function SavedSignInCard({ lang, onGoHome }) {
           <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2, marginBottom: 10 }}>
             {isHe ? 'היכנסו כדי לשמור את הדייטים שלכם' : 'Sign in to keep your dates'}
           </div>
-          <div style={{ fontSize: 14, color: '#B8A990', lineHeight: 1.65 }}>
+          <div style={{ fontSize: 14, color: '#6E6450', lineHeight: 1.65 }}>
             {isHe
               ? 'כשתמצאו תוכנית שמרגישה נכונה, תוכלו לשמור אותה ולחזור אליה מכל מכשיר.'
               : 'When you find a plan that feels right, save it and come back to it from any device.'}
@@ -1582,7 +1647,7 @@ function SavedSection({ title, children }) {
 
 function SavedSectionEmpty({ text }) {
   return (
-    <div style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 16, color: '#9CA3AF', fontSize: 14, lineHeight: 1.5 }}>
+    <div style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 16, color: '#8A7F6C', fontSize: 14, lineHeight: 1.5 }}>
       {text}
     </div>
   )
@@ -1610,7 +1675,7 @@ function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder
         <MiniPill>{isHe ? plan.budget_text_he : plan.budget_text_en}</MiniPill>
         {reminderSet ? <MiniPill>{isHe ? 'תזכורת נשמרה' : 'Reminder set'}</MiniPill> : null}
       </div>
-      <div style={{ color: '#B8A990', fontSize: 15, lineHeight: 1.55, marginBottom: 12 }}>{isHe ? plan.narrative_he : plan.narrative_en}</div>
+      <div style={{ color: '#6E6450', fontSize: 15, lineHeight: 1.55, marginBottom: 12 }}>{isHe ? plan.narrative_he : plan.narrative_en}</div>
       <div style={{ display: 'grid', gap: 8 }}>
         <button onClick={onToggleReminder} style={secondaryButtonStyle}>
           {reminderSet ? (isHe ? 'הסירו תזכורת' : 'Remove Reminder') : isHe ? 'קבעו תזכורת' : 'Set Reminder'}
@@ -1623,8 +1688,8 @@ function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder
             {isHe ? 'הייתם בדייט הזה?' : 'Did you go?'}
           </button>
         ) : (
-          <div style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 12, padding: 14, color: '#9CA3AF', fontSize: 13, lineHeight: 1.6 }}>
-            <div style={{ color: '#E8DCC8', fontWeight: 600, marginBottom: 4 }}>{isHe ? 'נשמר פידבק לדייט הזה' : 'Feedback saved for this date'}</div>
+          <div style={{ background: '#FBF7EE', border: '1px solid #EDE5D4', borderRadius: 12, padding: 14, color: '#8A7F6C', fontSize: 13, lineHeight: 1.6 }}>
+            <div style={{ color: '#241E16', fontWeight: 600, marginBottom: 4 }}>{isHe ? 'נשמר פידבק לדייט הזה' : 'Feedback saved for this date'}</div>
             <div>
               {isHe
                 ? `הלכתם: ${feedback.went ? 'כן' : 'לא'}${feedback.rating ? ` · דירוג: ${feedback.rating}/5` : ''}${feedback.again !== undefined ? ` · שוב: ${feedback.again ? 'כן' : 'לא'}` : ''}`
@@ -1663,14 +1728,14 @@ function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder
 function FeedbackComposer({ lang, rating, again, onSetWent, onSetRating, onSetAgain, onSubmit }) {
   const isHe = lang === 'he'
   return (
-    <div style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 12, padding: 14, display: 'grid', gap: 10 }}>
-      <div style={{ fontSize: 13, color: '#E8DCC8', fontWeight: 600 }}>{isHe ? 'עזרו לנו לדייק את ההמלצה הבאה' : 'Help us sharpen the next recommendation'}</div>
+    <div style={{ background: '#FBF7EE', border: '1px solid #EDE5D4', borderRadius: 12, padding: 14, display: 'grid', gap: 10 }}>
+      <div style={{ fontSize: 13, color: '#241E16', fontWeight: 600 }}>{isHe ? 'עזרו לנו לדייק את ההמלצה הבאה' : 'Help us sharpen the next recommendation'}</div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button onClick={() => onSetWent(true)} style={compactButtonStyle}>{isHe ? 'כן, הלכנו' : 'Yes, we went'}</button>
         <button onClick={() => onSetWent(false)} style={compactButtonStyle}>{isHe ? 'לא בסוף' : 'Not in the end'}</button>
       </div>
       <div>
-        <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 6 }}>{isHe ? 'איך היה?' : 'How was it?'}</div>
+        <div style={{ fontSize: 12, color: '#8A7F6C', marginBottom: 6 }}>{isHe ? 'איך היה?' : 'How was it?'}</div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {[1, 2, 3, 4, 5].map((value) => (
             <button key={value} onClick={() => onSetRating(value)} style={rating === value ? primaryCompactButtonStyle : compactButtonStyle}>
@@ -1680,7 +1745,7 @@ function FeedbackComposer({ lang, rating, again, onSetWent, onSetRating, onSetAg
         </div>
       </div>
       <div>
-        <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 6 }}>{isHe ? 'הייתם בוחרים משהו כזה שוב?' : 'Would you do something like this again?'}</div>
+        <div style={{ fontSize: 12, color: '#8A7F6C', marginBottom: 6 }}>{isHe ? 'הייתם בוחרים משהו כזה שוב?' : 'Would you do something like this again?'}</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={() => onSetAgain(true)} style={again === true ? primaryCompactButtonStyle : compactButtonStyle}>{isHe ? 'כן' : 'Yes'}</button>
           <button onClick={() => onSetAgain(false)} style={again === false ? primaryCompactButtonStyle : compactButtonStyle}>{isHe ? 'לא' : 'No'}</button>
@@ -1702,14 +1767,14 @@ function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz,
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
-      <section style={{ background: 'linear-gradient(145deg,#161B27 0%,#111A10 100%)', border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 20 }}>
+      <section style={{ background: '#FFFFFF', border: `1px solid ${APP_BORDER}`, borderRadius: 20, padding: 20 }}>
         <div style={{ fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: APP_MUTED }}>{tx.profileCardEyebrow}</div>
         <h2 style={{ fontSize: 26, margin: '6px 0 8px', lineHeight: 1.08 }}>{tx.profileCardTitle}</h2>
-        <p style={{ margin: 0, color: '#B8A990', fontSize: 14 }}>{authUser?.email ? authUser.email : tx.profileGuest}</p>
+        <p style={{ margin: 0, color: '#6E6450', fontSize: 14 }}>{authUser?.email ? authUser.email : tx.profileGuest}</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 10, marginTop: 18 }}>
           {cards.map((card) => (
-            <div key={card.label} style={{ background: '#121722', border: '1px solid #232A39', borderRadius: 12, padding: '14px 12px' }}>
+            <div key={card.label} style={{ background: '#FBF7EE', border: '1px solid #EDE5D4', borderRadius: 12, padding: '14px 12px' }}>
               <div style={{ fontSize: 24, color: APP_ACCENT, lineHeight: 1.1 }}>{card.value}</div>
               <div style={{ marginTop: 4, fontSize: 11, color: APP_MUTED, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{card.label}</div>
             </div>
@@ -1746,7 +1811,7 @@ function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz,
             onClick={onToggleAnalytics}
             style={{
               width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-              background: analyticsEnabled ? APP_ACCENT : '#374151',
+              background: analyticsEnabled ? APP_ACCENT : '#E6DCC8',
               position: 'relative', transition: 'background 0.2s',
             }}
             aria-label={analyticsEnabled ? 'Disable analytics' : 'Enable analytics'}
@@ -1790,7 +1855,7 @@ function ActionCard({ title, text, children }) {
   return (
     <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 18 }}>
       <h3 style={{ fontSize: 18, margin: '0 0 6px' }}>{title}</h3>
-      <p style={{ margin: children ? '0 0 16px' : 0, color: '#9CA3AF', fontSize: 14 }}>{text}</p>
+      <p style={{ margin: children ? '0 0 16px' : 0, color: '#8A7F6C', fontSize: 14 }}>{text}</p>
       {children ? <div style={{ display: 'grid', gap: 10 }}>{children}</div> : null}
     </section>
   )
@@ -1798,14 +1863,14 @@ function ActionCard({ title, text, children }) {
 
 function MiniPill({ children }) {
   return (
-    <span style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 999, padding: '5px 10px', fontSize: 12, color: '#C9A84C' }}>
+    <span style={{ background: '#FFFFFF', border: '1px solid #EBE2D0', borderRadius: 999, padding: '5px 10px', fontSize: 12, color: '#9A7A28' }}>
       {children}
     </span>
   )
 }
 
 function BottomNavIcon({ name, active }) {
-  const stroke = active ? APP_ACCENT : '#9CA3AF'
+  const stroke = active ? APP_ACCENT : '#A99A85'
   const sw = 1.85
   const svgProps = {
     width: 22,
@@ -1869,10 +1934,10 @@ function BottomNav({ tx, tab, savedCount, onSelect }) {
         height: NAV_HEIGHT,
         background: APP_PANEL,
         border: `1px solid ${APP_BORDER}`,
-        borderRadius: 16,
+        borderRadius: 18,
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
-        boxShadow: '0 8px 28px rgba(0,0,0,0.55)',
+        boxShadow: '0 12px 30px -14px rgba(40,30,12,0.4)',
         zIndex: 8000,
         isolation: 'isolate',
         overflow: 'hidden',
@@ -1962,34 +2027,35 @@ function EmptyState({ icon, title, text, actionLabel, onAction }) {
 }
 
 const primaryButtonStyle = {
-  background: 'linear-gradient(135deg,#C9A84C 0%,#E8B84B 100%)',
-  color: APP_BG,
+  background: APP_INK,
+  color: '#F4ECD8',
   border: 'none',
-  borderRadius: 12,
-  padding: '14px 18px',
+  borderRadius: 16,
+  padding: '16px 18px',
   cursor: 'pointer',
-  fontSize: 15,
+  fontSize: 16,
   fontWeight: 700,
   fontFamily: 'inherit',
+  boxShadow: '0 14px 26px -14px rgba(36,30,22,0.55)',
 }
 
 const secondaryButtonStyle = {
   background: APP_PANEL,
-  color: APP_TEXT,
-  border: `1px solid ${APP_BORDER}`,
-  borderRadius: 12,
-  padding: '13px 16px',
+  color: '#3C342A',
+  border: `1px solid #E6DCC8`,
+  borderRadius: 16,
+  padding: '14px 16px',
   cursor: 'pointer',
   fontSize: 14,
-  fontWeight: 600,
+  fontWeight: 700,
   fontFamily: 'inherit',
 }
 
 const compactButtonStyle = {
   background: APP_PANEL,
-  color: APP_TEXT,
-  border: `1px solid ${APP_BORDER}`,
-  borderRadius: 8,
+  color: '#3C342A',
+  border: `1px solid #E6DCC8`,
+  borderRadius: 10,
   padding: '9px 14px',
   cursor: 'pointer',
   fontSize: 13,
@@ -1998,10 +2064,10 @@ const compactButtonStyle = {
 }
 
 const primaryCompactButtonStyle = {
-  background: 'linear-gradient(135deg,#C9A84C 0%,#E8B84B 100%)',
-  color: APP_BG,
+  background: APP_INK,
+  color: '#F4ECD8',
   border: 'none',
-  borderRadius: 8,
+  borderRadius: 10,
   padding: '9px 14px',
   cursor: 'pointer',
   fontSize: 13,
@@ -2037,8 +2103,8 @@ function ConsentBanner({ lang, font, onAccept, onDecline, onOpenPrivacy }) {
         transform: 'translateX(-50%)',
         width: 'calc(100% - 32px)',
         maxWidth: 480,
-        background: '#161B27',
-        border: '1px solid #2A2F3E',
+        background: '#FFFFFF',
+        border: '1px solid #EBE2D0',
         borderRadius: 16,
         padding: '14px 16px',
         zIndex: 9000,
@@ -2054,20 +2120,20 @@ function ConsentBanner({ lang, font, onAccept, onDecline, onOpenPrivacy }) {
           ? 'אנחנו משתמשים בנתוני שימוש אנונימיים לשיפור ההמלצות.'
           : 'We use anonymous usage data to improve recommendations.'}
         {' '}
-        <button onClick={onOpenPrivacy} style={{ background: 'none', border: 'none', color: '#C9A84C', cursor: 'pointer', fontSize: 13, fontFamily: font, padding: 0, textDecoration: 'underline' }}>
+        <button onClick={onOpenPrivacy} style={{ background: 'none', border: 'none', color: '#9A7A28', cursor: 'pointer', fontSize: 13, fontFamily: font, padding: 0, textDecoration: 'underline' }}>
           {isHe ? 'מדיניות פרטיות' : 'Privacy Policy'}
         </button>
       </p>
       <div style={{ display: 'flex', gap: 8 }}>
         <button
           onClick={onAccept}
-          style={{ flex: 1, background: '#C9A84C', color: '#0D1117', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: font }}
+          style={{ flex: 1, background: '#241E16', color: '#F4ECD8', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: font }}
         >
           {isHe ? 'אישור' : 'Accept'}
         </button>
         <button
           onClick={onDecline}
-          style={{ flex: 1, background: '#1F2937', color: '#9CA3AF', border: '1px solid #374151', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: font }}
+          style={{ flex: 1, background: '#F2EBDB', color: '#8A7F6C', border: '1px solid #E6DCC8', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: font }}
         >
           {isHe ? 'דחייה' : 'Decline'}
         </button>
@@ -2090,7 +2156,7 @@ function FeedbackNudge({ lang, font, plan, onRespond, onDismiss }) {
       style={{
         position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)',
         width: 'calc(100% - 32px)', maxWidth: 480,
-        background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 16,
+        background: '#FFFFFF', border: '1px solid #EBE2D0', borderRadius: 16,
         padding: '16px', zIndex: 8500, fontFamily: font,
         boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
       }}
@@ -2101,13 +2167,13 @@ function FeedbackNudge({ lang, font, plan, onRespond, onDismiss }) {
             {isHe ? `הלכתם ל"${planTitle}"?` : `Did you go on "${planTitle}"? 🌟`}
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setStep('rate')} style={{ flex: 1, background: '#C9A84C', color: '#0D1117', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: font }}>
+            <button onClick={() => setStep('rate')} style={{ flex: 1, background: '#241E16', color: '#F4ECD8', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: font }}>
               {isHe ? 'כן!' : 'Yes!'}
             </button>
-            <button onClick={() => onRespond({ went: false })} style={{ flex: 1, background: '#1F2937', color: '#9CA3AF', border: '1px solid #374151', borderRadius: 10, padding: '10px 0', fontSize: 13, cursor: 'pointer', fontFamily: font }}>
+            <button onClick={() => onRespond({ went: false })} style={{ flex: 1, background: '#F2EBDB', color: '#8A7F6C', border: '1px solid #E6DCC8', borderRadius: 10, padding: '10px 0', fontSize: 13, cursor: 'pointer', fontFamily: font }}>
               {isHe ? 'לא עדיין' : 'Not yet'}
             </button>
-            <button onClick={onDismiss} style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', padding: '10px 6px', fontSize: 13, fontFamily: font }}>✕</button>
+            <button onClick={onDismiss} style={{ background: 'none', border: 'none', color: '#A99A85', cursor: 'pointer', padding: '10px 6px', fontSize: 13, fontFamily: font }}>✕</button>
           </div>
         </>
       ) : (
@@ -2125,7 +2191,7 @@ function FeedbackNudge({ lang, font, plan, onRespond, onDismiss }) {
           <button
             onClick={() => rating && onRespond({ went: true, rating, again: rating >= 4 })}
             disabled={!rating}
-            style={{ width: '100%', background: rating ? '#C9A84C' : '#374151', color: rating ? '#0D1117' : '#6B7280', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: rating ? 'pointer' : 'default', fontFamily: font, transition: 'all 0.2s' }}
+            style={{ width: '100%', background: rating ? '#241E16' : '#E6DCC8', color: rating ? '#F4ECD8' : '#A99A85', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: rating ? 'pointer' : 'default', fontFamily: font, transition: 'all 0.2s' }}
           >
             {isHe ? 'שמרו' : 'Save'}
           </button>

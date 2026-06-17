@@ -41,11 +41,19 @@ export function isVariousChain(loc) {
 // Same locale = same real city AND (if coords present) within 6km.
 // Used as a hard gate when relaxing other constraints — we'd rather return
 // a shorter plan than mix cities.
+//
+// Chain locations tagged city='Various' are not automatically "same locale"
+// just because they share the label — two branches of the same chain can be
+// 100km apart. If both have coords, we still enforce the 6km radius. Only
+// when coords are missing do we trust the shared label.
 export function sameLocale(a, b) {
   if (!a || !b) return false
-  if (isVariousChain(a) || isVariousChain(b)) return true // chain rows can travel
-  if (a.city !== b.city) return false
   const km = distanceKm(a, b)
+  if (isVariousChain(a) || isVariousChain(b)) {
+    if (km === null) return true
+    return km <= 6
+  }
+  if (a.city !== b.city) return false
   if (km === null) return true
   return km <= 6
 }

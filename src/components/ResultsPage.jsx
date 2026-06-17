@@ -4,13 +4,16 @@ import { buildPlanIdentity, getPlanFitSummary } from '../lib/quiz'
 
 const PlanRouteMap = lazy(() => import('./PlanRouteMap'))
 
-const BG       = '#0D1117'
-const PANEL    = '#161B27'
-const BORDER   = '#2A2F3E'
-const TEXT     = '#E8DCC8'
-const MUTED    = '#6B7280'
-const ACCENT   = '#C9A84C'
-const SOFT     = '#B8A990'
+const BG       = '#F7F2E8'
+const PANEL    = '#FFFFFF'
+const BORDER   = '#EBE2D0'
+const TEXT     = '#241E16'
+const MUTED    = '#8A7F6C'
+const ACCENT   = '#9A7A28'   // gold for eyebrows / links (readable on cream)
+const GOLD     = '#C9A84C'   // bright gold for fills (stop numbers)
+const INK      = '#241E16'   // dark pill / primary button
+const SOFT     = '#6E6450'   // body copy
+const SERIF    = "'Spectral','Frank Ruhl Libre',Georgia,serif"
 
 function getLocalizedPlanText(plan, lang) {
   const isHe = lang === 'he'
@@ -34,7 +37,6 @@ export default function ResultsPage({
   answers,
   saved,
   reminderSet,
-  userId,
   cityLocationCount = null,
   onBrowseAll,
   onNextPlan,
@@ -77,13 +79,13 @@ export default function ResultsPage({
     <div dir={dir} style={{ minHeight: '100vh', background: BG, color: TEXT, fontFamily: font }}>
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <div style={{ background: 'linear-gradient(160deg,#0F1720 0%,#131D14 100%)', padding: '28px 22px 22px', borderBottom: `1px solid ${BORDER}` }}>
+      <div style={{ background: 'linear-gradient(165deg,#F7F2E8 0%,#F1EAD9 100%)', padding: '28px 22px 22px', borderBottom: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 540, margin: '0 auto' }}>
-          <div style={{ fontSize: 11, letterSpacing: '0.18em', color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>
             {identity[lang]}
           </div>
 
-          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', lineHeight: 1.1, margin: '0 0 12px', fontWeight: 700 }}>
+          <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(26px, 7vw, 34px)', lineHeight: 1.08, margin: '0 0 12px', fontWeight: 600, letterSpacing: '-0.01em' }}>
             {text.title}
           </h1>
 
@@ -114,7 +116,7 @@ export default function ResultsPage({
         {/* ── Route map (only when stops have coords) ──────────── */}
         {primaryStops.filter(s => s.lat && s.lng).length >= 2 ? (
           <div style={{ marginBottom: 12, borderRadius: 16, overflow: 'hidden', height: 240, border: `1px solid ${BORDER}` }}>
-            <Suspense fallback={<div style={{ height: '100%', background: '#0B0F17', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>Loading map…</div>}>
+            <Suspense fallback={<div style={{ height: '100%', background: '#EDE7D9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>Loading map…</div>}>
               <PlanRouteMap stops={primaryStops.map(s => ({ id: s.maps_query || s.name_en, name: s.name_en, name_he: s.name_he, lat: s.lat, lng: s.lng, city: plan.city }))} lang={lang} />
             </Suspense>
           </div>
@@ -148,8 +150,8 @@ export default function ResultsPage({
 
         {/* ── Narrative ─────────────────────────────────────────── */}
         {text.narrative ? (
-          <div style={{ padding: '14px 16px', background: '#0F141E', border: `1px solid ${BORDER}`, borderRadius: 12, marginBottom: 12 }}>
-            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.65, color: '#C0B49A', fontStyle: 'italic' }}>
+          <div style={{ padding: '14px 16px', background: '#FBF7EE', border: `1px solid ${BORDER}`, borderRadius: 12, marginBottom: 12 }}>
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.65, color: '#6E6450', fontStyle: 'italic' }}>
               {text.narrative}
             </p>
           </div>
@@ -161,9 +163,9 @@ export default function ResultsPage({
             onClick={onSavePlan}
             style={{
               gridColumn: '1 / -1',
-              background: saved ? '#18261D' : ACCENT,
-              color: saved ? '#4ADE80' : BG,
-              border: saved ? '1px solid #2E6E45' : 'none',
+              background: saved ? '#E9F0E4' : INK,
+              color: saved ? '#4F7144' : '#F4ECD8',
+              border: saved ? '1px solid #C7DCBC' : 'none',
               borderRadius: 14, padding: '15px 0',
               fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: font,
               transition: 'all 0.2s',
@@ -178,7 +180,7 @@ export default function ResultsPage({
 
           <button
             onClick={onSetReminder}
-            style={reminderSet ? { ...secondaryBtn(font), color: '#4ADE80', borderColor: '#2E6E45', background: '#18261D' } : secondaryBtn(font)}
+            style={reminderSet ? { ...secondaryBtn(font), color: '#4F7144', borderColor: '#C7DCBC', background: '#E9F0E4' } : secondaryBtn(font)}
           >
             {reminderSet ? (isHe ? '✓ תזכורת' : '✓ Reminder') : isHe ? 'תזכורת' : 'Reminder'}
           </button>
@@ -193,9 +195,6 @@ export default function ResultsPage({
             >
               {isHe ? 'פתח במפות' : 'Open in Maps'} →
             </a>
-          ) : null}
-          {userId && stop._locationId ? (
-            <StopRating locationId={stop._locationId} userId={userId} lang={lang} />
           ) : null}
         </div>
 
@@ -235,7 +234,7 @@ export default function ResultsPage({
 
         {/* ── Empty-city CTA: invite a recommendation ──────────── */}
         {onSuggestPlace && answers?.city && answers.city !== 'flexible' && cityLocationCount === 0 ? (
-          <div style={{ background: '#161B27', border: `1px dashed ${ACCENT}`, borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
+          <div style={{ background: '#FFFFFF', border: `1px dashed ${GOLD}`, borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: SOFT, lineHeight: 1.5, marginBottom: 10 }}>
               {isHe
                 ? `עוד אין לנו הרבה מקומות ב${answers.city} — מכירים מקום טוב?`
@@ -258,7 +257,7 @@ export default function ResultsPage({
           <button onClick={onBrowseAll} style={linkBtn(font)}>
             {isHe ? 'דפדפו בכל המקומות' : 'Browse all places'}
           </button>
-          <button onClick={onBuildYourOwnPlan} style={{ ...linkBtn(font), color: '#4B5563' }}>
+          <button onClick={onBuildYourOwnPlan} style={{ ...linkBtn(font), color: '#B0A48E' }}>
             {isHe ? 'בנו תוכנית בעצמכם' : 'Build your own plan'}
           </button>
         </div>
@@ -272,7 +271,7 @@ export default function ResultsPage({
 
 function Chip({ children }) {
   return (
-    <span style={{ background: '#1A2030', border: `1px solid ${BORDER}`, borderRadius: 999, padding: '5px 10px', fontSize: 12, color: '#C9A84C', lineHeight: 1 }}>
+    <span style={{ background: '#FFFFFF', border: `1px solid #E9E0CE`, borderRadius: 999, padding: '6px 11px', fontSize: 12.5, fontWeight: 600, color: '#5A5142', lineHeight: 1 }}>
       {children}
     </span>
   )
@@ -290,18 +289,19 @@ function StopCard({ stop, index, lang, total }) {
     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
       {/* Number + connector */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-        <div style={{ width: 26, height: 26, borderRadius: '50%', background: ACCENT, color: BG, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
+        <div style={{ width: 30, height: 30, borderRadius: '50%', background: GOLD, color: INK, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800 }}>
           {index + 1}
         </div>
-        {!isLast ? <div style={{ width: 1, flex: 1, background: BORDER, marginTop: 4, minHeight: 16 }} /> : null}
+        {!isLast ? <div style={{ width: 2, flex: 1, background: 'linear-gradient(#E4DAC4,#EFE7D6)', marginTop: 4, minHeight: 18 }} /> : null}
       </div>
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0, paddingBottom: isLast ? 0 : 14 }}>
-        <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4, color: TEXT }}>{title}</div>
-        <div style={{ fontSize: 13, lineHeight: 1.6, color: '#C8BDA8', marginBottom: orderTip ? 6 : 0 }}>{instruction}</div>
+        <div style={{ fontFamily: SERIF, fontSize: 17.5, fontWeight: 600, marginBottom: 4, color: TEXT }}>{title}</div>
+        <div style={{ fontSize: 13.5, lineHeight: 1.55, color: '#6E6450', marginBottom: orderTip ? 6 : 0 }}>{instruction}</div>
         {orderTip ? (
-          <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.5, background: '#0F1420', borderRadius: 8, padding: '6px 10px', marginTop: 4 }}>
+          <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, background: '#FAF6EC', borderRadius: 10, padding: '9px 12px', marginTop: 6 }}>
+            💡
             {orderTip}
           </div>
         ) : null}
@@ -341,8 +341,8 @@ function CompactStop({ stop, lang }) {
 
 function secondaryBtn(font) {
   return {
-    background: PANEL, color: TEXT, border: `1px solid ${BORDER}`,
-    borderRadius: 12, padding: '12px 0', fontSize: 14, fontWeight: 600,
+    background: PANEL, color: '#3C342A', border: `1px solid #E6DCC8`,
+    borderRadius: 16, padding: '14px 0', fontSize: 14.5, fontWeight: 700,
     cursor: 'pointer', fontFamily: font,
   }
 }
@@ -350,8 +350,8 @@ function secondaryBtn(font) {
 function linkBtn(font) {
   return {
     background: 'none', border: 'none', color: MUTED, fontSize: 13,
-    cursor: 'pointer', fontFamily: font, padding: '6px 0',
-    textDecoration: 'underline', textDecorationColor: 'rgba(107,114,128,0.3)',
+    cursor: 'pointer', fontFamily: font, padding: '7px 0',
+    textDecoration: 'underline', textDecorationColor: 'rgba(154,143,124,0.4)',
     textUnderlineOffset: 3,
   }
 }

@@ -5,6 +5,7 @@ import {
   flowCompatibility,
   timeFitForStopIndex,
   buildComposeMetadata,
+  sameLocale,
 } from './planCoherence.js'
 
 // Variety knobs — see /plans/the-plans-feel-limited-quiet-moon.md
@@ -372,6 +373,12 @@ function scoreSupportStop(primary, candidate, answers, usageProfile, stopIndex, 
   if (candidate.city !== primary.city) return -Infinity
   if (selectedIds.includes(candidate.id)) return -Infinity
   if (isVeryDisliked(candidate, usageProfile)) return -Infinity
+  // Same-city is necessary but not sufficient: 'Various' chain rows or rows
+  // with bad coord data can be in the same city label yet 30km apart. Reject
+  // anything outside walkable/short-drive radius of the anchor we're chaining
+  // off (previous stop, or primary for stop 2).
+  const anchor = prevStop || primary
+  if (!sameLocale(anchor, candidate)) return -Infinity
 
   const candidateCategory = normalizeCategory(candidate.category)
   const primaryCategory = normalizeCategory(primary.category)
@@ -394,7 +401,6 @@ function scoreSupportStop(primary, candidate, answers, usageProfile, stopIndex, 
 
   // Coherence: proximity, emotional flow, time-of-day fit relative to the
   // immediately previous stop (or the primary anchor if this is stop 2).
-  const anchor = prevStop || primary
   score += proximityScore(anchor, candidate)
   score += flowCompatibility(anchor, candidate).delta
   score += timeFitForStopIndex(candidate, stopIndex, totalStops)
@@ -667,11 +673,21 @@ export function getSmartMatchedPlans(curatedPlans, locations, answers, count = 2
 
   // Focus-scoped anchor pool: prefer anchors that carry the user's stated
   // focus. Without this, a high-curation cafe can out-score the city's only
-  // park even when the user picked focus=outdoors. Falls back to the full
-  // city pool when nothing in-focus exists so sparse cities still get plans.
+  // park even when the user picked focus=outdoors.
+  //
+  // If the user picked a specific city AND that city has zero in-focus
+  // anchors, return no generated plans. A wrong-category "plan" is worse
+  // than an honest "not enough options yet" fallback. (Flexible city still
+  // falls through because globally we always have in-focus anchors.)
+  let focusGap = false
   if (answers.focus) {
     const focusMatched = anchorPool.filter((l) => deriveFocusTags(l).includes(answers.focus))
-    if (focusMatched.length > 0) anchorPool = focusMatched
+    if (focusMatched.length > 0) {
+      anchorPool = focusMatched
+    } else if (answers.city && answers.city !== 'flexible') {
+      focusGap = true
+      anchorPool = []
+    }
   }
 
   const generated = anchorPool

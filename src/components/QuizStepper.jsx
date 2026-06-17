@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react'
 import { t } from '../lib/translations'
 
-const ACCENT = '#C9A84C'
-const BG     = '#0D1117'
-const PANEL  = '#161B27'
-const BORDER = '#2A2F3E'
-const TEXT   = '#E8DCC8'
-const MUTED  = '#9CA3AF'
+const ACCENT = '#9A7A28'   // gold for eyebrows (readable on cream)
+const GOLD   = '#C9A84C'   // bright gold for dots / fills
+const BG     = '#F7F2E8'
+const PANEL  = '#FFFFFF'
+const BORDER = '#EBE2D0'
+const TEXT   = '#241E16'
+const MUTED  = '#8A7F6C'
+const SERIF  = "'Spectral','Frank Ruhl Libre',Georgia,serif"
+const INK    = '#241E16'
 
 function slugify(city) {
   return city.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
@@ -131,8 +134,8 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
       style={{ minHeight: '100dvh', background: BG, color: TEXT, fontFamily: font, display: 'flex', flexDirection: 'column' }}
     >
       {/* Gold progress bar */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 3, background: '#1F2937', zIndex: 100 }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: `linear-gradient(90deg,${ACCENT} 0%,#E8B84B 100%)`, transition: 'width 0.3s ease' }} />
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 3, background: '#E7DECB', zIndex: 100 }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: `linear-gradient(90deg,${GOLD} 0%,#E0BE58 100%)`, transition: 'width 0.3s ease' }} />
       </div>
 
       {/* Nav row */}
@@ -154,7 +157,7 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
                 width: i === step ? 18 : 6,
                 height: 6,
                 borderRadius: 999,
-                background: i === step ? ACCENT : i < step ? '#4B5563' : '#2A2F3E',
+                background: i === step ? GOLD : i < step ? GOLD : '#E0D6C2',
                 transition: 'all 0.2s ease',
               }}
             />
@@ -173,7 +176,7 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
             <div style={{ fontSize: 11, letterSpacing: '0.18em', color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>
               {isHe ? `שאלה ${step + 1} מתוך ${total}` : `Step ${step + 1} of ${total}`}
             </div>
-            <h2 style={{ fontSize: 'clamp(22px, 5.5vw, 28px)', fontWeight: 700, lineHeight: 1.15, margin: '0 0 8px' }}>
+            <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(24px, 6vw, 30px)', fontWeight: 600, lineHeight: 1.12, margin: '0 0 8px', letterSpacing: '-0.01em' }}>
               {isHe ? question.he : question.en}
             </h2>
             <p style={{ margin: 0, fontSize: 14, color: MUTED, lineHeight: 1.5 }}>
@@ -263,7 +266,7 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
 
                     {/* Selected checkmark */}
                     {isChosen ? (
-                      <div style={{ position: 'absolute', top: 8, right: 8, width: 20, height: 20, borderRadius: '50%', background: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: BG, fontWeight: 700 }}>
+                      <div style={{ position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: '50%', background: GOLD, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: INK, fontWeight: 800 }}>
                         ✓
                       </div>
                     ) : null}
@@ -282,10 +285,10 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
                     onClick={() => handleSelect(option.value)}
                     disabled={chosen !== null}
                     style={{
-                      background: isChosen ? '#161F14' : PANEL,
-                      border: `1px solid ${isChosen ? ACCENT : BORDER}`,
-                      borderRadius: 14,
-                      padding: '16px 18px',
+                      background: isChosen ? '#FBF4E1' : PANEL,
+                      border: `1.5px solid ${isChosen ? GOLD : BORDER}`,
+                      borderRadius: 17,
+                      padding: '17px 18px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -296,23 +299,24 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
                       color: TEXT,
                       transform: isChosen ? 'scale(0.985)' : 'scale(1)',
                       transition: 'all 0.16s ease',
-                      boxShadow: isChosen ? `0 0 0 1px ${ACCENT}30` : 'none',
+                      boxShadow: isChosen ? `0 6px 18px -10px rgba(201,168,76,0.45)` : '0 4px 14px -12px rgba(40,30,12,0.35)',
                     }}
                   >
                     <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: 'block', fontSize: 16, fontWeight: 600, marginBottom: 3, color: isChosen ? ACCENT : TEXT }}>
+                      <span style={{ display: 'block', fontSize: 16.5, fontWeight: 700, marginBottom: 3, color: isChosen ? ACCENT : TEXT }}>
                         {isHe ? option.he : option.en}
                       </span>
-                      <span style={{ display: 'block', fontSize: 12, color: MUTED, lineHeight: 1.4 }}>
+                      <span style={{ display: 'block', fontSize: 12.5, color: MUTED, lineHeight: 1.4 }}>
                         {isHe ? option.subhe : option.suben}
                       </span>
                     </span>
                     <span style={{
-                      width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                      background: isChosen ? ACCENT : BORDER,
+                      width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                      background: isChosen ? GOLD : '#F2EBDB',
+                      border: isChosen ? `1px solid ${GOLD}` : '1px solid #E5DCC8',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, color: isChosen ? BG : 'transparent',
-                      fontWeight: 700, transition: 'all 0.16s',
+                      fontSize: 13, color: isChosen ? INK : 'transparent',
+                      fontWeight: 800, transition: 'all 0.16s',
                     }}>
                       ✓
                     </span>

@@ -1,25 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-
-const ALLOWED_REDIRECT_ORIGINS = new Set([
-  'https://hamakom.app',
-  'https://www.hamakom.app',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-])
+import { getAuthRedirectUrl } from '../lib/authRedirect'
 
 const OTP_COOLDOWN_MS = 60_000
-
-function getAuthRedirectUrl() {
-  const configuredUrl = import.meta.env.VITE_PUBLIC_APP_URL
-  if (configuredUrl) return configuredUrl
-
-  if (typeof window === 'undefined') return 'https://hamakom.app'
-
-  const { origin } = window.location
-  return ALLOWED_REDIRECT_ORIGINS.has(origin) ? origin : 'https://hamakom.app'
-}
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', itemTitle, itemSubtitle, onClose }) {
   const [mode, setMode] = useState('choose')
@@ -71,16 +55,6 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
     }
   }
 
-  function startResendCountdown() {
-    setResendCountdown(30)
-    const t = setInterval(() => {
-      setResendCountdown(c => {
-        if (c <= 1) { clearInterval(t); return 0 }
-        return c - 1
-      })
-    }, 1000)
-  }
-
   const handleEmail = async (event) => {
     event.preventDefault()
 
@@ -112,27 +86,8 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
       if (authError) throw authError
       setOtpCooldownUntil(Date.now() + OTP_COOLDOWN_MS)
       setSent(true)
-      startResendCountdown()
     } catch {
       setError(isHe ? 'לא הצלחנו לשלוח קישור. נסו שוב.' : 'We could not send the link. Try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleResend = async () => {
-    if (!supabase || resendCountdown > 0 || !email) return
-    setLoading(true)
-    setError('')
-    try {
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.origin, shouldCreateUser: true },
-      })
-      if (authError) throw authError
-      startResendCountdown()
-    } catch {
-      setError(isHe ? 'לא הצלחנו לשלוח שוב. נסו מאוחר יותר.' : 'Could not resend. Please try again later.')
     } finally {
       setLoading(false)
     }
@@ -159,26 +114,26 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
       <div
         style={{
           width: 'min(100%, 520px)',
-          background: 'linear-gradient(180deg,#141922 0%,#0D1117 100%)',
-          border: '1px solid #2A2F3E',
+          background: '#FFFFFF',
+          border: '1px solid #EBE2D0',
           borderBottom: 'none',
           borderRadius: '24px 24px 0 0',
           padding: '14px 22px 34px',
           boxSizing: 'border-box',
-          color: '#E8DCC8',
+          color: '#241E16',
         }}
       >
-        <div style={{ width: 36, height: 4, background: '#2A2F3E', borderRadius: 999, margin: '0 auto 18px' }} />
+        <div style={{ width: 36, height: 4, background: '#EBE2D0', borderRadius: 999, margin: '0 auto 18px' }} />
 
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 30, marginBottom: 8, color: '#C9A84C' }}>◍</div>
-          <div style={{ fontSize: 12, letterSpacing: '0.16em', color: '#C9A84C', textTransform: 'uppercase', marginBottom: 8 }}>{copy.eyebrow}</div>
+          <div style={{ fontSize: 30, marginBottom: 8, color: '#9A7A28' }}>◍</div>
+          <div style={{ fontSize: 12, letterSpacing: '0.16em', color: '#9A7A28', textTransform: 'uppercase', marginBottom: 8 }}>{copy.eyebrow}</div>
           <h2 style={{ fontSize: 24, lineHeight: 1.15, margin: '0 0 8px', color: '#F5EBD8' }}>{copy.title}</h2>
           <p style={{ margin: 0, color: '#C8BDA8', fontSize: 15, lineHeight: 1.6 }}>{copy.body}</p>
         </div>
 
         {previewTitle ? (
-          <div style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 16, padding: 14, marginBottom: 18 }}>
+          <div style={{ background: '#FBF7EE', border: '1px solid #EBE2D0', borderRadius: 16, padding: 14, marginBottom: 18 }}>
             <div style={{ fontSize: 11, letterSpacing: '0.12em', color: '#8E97A8', textTransform: 'uppercase', marginBottom: 6 }}>{copy.previewLabel}</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: '#F3E7D1' }}>{previewTitle}</div>
             {previewSubtitle ? <div style={{ fontSize: 13, color: '#B6A88F' }}>{previewSubtitle}</div> : null}
@@ -209,9 +164,9 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
                 <button
                   onClick={() => setMode('email')}
                   style={{
-                    background: '#161B27',
-                    color: '#E8DCC8',
-                    border: '1px solid #2A2F3E',
+                    background: '#FBF7EE',
+                    color: '#241E16',
+                    border: '1px solid #EBE2D0',
                     borderRadius: 12,
                     padding: '14px 18px',
                     fontSize: 15,
@@ -238,7 +193,7 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
                     setMode('choose')
                     setError('')
                   }}
-                  style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 13, cursor: 'pointer', textAlign: isHe ? 'right' : 'left', fontFamily: 'inherit', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: '#8A7F6C', fontSize: 13, cursor: 'pointer', textAlign: isHe ? 'right' : 'left', fontFamily: 'inherit', padding: 0 }}
                 >
                   {isHe ? 'חזרה' : 'Back'}
                 </button>
@@ -251,11 +206,11 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
                   required
                   dir="ltr"
                   style={{
-                    background: '#161B27',
-                    border: '1px solid #2A2F3E',
+                    background: '#FBF7EE',
+                    border: '1px solid #EBE2D0',
                     borderRadius: 12,
                     padding: '14px 16px',
-                    color: '#E8DCC8',
+                    color: '#241E16',
                     fontSize: 15,
                     fontFamily: 'inherit',
                     outline: 'none',
@@ -266,8 +221,8 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
                   type="submit"
                   disabled={loading}
                   style={{
-                    background: loading ? '#374151' : 'linear-gradient(135deg,#C9A84C 0%,#E8B84B 100%)',
-                    color: '#0D1117',
+                    background: loading ? '#E6DCC8' : '#241E16',
+                    color: '#F4ECD8',
                     border: 'none',
                     borderRadius: 12,
                     padding: '14px 18px',
@@ -286,7 +241,7 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
           </>
         ) : (
           <div style={{ textAlign: 'center', paddingTop: 6 }}>
-            <div style={{ fontSize: 38, marginBottom: 10, color: '#C9A84C' }}>✉</div>
+            <div style={{ fontSize: 38, marginBottom: 10, color: '#9A7A28' }}>✉</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6, color: '#F5EBD8' }}>{isHe ? 'בדקו את תיבת המייל' : 'Check your inbox'}</div>
             <div style={{ fontSize: 14, color: '#C8BDA8', lineHeight: 1.5 }}>{isHe ? `שלחנו קישור ל-${email}` : `We sent a link to ${email}`}</div>
           </div>

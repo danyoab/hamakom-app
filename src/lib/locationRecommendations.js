@@ -120,8 +120,14 @@ function scoreBehaviorBoost(location, profile) {
 // slot in without touching call sites.
 
 const HARD_FILTERS = [
+  // Closure / status gate (DATE_PLANNING_RULES H2, H3). Only OPERATIONAL venues
+  // may appear. Temporarily-closed and unknown/null status are excluded too —
+  // the audit proved temporary closures were leaking into live plans.
   function rejectClosed(loc) {
     if (loc.business_status === 'CLOSED_PERMANENTLY') return 'closed_permanently'
+    if (loc.business_status === 'CLOSED_TEMPORARILY') return 'closed_temporarily'
+    if (loc.business_status == null) return 'status_unknown'
+    if (loc.business_status !== 'OPERATIONAL') return 'not_operational'
     return null
   },
 ]

@@ -148,6 +148,16 @@ export default function ResultsPage({
           ) : null}
         </div>
 
+        {/* ── Verification disclaimer ───────────────────────────── */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 13px', background: '#FBF7EE', border: `1px solid ${BORDER}`, borderRadius: 10, marginBottom: 12 }}>
+          <span style={{ fontSize: 13, lineHeight: 1.4, flexShrink: 0 }}>ℹ️</span>
+          <p style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
+            {isHe
+              ? 'אנחנו מוודאים שהמקומות פעילים, אבל שעות הפעילות עשויות להשתנות. בדקו בקישור למפה או התקשרו לפני שיוצאים.'
+              : 'We verify venues are active, but hours can change. Please check the map link or call before going.'}
+          </p>
+        </div>
+
         {/* ── Narrative ─────────────────────────────────────────── */}
         {text.narrative ? (
           <div style={{ padding: '14px 16px', background: '#FBF7EE', border: `1px solid ${BORDER}`, borderRadius: 12, marginBottom: 12 }}>

@@ -691,8 +691,8 @@ export default function App() {
         </h1>
         <p style={{ fontSize: 14, color: '#8A7F6C', maxWidth: 420, lineHeight: 1.55, margin: '0 0 22px' }}>
           {isHe
-            ? 'אנחנו מעדיפים להגיד את האמת מאשר להמציא ערב שלא יעבוד. נסו לבחור עיר אחרת או להחליף את סוג החוויה.'
-            : 'We\'d rather be honest than fake an evening that won\'t work. Try a different city, or pick a different kind of experience.'}
+            ? 'עדיין אין לנו מספיק אופציות מאומתות בעיר הזו. נסו אזור קרוב או הקלו על ההעדפות שלכם.'
+            : 'We don’t have enough verified options in this city yet. Try a nearby area or loosen your preferences.'}
         </p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
@@ -1389,21 +1389,26 @@ function ExplorePage({
   )
 }
 
-function TonightPlanCard({ lang, tx, plan, onOpenPlan, onStartQuiz }) {
+function TonightPlanCard({ lang, tx, plan, onOpenPlan }) {
   if (!plan) return null
-
   const isHe = lang === 'he'
+  const meta = [
+    isHe ? plan.start_time_text_he : plan.start_time_text_en,
+    isHe ? plan.duration_text_he : plan.duration_text_en,
+    `${(plan.stops || []).length} ${isHe ? 'תחנות' : 'stops'}`,
+  ].filter(Boolean)
+
   return (
-    <div
+    <button
+      onClick={onOpenPlan}
       style={{
-        background: APP_PANEL,
-        border: `1px solid ${APP_BORDER}`,
-        borderRadius: 22,
-        padding: 20,
+        display: 'block', width: '100%', textAlign: isHe ? 'right' : 'left',
+        background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 22,
+        padding: 18, cursor: 'pointer', fontFamily: 'inherit',
         boxShadow: '0 10px 30px -20px rgba(40,30,12,0.5)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 11 }}>
         <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', color: APP_ACCENT, textTransform: 'uppercase' }}>
           {plan.city ? `${isHe ? 'בחירת הערב' : "Tonight's pick"} · ${plan.city}` : (isHe ? 'בחירת הערב' : "Tonight's pick")}
         </span>
@@ -1411,29 +1416,26 @@ function TonightPlanCard({ lang, tx, plan, onOpenPlan, onStartQuiz }) {
           {isHe ? 'התאמה חזקה' : 'Strong match'}
         </span>
       </div>
-      <div style={{ fontFamily: SERIF, fontSize: 23, fontWeight: 600, lineHeight: 1.12, marginBottom: 8, color: APP_TEXT }}>{isHe ? plan.title_he : plan.title_en}</div>
-      <div style={{ color: APP_SOFT, fontSize: 13.5, lineHeight: 1.5, marginBottom: 14 }}>{isHe ? plan.narrative_he : plan.narrative_en}</div>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', borderTop: `1px solid #F0E9DA`, paddingTop: 13, marginBottom: 16 }}>
-        {[isHe ? plan.start_time_text_he : plan.start_time_text_en,
-          isHe ? plan.duration_text_he : plan.duration_text_en,
-          `${(plan.stops || []).length} ${isHe ? 'תחנות' : 'stops'}`]
-          .filter(Boolean)
-          .map((meta, i, arr) => (
-            <span key={meta} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 12.5, color: '#7E7361', fontWeight: 600 }}>{meta}</span>
-              {i < arr.length - 1 ? <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#D8CCB2' }} /> : null}
-            </span>
-          ))}
+
+      <div style={{ fontFamily: SERIF, fontSize: 23, fontWeight: 600, lineHeight: 1.12, marginBottom: 6, color: APP_TEXT }}>
+        {isHe ? plan.title_he : plan.title_en}
       </div>
-      <div style={{ display: 'grid', gap: 8 }}>
-        <button onClick={onOpenPlan} style={{ ...primaryButtonStyle, width: '100%' }}>
-          {tx.viewTonightsPick}
-        </button>
-        <button onClick={onStartQuiz} style={textLinkButtonStyle}>
-          {tx.getPersonalPlan}
-        </button>
+      <div style={{ color: APP_SOFT, fontSize: 13.5, lineHeight: 1.5, marginBottom: 14 }}>
+        {isHe ? plan.narrative_he : plan.narrative_en}
       </div>
-    </div>
+
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', borderTop: '1px solid #F0E9DA', paddingTop: 13 }}>
+        {meta.map((m, i) => (
+          <span key={m} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 12.5, color: '#7E7361', fontWeight: 600 }}>{m}</span>
+            {i < meta.length - 1 ? <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#D8CCB2' }} /> : null}
+          </span>
+        ))}
+        <span style={{ marginInlineStart: 'auto', fontSize: 13, color: APP_ACCENT, fontWeight: 700, whiteSpace: 'nowrap' }}>
+          {isHe ? '← צפייה' : 'View →'}
+        </span>
+      </div>
+    </button>
   )
 }
 

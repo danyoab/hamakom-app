@@ -6,7 +6,9 @@ import {
   timeFitForStopIndex,
   buildComposeMetadata,
   sameLocale,
+  distanceKm,
 } from './planCoherence.js'
+import { plannableLocations, isRealPlan, sameCity, violatesFoodPairing, MAX_LEG_KM } from './planGates.js'
 
 // Variety knobs — see /plans/the-plans-feel-limited-quiet-moon.md
 const SCORE_BAND_WIDTH = 2.5
@@ -368,7 +370,7 @@ function scorePrimaryBoost(location, answers, usageProfile) {
   return score
 }
 
-function scoreSupportStop(primary, candidate, answers, usageProfile, stopIndex, selectedIds = [], totalStops = 3, prevStop = null) {
+function scoreSupportStop(primary, candidate, answers, usageProfile, stopIndex, selectedIds = [], totalStops = 3, prevStop = null, selectedStops = []) {
   if (candidate.id === primary.id) return -Infinity
   if (candidate.city !== primary.city) return -Infinity
   if (selectedIds.includes(candidate.id)) return -Infinity
@@ -379,6 +381,17 @@ function scoreSupportStop(primary, candidate, answers, usageProfile, stopIndex, 
   // off (previous stop, or primary for stop 2).
   const anchor = prevStop || primary
   if (!sameLocale(anchor, candidate)) return -Infinity
+
+  // H7 (DATE_PLANNING_RULES): hard distance cap. A leg over MAX_LEG_KM from the
+  // previous stop is rejected outright — we return a shorter plan rather than
+  // drag the user across town (kills the proven 2.96–5.69 km legs).
+  const leg = distanceKm(anchor, candidate)
+  if (leg != null && leg > MAX_LEG_KM) return -Infinity
+
+  // H6: no two dinners / heavy-food stops. Reject a candidate that would create
+  // a second heavy meal, or a food→food adjacency that isn't a light follow-on
+  // (dessert/bar). Blocks restaurant→restaurant and café→restaurant.
+  if (violatesFoodPairing(selectedStops, candidate, prevStop)) return -Infinity
 
   const candidateCategory = normalizeCategory(candidate.category)
   const primaryCategory = normalizeCategory(primary.category)
@@ -415,12 +428,13 @@ function buildSupportStops(primary, locations, answers, usageProfile) {
 
   while (chosen.length < desiredCount - 1) {
     const prevStop = chosen.length ? chosen[chosen.length - 1] : null
+    const selectedStops = [primary, ...chosen]
     const next = [...locations]
       .map((candidate) => ({
         candidate,
         score: scoreSupportStop(
           primary, candidate, answers, usageProfile,
-          chosen.length + 1, selectedIds, desiredCount, prevStop,
+          chosen.length + 1, selectedIds, desiredCount, prevStop, selectedStops,
         ),
       }))
       .filter((entry) => entry.score > 1)
@@ -654,12 +668,23 @@ function buildGeneratedPlan(location, locations, answers, behavior, usageProfile
 
 export function getSmartMatchedPlans(curatedPlans, locations, answers, count = 2, behavior = {}) {
   const usageProfile = buildLocationUsageProfile(behavior)
-  const curated = getMatchedPlans(curatedPlans, answers, curatedPlans.length, behavior).map((plan) => ({
-    ...plan,
-    source_type: plan.source_type || 'curated',
-    _compose: plan._compose || { engine: 'curated', flowWarnings: [], legs: [], flowDeltas: [], derivedVibes: [] },
-    _flowWarnings: plan._flowWarnings || [],
-  }))
+
+  // Venue-level hard gates (DATE_PLANNING_RULES H1/H2/H3): only OPERATIONAL,
+  // real venues are eligible — as anchors AND as support stops. Closed/temp-
+  // closed/unknown rows are removed before any composition happens.
+  const pool = plannableLocations(locations)
+
+  const wantsCity = answers.city && answers.city !== 'flexible'
+  const curated = getMatchedPlans(curatedPlans, answers, curatedPlans.length, behavior)
+    // H5: drop placeholder/generic plans — every stop must link to a real venue.
+    // H4: a curated plan must match the chosen city (no cross-city fallback).
+    .filter((plan) => isRealPlan(plan) && (!wantsCity || sameCity(plan.city, answers.city)))
+    .map((plan) => ({
+      ...plan,
+      source_type: plan.source_type || 'curated',
+      _compose: plan._compose || { engine: 'curated', flowWarnings: [], legs: [], flowDeltas: [], derivedVibes: [] },
+      _flowWarnings: plan._flowWarnings || [],
+    }))
 
   // City-scoped anchor pool: when the user picked a real city, only that
   // city's rows can anchor a generated plan. Prevents cross-city anchors
@@ -667,9 +692,9 @@ export function getSmartMatchedPlans(curatedPlans, locations, answers, count = 2
   // flow through getMatchedPlans above with their existing soft penalty so
   // a thoughtful Tel Aviv plan can still show for a Jerusalem user if no
   // generated plan beats it.
-  let anchorPool = (answers.city && answers.city !== 'flexible')
-    ? (locations || []).filter((l) => l.city === answers.city)
-    : (locations || [])
+  let anchorPool = wantsCity
+    ? pool.filter((l) => sameCity(l.city, answers.city))
+    : pool
 
   // Focus-scoped anchor pool: prefer anchors that carry the user's stated
   // focus. Without this, a high-curation cafe can out-score the city's only
@@ -691,7 +716,7 @@ export function getSmartMatchedPlans(curatedPlans, locations, answers, count = 2
   }
 
   const generated = anchorPool
-    .map((location) => buildGeneratedPlan(location, locations || [], answers, behavior, usageProfile))
+    .map((location) => buildGeneratedPlan(location, pool, answers, behavior, usageProfile))
     .filter(Boolean)
 
   const recentIds = getRecentPlanIds()

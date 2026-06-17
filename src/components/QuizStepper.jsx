@@ -142,7 +142,7 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
       <div style={{ padding: '22px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <button
           onClick={handleBack}
-          style={{ background: 'none', border: 'none', color: MUTED, cursor: 'pointer', fontSize: 20, padding: 4, lineHeight: 1, fontFamily: font }}
+          style={{ color: '#5A5142', cursor: 'pointer', fontSize: 17, width: 38, height: 38, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, fontFamily: font, background: PANEL, border: `1px solid ${BORDER}` }}
           aria-label="Back"
         >
           {isHe ? '→' : '←'}

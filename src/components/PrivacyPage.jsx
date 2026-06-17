@@ -1,9 +1,9 @@
-const APP_BG = '#0D1117'
-const APP_PANEL = '#161B27'
-const APP_BORDER = '#2A2F3E'
-const APP_TEXT = '#E8DCC8'
+const APP_BG = '#F7F2E8'
+const APP_PANEL = '#FFFFFF'
+const APP_BORDER = '#EBE2D0'
+const APP_TEXT = '#241E16'
 const APP_ACCENT = '#C9A84C'
-const APP_MUTED = '#6B7280'
+const APP_MUTED = '#A99A85'
 
 const SECTIONS_EN = [
   {
@@ -142,7 +142,7 @@ export default function PrivacyPage({ lang, font, onBack }) {
         <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 6px' }}>{isHe ? 'מדיניות פרטיות' : 'Privacy Policy'}</h1>
         <p style={{ color: APP_MUTED, fontSize: 13, margin: '0 0 36px' }}>{isHe ? 'עודכן לאחרונה: מאי 2026' : 'Last updated: May 2026'}</p>
 
-        <p style={{ color: '#C8BDA8', fontSize: 15, lineHeight: 1.7, margin: '0 0 32px' }}>
+        <p style={{ color: '#6E6450', fontSize: 15, lineHeight: 1.7, margin: '0 0 32px' }}>
           {isHe
             ? 'HaMakom ("אנחנו") מכבדת את פרטיותכם. מסמך זה מסביר אילו נתונים אנחנו אוספים, כיצד אנחנו משתמשים בהם, ומהן הזכויות שלכם.'
             : 'HaMakom ("we", "us") respects your privacy. This document explains what data we collect, how we use it, and what rights you have.'}
@@ -151,7 +151,7 @@ export default function PrivacyPage({ lang, font, onBack }) {
         {sections.map((s) => (
           <section key={s.title} style={{ marginBottom: 32, paddingBottom: 32, borderBottom: `1px solid ${APP_BORDER}` }}>
             <h2 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: APP_ACCENT }}>{s.title}</h2>
-            <div style={{ fontSize: 14, lineHeight: 1.8, color: '#C8BDA8', whiteSpace: 'pre-line' }}>{s.body}</div>
+            <div style={{ fontSize: 14, lineHeight: 1.8, color: '#6E6450', whiteSpace: 'pre-line' }}>{s.body}</div>
           </section>
         ))}
       </div>

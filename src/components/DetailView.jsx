@@ -17,7 +17,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
   const showImg = loc.image_url && !imgFailed
 
   return (
-    <div dir={tx.dir} style={{ minHeight: '100vh', background: '#0D1117', color: '#E8DCC8', fontFamily: font }}>
+    <div dir={tx.dir} style={{ minHeight: '100vh', background: '#F7F2E8', color: '#241E16', fontFamily: font }}>
       <div style={{ position: 'relative', height: 220, background: showImg ? '#000' : `${color}22`, overflow: 'hidden' }}>
         {showImg ? (
           <img src={loc.image_url} alt={name} onError={() => setImgFailed(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
@@ -33,10 +33,10 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
             position: 'absolute',
             top: 14,
             [lang === 'he' ? 'right' : 'left']: 16,
-            background: 'rgba(13,17,23,0.65)',
-            border: '1px solid #2A2F3E',
+            background: 'rgba(13,17,23,0.55)',
+            border: '1px solid rgba(255,253,247,0.5)',
             borderRadius: 8,
-            color: '#C9A84C',
+            color: '#F4ECD8',
             cursor: 'pointer',
             fontSize: 13,
             fontFamily: 'inherit',
@@ -54,18 +54,18 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         </div>
 
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-          <h2 style={{ fontSize: 30, fontWeight: 400, margin: 0, lineHeight: 1.1 }}>{name}</h2>
+          <h2 style={{ fontFamily: "'Spectral','Frank Ruhl Libre',Georgia,serif", fontSize: 30, fontWeight: 600, margin: 0, lineHeight: 1.1 }}>{name}</h2>
           {showSave ? (
             <button onClick={onToggleSave} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 26, padding: 4, flexShrink: 0 }}>
               {saved ? '♥' : '♡'}
             </button>
           ) : null}
         </div>
-        <div style={{ fontSize: 15, color: '#C9A84C', marginTop: 4, fontStyle: 'italic' }}>{city}</div>
+        <div style={{ fontSize: 15, color: '#9A7A28', marginTop: 4, fontStyle: 'italic' }}>{city}</div>
 
         {loc.kashrus ? (
-          <div style={{ marginTop: 8, display: 'inline-block', background: '#1A3A2A', border: '1px solid #2D6A4F', borderRadius: 6, padding: '4px 12px' }}>
-            <span style={{ fontSize: 12, color: '#4ADE80' }}>✓ {loc.kashrus}</span>
+          <div style={{ marginTop: 8, display: 'inline-block', background: '#E9F0E4', border: '1px solid #C7DCBC', borderRadius: 999, padding: '4px 12px' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#4F7144' }}>✓ {loc.kashrus}</span>
           </div>
         ) : null}
 
@@ -78,9 +78,9 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
           ))}
         </div>
 
-        <div style={{ height: 1, background: '#2A2F3E', margin: '20px 0' }} />
+        <div style={{ height: 1, background: '#EBE2D0', margin: '20px 0' }} />
 
-        <p style={{ fontSize: 16, lineHeight: 1.7, color: '#D1C4A8', fontStyle: 'italic' }}>{desc}</p>
+        <p style={{ fontSize: 16, lineHeight: 1.7, color: '#6E6450', fontStyle: 'italic' }}>{desc}</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 20 }}>
           <InfoBox label={tx.priceRange} value={tx.priceLabels[loc.price]} />
@@ -97,12 +97,12 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                background: '#161B27',
-                border: '1px solid #2A2F3E',
+                background: '#FFFFFF',
+                border: '1px solid #EBE2D0',
                 borderRadius: 10,
                 padding: '13px 16px',
                 textDecoration: 'none',
-                color: '#C9A84C',
+                color: '#9A7A28',
                 fontSize: 14,
                 fontFamily: font,
               }}
@@ -119,12 +119,12 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: '#0d2618',
-              border: '1px solid #1a4d2e',
+              background: '#E9F0E4',
+              border: '1px solid #C7DCBC',
               borderRadius: 10,
               padding: '13px 16px',
               textDecoration: 'none',
-              color: '#4ADE80',
+              color: '#2F6B3F',
               fontSize: 14,
               fontFamily: font,
             }}
@@ -140,12 +140,12 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: '#1A0D26',
-              border: '1px solid #4A1D6E',
+              background: '#F3EDFA',
+              border: '1px solid #E0D0F0',
               borderRadius: 10,
               padding: '13px 16px',
               textDecoration: 'none',
-              color: '#C084FC',
+              color: '#7A4F9A',
               fontSize: 14,
               fontFamily: font,
             }}
@@ -156,19 +156,19 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         </div>
 
         <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.15em', color: '#6B7280', marginBottom: 8, textTransform: 'uppercase' }}>{tx.goodFor}</div>
+          <div style={{ fontSize: 10, letterSpacing: '0.15em', color: '#A99A85', marginBottom: 8, textTransform: 'uppercase' }}>{tx.goodFor}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {loc.occasion?.map((tag) => (
-              <span key={tag} style={{ background: '#1F2937', border: '1px solid #374151', borderRadius: 16, padding: '4px 12px', fontSize: 12, color: '#9CA3AF' }}>
+              <span key={tag} style={{ background: '#F2EBDB', border: '1px solid #E6DCC8', borderRadius: 16, padding: '4px 12px', fontSize: 12, color: '#8A7F6C' }}>
                 {tx.occasions[tag] || tag}
               </span>
             ))}
           </div>
         </div>
 
-        <div style={{ marginTop: 24, background: '#161B27', borderRadius: 10, padding: 18, border: '1px solid #2A2F3E' }}>
-          <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.1em', marginBottom: 6, textTransform: 'uppercase' }}>{tx.importantNote}</div>
-          <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0, lineHeight: 1.6 }}>{tx.kashrusNote}</p>
+        <div style={{ marginTop: 24, background: '#FFFFFF', borderRadius: 10, padding: 18, border: '1px solid #EBE2D0' }}>
+          <div style={{ fontSize: 11, color: '#9A7A28', letterSpacing: '0.1em', marginBottom: 6, textTransform: 'uppercase' }}>{tx.importantNote}</div>
+          <p style={{ fontSize: 13, color: '#8A7F6C', margin: 0, lineHeight: 1.6 }}>{tx.kashrusNote}</p>
         </div>
 
         {setDateFeedback ? (
@@ -177,7 +177,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
 
         <button
           onClick={() => setShowReport(true)}
-          style={{ background: 'none', border: 'none', color: '#4B5563', cursor: 'pointer', fontSize: 12, fontFamily: font, marginTop: 24, padding: '4px 0', textDecoration: 'underline', textDecorationColor: 'rgba(75,85,99,0.4)', textUnderlineOffset: 3 }}
+          style={{ background: 'none', border: 'none', color: '#B0A48E', cursor: 'pointer', fontSize: 12, fontFamily: font, marginTop: 24, padding: '4px 0', textDecoration: 'underline', textDecorationColor: 'rgba(75,85,99,0.4)', textUnderlineOffset: 3 }}
         >
           {lang === 'he' ? 'דווח על בעיה במקום זה' : 'Report a problem with this place'}
         </button>
@@ -198,9 +198,9 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
 
 function InfoBox({ label, value }) {
   return (
-    <div style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 8, padding: '11px 14px' }}>
-      <div style={{ fontSize: 9, letterSpacing: '0.15em', color: '#6B7280', marginBottom: 3, textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ fontSize: 14, color: '#E8DCC8' }}>{value}</div>
+    <div style={{ background: '#FFFFFF', border: '1px solid #EBE2D0', borderRadius: 8, padding: '11px 14px' }}>
+      <div style={{ fontSize: 9, letterSpacing: '0.15em', color: '#A99A85', marginBottom: 3, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: 14, color: '#241E16' }}>{value}</div>
     </div>
   )
 }

@@ -6,7 +6,7 @@ import { CATEGORY_EMOJI, CITY_COORDS, getCategoryColor } from '../lib/constants'
 
 function cityIcon(count, active) {
   return L.divIcon({
-    html: `<div style="background:${active ? '#C9A84C' : '#1A2035'};color:${active ? '#0D1117' : '#E8DCC8'};border:2px solid ${active ? '#C9A84C' : '#3A4055'};border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,0.6);">${count}</div>`,
+    html: `<div style="background:${active ? '#C9A84C' : '#FFFFFF'};color:#241E16;border:2px solid ${active ? '#C9A84C' : '#D8CCB2'};border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;box-shadow:0 3px 9px rgba(40,30,12,0.35);">${count}</div>`,
     className: '',
     iconSize: [36, 36],
     iconAnchor: [18, 18],
@@ -114,8 +114,8 @@ export default function MapView({
         right: 0,
         bottom: 0,
         height: panelHeight,
-        background: '#161B27',
-        borderTop: '2px solid #2A2F3E',
+        background: '#FFFFFF',
+        borderTop: '2px solid #EBE2D0',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 2000,
@@ -127,8 +127,8 @@ export default function MapView({
         right: 0,
         bottom: bottomOffset,
         height: panelHeight,
-        background: '#161B27',
-        borderTop: '2px solid #2A2F3E',
+        background: '#FFFFFF',
+        borderTop: '2px solid #EBE2D0',
         display: 'flex',
         flexDirection: 'column',
         zIndex: 2000,
@@ -140,7 +140,7 @@ export default function MapView({
       dir={tx.dir}
       style={{
         fontFamily: font,
-        color: '#E8DCC8',
+        color: '#241E16',
         ...(embedded ? { position: 'relative', width: '100%', height: '100%', minHeight: 0 } : {}),
       }}
     >
@@ -152,8 +152,8 @@ export default function MapView({
             left: 0,
             right: 0,
             height: 56,
-            background: '#161B27',
-            borderBottom: '1px solid #2A2F3E',
+            background: '#FFFFFF',
+            borderBottom: '1px solid #EBE2D0',
             padding: '0 20px',
             display: 'flex',
             alignItems: 'center',
@@ -163,12 +163,12 @@ export default function MapView({
         >
           <button
             onClick={onBack}
-            style={{ background: 'none', border: 'none', color: '#C9A84C', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}
+            style={{ background: 'none', border: 'none', color: '#9A7A28', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}
           >
             {tx.back}
           </button>
           <span style={{ fontSize: 15, fontWeight: 500 }}>{tx.map}</span>
-          <span style={{ fontSize: 11, color: '#6B7280', marginLeft: 'auto' }}>
+          <span style={{ fontSize: 11, color: '#A99A85', marginLeft: 'auto' }}>
             {locations.length} {tx.locations}
           </span>
         </div>
@@ -198,13 +198,13 @@ export default function MapView({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px 8px', flexShrink: 0 }}>
             <span style={{ fontSize: 15, fontWeight: 500 }}>
               {selectedCity}
-              <span style={{ fontSize: 11, color: '#6B7280', marginInlineStart: 8 }}>
+              <span style={{ fontSize: 11, color: '#A99A85', marginInlineStart: 8 }}>
                 {panelLocations.length} {lang === 'he' ? 'מקומות' : `place${panelLocations.length !== 1 ? 's' : ''}`}
               </span>
             </span>
             <button
               onClick={() => setSelectedCity(null)}
-              style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: '0 4px' }}
+              style={{ background: 'none', border: 'none', color: '#8A7F6C', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: '0 4px' }}
             >
               ×
             </button>
@@ -220,8 +220,8 @@ export default function MapView({
                   key={location.id}
                   onClick={() => onOpenDetail(location)}
                   style={{
-                    background: '#1F2937',
-                    border: '1px solid #2A2F3E',
+                    background: '#F2EBDB',
+                    border: '1px solid #EBE2D0',
                     borderLeft: lang === 'en' ? `3px solid ${getCategoryColor(location.category)}` : undefined,
                     borderRight: lang === 'he' ? `3px solid ${getCategoryColor(location.category)}` : undefined,
                     borderRadius: 8,
@@ -232,13 +232,13 @@ export default function MapView({
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                     <span style={{ fontSize: 13 }}>{CATEGORY_EMOJI[location.category]}</span>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: '#E8DCC8' }}>{name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: '#241E16' }}>{name}</span>
                     {location.kashrus ? (
                       <span style={{ fontSize: 10, color: '#4ADE80', marginInlineStart: 'auto' }}>✓ {location.kashrus}</span>
                     ) : null}
                   </div>
                   {desc ? (
-                    <div style={{ fontSize: 11, color: '#9CA3AF', fontStyle: 'italic', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: 11, color: '#8A7F6C', fontStyle: 'italic', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                       {desc}
                     </div>
                   ) : null}

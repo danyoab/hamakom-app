@@ -1,9 +1,9 @@
 import { CATEGORIES, CITIES, CATEGORY_EMOJI } from '../lib/constants'
 
 const ACCENT = '#C9A84C'
-const PANEL  = '#161B27'
-const BORDER = '#2A2F3E'
-const MUTED  = '#9CA3AF'
+const PANEL  = '#FFFFFF'
+const BORDER = '#EBE2D0'
+const MUTED  = '#8A7F6C'
 
 const DEFAULTS = {
   cityFilter: 'All Cities',
@@ -16,7 +16,7 @@ const DEFAULTS = {
 function chipStyle(active) {
   return {
     background: active ? ACCENT : PANEL,
-    color: active ? '#0D1117' : MUTED,
+    color: active ? '#F7F2E8' : MUTED,
     border: `1px solid ${active ? ACCENT : BORDER}`,
     borderRadius: 999,
     padding: '7px 13px',

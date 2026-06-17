@@ -36,8 +36,8 @@ export default function FeedbackStrip({ lang, loc, dateFeedback, setDateFeedback
   }
 
   return (
-    <div style={{ marginTop: 24, paddingTop: 18, borderTop: '1px solid #1F2937' }}>
-      <div style={{ fontSize: 10, letterSpacing: '0.15em', color: '#6B7280', marginBottom: 10, textTransform: 'uppercase' }}>
+    <div style={{ marginTop: 24, paddingTop: 18, borderTop: '1px solid #EBE2D0' }}>
+      <div style={{ fontSize: 10, letterSpacing: '0.15em', color: '#A99A85', marginBottom: 10, textTransform: 'uppercase' }}>
         {lang === 'he' ? 'איך היה?' : 'How was this?'}
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -48,9 +48,9 @@ export default function FeedbackStrip({ lang, loc, dateFeedback, setDateFeedback
               key={c.key}
               onClick={() => toggle(c.key)}
               style={{
-                background: active ? '#C9A84C' : '#1F2937',
-                color: active ? '#0D1117' : '#9CA3AF',
-                border: `1px solid ${active ? '#C9A84C' : '#374151'}`,
+                background: active ? '#C9A84C' : '#F2EBDB',
+                color: active ? '#F7F2E8' : '#8A7F6C',
+                border: `1px solid ${active ? '#C9A84C' : '#E6DCC8'}`,
                 borderRadius: 999,
                 padding: '5px 12px',
                 fontSize: 12,
@@ -64,7 +64,7 @@ export default function FeedbackStrip({ lang, loc, dateFeedback, setDateFeedback
           )
         })}
       </div>
-      <div style={{ fontSize: 10, color: '#4B5563', marginTop: 8 }}>
+      <div style={{ fontSize: 10, color: '#B0A48E', marginTop: 8 }}>
         {lang === 'he'
           ? 'נשמר באופן פרטי כדי לשפר את ההמלצות שלכם.'
           : 'Saved privately to improve your recommendations.'}

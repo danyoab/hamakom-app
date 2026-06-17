@@ -17,15 +17,15 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: '#161B27',
-        border: `1px solid ${hovered ? '#3A4055' : '#2A2F3E'}`,
+        background: '#FFFFFF',
+        border: `1px solid ${hovered ? '#D8CCB2' : '#EBE2D0'}`,
         borderRadius: 14,
         cursor: 'pointer',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
-        boxShadow: hovered ? '0 6px 18px rgba(0,0,0,0.35)' : 'none',
+        boxShadow: hovered ? '0 10px 24px -14px rgba(40,30,12,0.4)' : 'none',
         minWidth: 0,
       }}
     >
@@ -34,7 +34,7 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
           position: 'relative',
           width: '100%',
           aspectRatio: '4 / 3',
-          background: showImg ? '#0B0F17' : `${color}22`,
+          background: showImg ? '#EDE7D9' : `${color}22`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -60,7 +60,7 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
               top: 8,
               [isHe ? 'right' : 'left']: 8,
               background: 'rgba(201,168,76,0.92)',
-              color: '#0D1117',
+              color: '#F4ECD8',
               fontSize: 10,
               fontWeight: 700,
               letterSpacing: '0.06em',
@@ -93,7 +93,7 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
               cursor: 'pointer',
               fontSize: 16,
               lineHeight: 1,
-              color: saved ? '#C9A84C' : '#E8DCC8',
+              color: saved ? '#E0BE58' : '#F4ECD8',
             }}
           >
             {saved ? '♥' : '♡'}
@@ -106,7 +106,7 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: '#E8DCC8',
+            color: '#241E16',
             lineHeight: 1.3,
             display: '-webkit-box',
             WebkitLineClamp: 2,
@@ -117,13 +117,13 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
         >
           {name}
         </div>
-        <div style={{ fontSize: 12, color: '#9CA3AF', lineHeight: 1.3, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 12, color: '#8A7F6C', lineHeight: 1.3, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <span aria-hidden>{CATEGORY_EMOJI[loc.category]}</span>
-          <span style={{ color: '#C9A84C' }}>{city}</span>
+          <span style={{ color: '#9A7A28' }}>{city}</span>
           {priceLabel ? (
             <>
-              <span style={{ color: '#4B5563' }}>·</span>
-              <span style={{ color: '#B8A990', fontWeight: 600, letterSpacing: '0.04em' }}>{priceLabel}</span>
+              <span style={{ color: '#B0A48E' }}>·</span>
+              <span style={{ color: '#6E6450', fontWeight: 600, letterSpacing: '0.04em' }}>{priceLabel}</span>
             </>
           ) : null}
         </div>

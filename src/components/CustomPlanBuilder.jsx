@@ -4,12 +4,12 @@ import { getDistanceKm, formatWalkTime } from '../lib/distance'
 
 const PlanRouteMap = lazy(() => import('./PlanRouteMap'))
 
-const SURFACE = '#161B27'
-const PANEL = '#121722'
-const BORDER = '#2A2F3E'
+const SURFACE = '#FFFFFF'
+const PANEL = '#FBF7EE'
+const BORDER = '#EBE2D0'
 const ACCENT = '#C9A84C'
-const TEXT = '#E8DCC8'
-const MUTED = '#9CA3AF'
+const TEXT = '#241E16'
+const MUTED = '#8A7F6C'
 
 function normalizeCategory(category) {
   if (category === 'CafÃ©s & Restaurants') return 'Cafés & Restaurants'
@@ -150,10 +150,10 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
   }
 
   return (
-    <div dir={tx.dir} style={{ minHeight: '100vh', background: '#0D1117', color: TEXT, fontFamily: font }}>
+    <div dir={tx.dir} style={{ minHeight: '100vh', background: '#F7F2E8', color: TEXT, fontFamily: font }}>
       <div
         style={{
-          background: 'linear-gradient(180deg,#111827 0%,#131B17 100%)',
+          background: 'linear-gradient(165deg,#F7F2E8 0%,#F1EAD9 100%)',
           borderBottom: `1px solid ${BORDER}`,
           padding: '20px 20px 18px',
         }}
@@ -167,13 +167,13 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
           </button>
           <div style={{ fontSize: 12, letterSpacing: '0.14em', color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>{tx.buildYourOwnPlanEyebrow}</div>
           <h1 style={{ fontSize: 30, lineHeight: 1.08, margin: '0 0 8px' }}>{tx.buildYourOwnPlanTitle}</h1>
-          <p style={{ margin: 0, maxWidth: 720, color: '#B8A990', fontSize: 15, lineHeight: 1.6 }}>{tx.buildYourOwnPlanText}</p>
+          <p style={{ margin: 0, maxWidth: 720, color: '#6E6450', fontSize: 15, lineHeight: 1.6 }}>{tx.buildYourOwnPlanText}</p>
         </div>
       </div>
 
       <div style={{ maxWidth: 940, margin: '0 auto', padding: '20px 20px 40px', display: 'grid', gap: 16 }}>
         <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
-          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepArea}</div>
+          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepArea}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             <button
               onClick={() => setSelectedCity('')}
@@ -191,7 +191,7 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
 
         <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
           <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
-            <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepOne}</div>
+            <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepOne}</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{tx.buildPlanFirstStop}</div>
             <input
               value={firstSearch}
@@ -224,7 +224,7 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
           </section>
 
           <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
-            <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepTwo}</div>
+            <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepTwo}</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{tx.buildPlanSecondStop}</div>
 
             {!firstStop ? (
@@ -270,16 +270,16 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
         </div>
 
         <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
-          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanPreview}</div>
+          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanPreview}</div>
           <div style={{ display: 'grid', gap: 12 }}>
             <PlanSummaryStop index={1} label={tx.buildPlanFirstStop} location={firstStop} lang={lang} />
             <PlanSummaryStop index={2} label={tx.buildPlanSecondStop} location={secondStop} lang={lang} />
           </div>
-          <p style={{ margin: '14px 0 0', color: '#B8A990', lineHeight: 1.6 }}>{summaryText || tx.buildPlanPreviewPrompt}</p>
+          <p style={{ margin: '14px 0 0', color: '#6E6450', lineHeight: 1.6 }}>{summaryText || tx.buildPlanPreviewPrompt}</p>
 
           {firstStop && secondStop ? (
             <div style={{ marginTop: 16, borderRadius: 12, overflow: 'hidden', height: 240, border: `1px solid ${BORDER}` }}>
-              <Suspense fallback={<div style={{ height: '100%', background: '#0B0F17', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>Loading map…</div>}>
+              <Suspense fallback={<div style={{ height: '100%', background: '#EDE7D9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>Loading map…</div>}>
                 <PlanRouteMap stops={[firstStop, secondStop]} lang={lang} />
               </Suspense>
             </div>
@@ -382,7 +382,7 @@ function PlanSummaryStop({ index, label, location, lang }) {
           height: 30,
           borderRadius: 999,
           background: ACCENT,
-          color: '#0D1117',
+          color: '#F4ECD8',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -393,7 +393,7 @@ function PlanSummaryStop({ index, label, location, lang }) {
         {index}
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 11, letterSpacing: '0.12em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+        <div style={{ fontSize: 11, letterSpacing: '0.12em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
         {text ? (
           <>
             <div style={{ fontSize: 17, fontWeight: 600 }}>{text.name}</div>
@@ -409,9 +409,9 @@ function PlanSummaryStop({ index, label, location, lang }) {
 }
 
 const chipStyle = {
-  background: '#1F2937',
+  background: '#F2EBDB',
   color: TEXT,
-  border: '1px solid #374151',
+  border: '1px solid #E6DCC8',
   borderRadius: 999,
   padding: '10px 14px',
   cursor: 'pointer',
@@ -421,8 +421,8 @@ const chipStyle = {
 }
 
 const selectedChipStyle = {
-  background: 'linear-gradient(135deg,#C9A84C 0%,#E8B84B 100%)',
-  color: '#0D1117',
+  background: '#241E16',
+  color: '#F4ECD8',
   border: 'none',
   borderRadius: 999,
   padding: '10px 14px',
@@ -433,8 +433,8 @@ const selectedChipStyle = {
 }
 
 const primaryButtonStyle = {
-  background: 'linear-gradient(135deg,#C9A84C 0%,#E8B84B 100%)',
-  color: '#0D1117',
+  background: '#241E16',
+  color: '#F4ECD8',
   border: 'none',
   borderRadius: 12,
   padding: '14px 16px',
@@ -451,9 +451,9 @@ const disabledButtonStyle = {
 }
 
 const secondaryButtonStyle = {
-  background: '#1F2937',
+  background: '#F2EBDB',
   color: TEXT,
-  border: '1px solid #374151',
+  border: '1px solid #E6DCC8',
   borderRadius: 12,
   padding: '14px 16px',
   cursor: 'pointer',
@@ -463,8 +463,8 @@ const secondaryButtonStyle = {
 }
 
 const primaryMiniButtonStyle = {
-  background: 'linear-gradient(135deg,#C9A84C 0%,#E8B84B 100%)',
-  color: '#0D1117',
+  background: '#241E16',
+  color: '#F4ECD8',
   border: 'none',
   borderRadius: 12,
   padding: '9px 12px',
@@ -475,9 +475,9 @@ const primaryMiniButtonStyle = {
 }
 
 const secondaryMiniButtonStyle = {
-  background: '#1F2937',
+  background: '#F2EBDB',
   color: TEXT,
-  border: '1px solid #374151',
+  border: '1px solid #E6DCC8',
   borderRadius: 12,
   padding: '9px 12px',
   cursor: 'pointer',

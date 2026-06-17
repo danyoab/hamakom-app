@@ -72,28 +72,28 @@ export default function SuggestView({ tx, font, onBack, initialCity = '' }) {
   const dir = tx.dir
 
   if (status === 'success') return (
-    <div dir={dir} style={{ minHeight:'100vh', background:'#0D1117', color:'#E8DCC8', fontFamily:font, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, textAlign:'center' }}>
+    <div dir={dir} style={{ minHeight:'100vh', background:'#F7F2E8', color:'#241E16', fontFamily:font, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, textAlign:'center' }}>
       <div style={{ fontSize:56, marginBottom:20 }}>🎉</div>
       <h2 style={{ fontSize:26, fontWeight:400, margin:'0 0 12px' }}>{tx.suggestSuccess}</h2>
-      <p style={{ color:'#9CA3AF', fontSize:15, marginBottom:40 }}>{tx.suggestSuccessSub}</p>
-      <button onClick={() => { setForm({ name:'',city:'',category:'',kashrus:'',why:'',whatsapp:'',dateStage:[],price:2 }); setTouch({}); setStatus('idle') }} style={btnStyle('#C9A84C','#0D1117')}>
+      <p style={{ color:'#8A7F6C', fontSize:15, marginBottom:40 }}>{tx.suggestSuccessSub}</p>
+      <button onClick={() => { setForm({ name:'',city:'',category:'',kashrus:'',why:'',whatsapp:'',dateStage:[],price:2 }); setTouch({}); setStatus('idle') }} style={btnStyle('#C9A84C','#F7F2E8')}>
         {tx.suggestAnother}
       </button>
-      <button onClick={onBack} style={{ ...btnStyle('transparent','#9CA3AF'), border:'1px solid #374151', marginTop:10 }}>
+      <button onClick={onBack} style={{ ...btnStyle('transparent','#8A7F6C'), border:'1px solid #E6DCC8', marginTop:10 }}>
         {tx.back}
       </button>
     </div>
   )
 
   return (
-    <div dir={dir} style={{ minHeight:'100vh', background:'#0D1117', color:'#E8DCC8', fontFamily:font }}>
-      <div style={{ background:'#161B27', borderBottom:'1px solid #2A2F3E', padding:'16px 20px', display:'flex', alignItems:'center', gap:16 }}>
+    <div dir={dir} style={{ minHeight:'100vh', background:'#F7F2E8', color:'#241E16', fontFamily:font }}>
+      <div style={{ background:'#FFFFFF', borderBottom:'1px solid #EBE2D0', padding:'16px 20px', display:'flex', alignItems:'center', gap:16 }}>
         <button onClick={onBack} style={{ background:'none',border:'none',color:'#C9A84C',cursor:'pointer',fontSize:13,fontFamily:'inherit',padding:0 }}>{tx.back}</button>
         <span style={{ fontSize:15, fontWeight:500 }}>{tx.suggestTitle}</span>
       </div>
 
       <div style={{ maxWidth:560, margin:'0 auto', padding:'28px 20px' }}>
-        <p style={{ color:'#9CA3AF', fontSize:14, marginBottom:28, fontStyle:'italic' }}>{tx.suggestSubtitle}</p>
+        <p style={{ color:'#8A7F6C', fontSize:14, marginBottom:28, fontStyle:'italic' }}>{tx.suggestSubtitle}</p>
 
         {/* Name + City — stacks on narrow screens */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:14, marginBottom:14 }}>
@@ -109,7 +109,7 @@ export default function SuggestView({ tx, font, onBack, initialCity = '' }) {
           <select
             value={form.category}
             onChange={e => set('category', e.target.value)}
-            style={{ ...inputStyle, width:'100%', direction:dir, borderColor: fieldErr('category') ? '#F87171' : '#2A2F3E' }}
+            style={{ ...inputStyle, width:'100%', direction:dir, borderColor: fieldErr('category') ? '#F87171' : '#EBE2D0' }}
           >
             <option value="">—</option>
             {CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
@@ -135,9 +135,9 @@ export default function SuggestView({ tx, font, onBack, initialCity = '' }) {
             {[[1,'💬',tx.date1],[2,'😊',tx.date2],[3,'🔥',tx.date3]].map(([s,emoji,label]) => (
               <button key={s} onClick={() => toggleStage(s)} style={{
                 flex:1, padding:'8px 4px', borderRadius:8, cursor:'pointer', fontSize:12, fontFamily:'inherit',
-                background: form.dateStage.includes(s) ? DATE_STAGE_BADGE[s].bg : '#1F2937',
-                color:      form.dateStage.includes(s) ? DATE_STAGE_BADGE[s].text : '#9CA3AF',
-                border: '1px solid ' + (form.dateStage.includes(s) ? DATE_STAGE_BADGE[s].text : '#374151'),
+                background: form.dateStage.includes(s) ? DATE_STAGE_BADGE[s].bg : '#F2EBDB',
+                color:      form.dateStage.includes(s) ? DATE_STAGE_BADGE[s].text : '#8A7F6C',
+                border: '1px solid ' + (form.dateStage.includes(s) ? DATE_STAGE_BADGE[s].text : '#E6DCC8'),
                 transition: 'all 0.15s',
               }}>
                 {emoji} {label}
@@ -151,9 +151,9 @@ export default function SuggestView({ tx, font, onBack, initialCity = '' }) {
             {[[1,'₪'],[2,'₪₪'],[3,'₪₪₪'],[4,'₪₪₪₪']].map(([p,label]) => (
               <button key={p} onClick={() => set('price',p)} style={{
                 flex:1, padding:'8px 4px', borderRadius:8, cursor:'pointer', fontSize:13, fontFamily:'inherit',
-                background: form.price===p ? '#C9A84C' : '#1F2937',
-                color:      form.price===p ? '#0D1117'  : '#9CA3AF',
-                border: '1px solid ' + (form.price===p ? '#C9A84C' : '#374151'),
+                background: form.price===p ? '#C9A84C' : '#F2EBDB',
+                color:      form.price===p ? '#F7F2E8'  : '#8A7F6C',
+                border: '1px solid ' + (form.price===p ? '#C9A84C' : '#E6DCC8'),
                 transition: 'all 0.15s',
               }}>
                 {label}
@@ -178,7 +178,7 @@ export default function SuggestView({ tx, font, onBack, initialCity = '' }) {
 
         {error && <div style={{ color:'#F87171', fontSize:13, marginBottom:14 }}>{error}</div>}
 
-        <button onClick={handleSubmit} disabled={status==='submitting'} style={{ ...btnStyle('#C9A84C','#0D1117','100%'), opacity: status==='submitting' ? 0.7 : 1 }}>
+        <button onClick={handleSubmit} disabled={status==='submitting'} style={{ ...btnStyle('#C9A84C','#F7F2E8','100%'), opacity: status==='submitting' ? 0.7 : 1 }}>
           {status==='submitting' ? tx.suggestSubmitting : tx.suggestSubmit}
         </button>
       </div>
@@ -190,10 +190,10 @@ function Field({ label, required, error, hint, children, style }) {
   return (
     <div style={style}>
       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-        <label style={{ fontSize:11, letterSpacing:'0.1em', color: error ? '#F87171' : '#6B7280', textTransform:'uppercase' }}>
+        <label style={{ fontSize:11, letterSpacing:'0.1em', color: error ? '#F87171' : '#A99A85', textTransform:'uppercase' }}>
           {label}{required && <span style={{ color:'#F87171' }}> *</span>}
         </label>
-        {hint && <span style={{ fontSize:10, color:'#4B5563' }}>{hint}</span>}
+        {hint && <span style={{ fontSize:10, color:'#B0A48E' }}>{hint}</span>}
       </div>
       {children}
       {error && <div style={{ fontSize:11, color:'#F87171', marginTop:4 }}>{error}</div>}
@@ -207,14 +207,14 @@ function Input({ value, onChange, placeholder, dir, hasError }) {
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      style={{ ...inputStyle, width:'100%', textAlign:dir==='rtl'?'right':'left', direction:dir, borderColor: hasError ? '#F87171' : '#2A2F3E' }}
+      style={{ ...inputStyle, width:'100%', textAlign:dir==='rtl'?'right':'left', direction:dir, borderColor: hasError ? '#F87171' : '#EBE2D0' }}
     />
   )
 }
 
 const inputStyle = {
-  background:'#161B27', border:'1px solid #2A2F3E', borderRadius:8,
-  padding:'10px 12px', color:'#E8DCC8', fontSize:13,
+  background:'#FFFFFF', border:'1px solid #EBE2D0', borderRadius:8,
+  padding:'10px 12px', color:'#241E16', fontSize:13,
   fontFamily:'inherit', outline:'none', boxSizing:'border-box',
 }
 

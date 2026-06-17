@@ -8,14 +8,14 @@ import { getDistanceKm, formatWalkTime } from '../lib/distance'
 export { getDistanceKm, formatWalkTime }
 
 const ACCENT = '#C9A84C'
-const BG = '#0D1117'
+const BG = '#F7F2E8'
 
 function stopIcon(index, isFirst) {
   return L.divIcon({
     html: `<div style="
-      background: ${isFirst ? ACCENT : '#E8DCC8'};
+      background: ${isFirst ? ACCENT : '#241E16'};
       color: ${BG};
-      border: 2px solid ${isFirst ? '#E8B84B' : '#9CA3AF'};
+      border: 2px solid ${isFirst ? '#E0BE58' : '#8A7F6C'};
       border-radius: 50%;
       width: 32px; height: 32px;
       display: flex; align-items: center; justify-content: center;
@@ -104,8 +104,8 @@ export default function PlanRouteMap({ stops, lang }) {
       {distLabel ? (
         <div style={{
           position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(13,17,23,0.88)', border: '1px solid #2A2F3E',
-          borderRadius: 999, padding: '5px 14px', fontSize: 12, color: '#E8DCC8',
+          background: 'rgba(255,253,247,0.94)', border: '1px solid #EBE2D0',
+          borderRadius: 999, padding: '5px 14px', fontSize: 12, color: '#241E16',
           zIndex: 1000, whiteSpace: 'nowrap', backdropFilter: 'blur(4px)',
           fontWeight: 500,
         }}>
@@ -122,11 +122,11 @@ export default function PlanRouteMap({ stops, lang }) {
           const name = isHe ? stop.name_he || stop.name : stop.name
           return (
             <div key={stop.id} style={{
-              background: 'rgba(13,17,23,0.88)', border: `1px solid ${i === 0 ? ACCENT : '#2A2F3E'}`,
-              borderRadius: 999, padding: '4px 10px', fontSize: 11, color: i === 0 ? ACCENT : '#E8DCC8',
+              background: 'rgba(255,253,247,0.94)', border: `1px solid ${i === 0 ? ACCENT : '#EBE2D0'}`,
+              borderRadius: 999, padding: '4px 10px', fontSize: 11, color: i === 0 ? ACCENT : '#241E16',
               backdropFilter: 'blur(4px)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5,
             }}>
-              <span style={{ width: 14, height: 14, borderRadius: '50%', background: i === 0 ? ACCENT : '#E8DCC8', color: BG, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800 }}>{i + 1}</span>
+              <span style={{ width: 14, height: 14, borderRadius: '50%', background: i === 0 ? ACCENT : '#241E16', color: BG, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800 }}>{i + 1}</span>
               {name}
             </div>
           )

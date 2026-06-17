@@ -9,7 +9,7 @@ const JITTER = [[0, 0], [0.0027, 0], [-0.0013, 0.0023]]
 function markerSvg(n) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
     <path fill="#C9A84C" d="M16 0C7.164 0 0 7.164 0 16c0 10 16 24 16 24S32 26 32 16C32 7.164 24.836 0 16 0z"/>
-    <circle fill="#0D1117" cx="16" cy="16" r="10"/>
+    <circle fill="#241E16" cx="16" cy="16" r="10"/>
     <text fill="#C9A84C" font-family="system-ui,sans-serif" font-size="11" font-weight="700"
           text-anchor="middle" dominant-baseline="central" x="16" y="16.5">${n}</text>
   </svg>`
@@ -73,7 +73,7 @@ export default function PlanStopsMap({ stops = [], lang, planCity }) {
           : null
 
         const popup = L.popup({ className: 'hamakom-popup', offset: [0, -2] }).setContent(
-          `<div style="font-family:system-ui,sans-serif;font-size:13px;color:#E8DCC8;min-width:120px">
+          `<div style="font-family:system-ui,sans-serif;font-size:13px;color:#241E16;min-width:120px">
             <span style="color:#C9A84C;font-weight:700;margin-right:6px">${i + 1}</span>${name}
             ${mapsUrl ? `<br/><a href="${mapsUrl}" target="_blank" rel="noopener noreferrer"
               style="color:#C9A84C;font-size:11px;text-decoration:none;display:block;margin-top:4px">
@@ -105,15 +105,15 @@ export default function PlanStopsMap({ stops = [], lang, planCity }) {
 
   return (
     <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', marginBottom: 14 }}>
-      <div ref={mapRef} style={{ height: 220, width: '100%', background: '#0D1117' }} />
+      <div ref={mapRef} style={{ height: 220, width: '100%', background: '#F7F2E8' }} />
       <style>{`
         .hamakom-popup .leaflet-popup-content-wrapper {
-          background: #161B27; border: 1px solid #2A2F3E; border-radius: 10px;
+          background: #FFFFFF; border: 1px solid #EBE2D0; border-radius: 10px;
           box-shadow: 0 4px 16px rgba(0,0,0,0.5); padding: 0;
         }
-        .hamakom-popup .leaflet-popup-tip { background: #161B27; }
+        .hamakom-popup .leaflet-popup-tip { background: #FFFFFF; }
         .hamakom-popup .leaflet-popup-content { margin: 10px 14px; }
-        .leaflet-popup-close-button { color: #6B7280 !important; }
+        .leaflet-popup-close-button { color: #A99A85 !important; }
       `}</style>
     </div>
   )

@@ -15,6 +15,21 @@ const INK      = '#241E16'   // dark pill / primary button
 const SOFT     = '#6E6450'   // body copy
 const SERIF    = "'Spectral','Frank Ruhl Libre',Georgia,serif"
 
+// Short, friendly vibe labels for the plan tabs, keyed by a plan's primary
+// focus tag. Falls back to the plan title when a focus has no mapping.
+const VIBE_LABELS = {
+  'outdoors':   { en: 'Outdoorsy',   he: 'בחוץ',       suben: 'Move & view',   subhe: 'תנועה ונוף' },
+  'food-drink': { en: 'Food & talk', he: 'אוכל ושיחה', suben: 'Sit & savor',   subhe: 'לשבת ולטעום' },
+  'atmosphere': { en: 'Intimate',    he: 'אווירה',     suben: 'Mood & place',  subhe: 'אווירה ומקום' },
+  'activity':   { en: 'Playful',     he: 'שובב',       suben: 'Do something',  subhe: 'פעילות' },
+}
+
+function vibeLabel(plan, lang) {
+  const v = VIBE_LABELS[plan?.focus_tags?.[0]]
+  if (v) return { title: lang === 'he' ? v.he : v.en, sub: lang === 'he' ? v.subhe : v.suben }
+  return { title: lang === 'he' ? plan?.title_he : plan?.title_en, sub: '' }
+}
+
 function getLocalizedPlanText(plan, lang) {
   const isHe = lang === 'he'
   return {
@@ -31,15 +46,15 @@ export default function ResultsPage({
   lang,
   font,
   plan,
+  plans = [],
   planIndex = 0,
-  planCount = 1,
+  onSelectPlan,
   backupLocations = [],
   answers,
   saved,
   reminderSet,
   cityLocationCount = null,
   onBrowseAll,
-  onNextPlan,
   onToggleBackupOptions,
   onOpenBackupLocation,
   onOpenPlanMaps,
@@ -81,8 +96,19 @@ export default function ResultsPage({
       {/* ── Hero ─────────────────────────────────────────────── */}
       <div style={{ background: 'linear-gradient(165deg,#F7F2E8 0%,#F1EAD9 100%)', padding: '28px 22px 22px', borderBottom: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 540, margin: '0 auto' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>
-            {identity[lang]}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', color: ACCENT, textTransform: 'uppercase' }}>
+              {(isHe ? plan.identity_label_he : plan.identity_label_en) || identity[lang]}
+            </div>
+            {planIndex === 0 ? (
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#4F7144', background: '#E9F0E4', borderRadius: 999, padding: '4px 9px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {isHe ? 'התאמה חזקה' : 'Strong match'}
+              </span>
+            ) : plan.city ? (
+              <span style={{ fontSize: 11, fontWeight: 700, color: ACCENT, background: '#FBF4E1', borderRadius: 999, padding: '4px 9px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {isHe ? `גם ב${plan.city}` : `Also in ${plan.city}`}
+              </span>
+            ) : null}
           </div>
 
           <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(26px, 7vw, 34px)', lineHeight: 1.08, margin: '0 0 12px', fontWeight: 600, letterSpacing: '-0.01em' }}>
@@ -112,6 +138,44 @@ export default function ResultsPage({
       </div>
 
       <div style={{ maxWidth: 540, margin: '0 auto', padding: '18px 18px 48px' }}>
+
+        {/* ── Vibe tabs (other plans in this city) ─────────────── */}
+        {plans.length > 1 ? (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#A99A78', textTransform: 'uppercase', marginBottom: 9 }}>
+              {plan.city
+                ? (isHe ? `${plans.length} תוכניות ב${plan.city}` : `${plans.length} plans in ${plan.city}`)
+                : (isHe ? 'וייבים נוספים' : 'Other vibes to try')}
+            </div>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
+              {plans.map((p, i) => {
+                const active = i === planIndex
+                const vl = vibeLabel(p, lang)
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => onSelectPlan?.(i)}
+                    style={{
+                      flexShrink: 0, borderRadius: 14, padding: '11px 15px', cursor: 'pointer',
+                      fontFamily: font, textAlign: isHe ? 'right' : 'left', transition: 'all 0.18s',
+                      background: active ? INK : PANEL,
+                      border: `1.5px solid ${active ? INK : '#E6DCC8'}`,
+                    }}
+                  >
+                    <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: active ? '#F4ECD8' : '#3C342A' }}>
+                      {vl.title}
+                    </span>
+                    {vl.sub ? (
+                      <span style={{ display: 'block', fontSize: 11, marginTop: 1, color: active ? 'rgba(244,236,216,0.7)' : '#A99A85' }}>
+                        {vl.sub}
+                      </span>
+                    ) : null}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ) : null}
 
         {/* ── Route map (only when stops have coords) ──────────── */}
         {primaryStops.filter(s => s.lat && s.lng).length >= 2 ? (

@@ -154,13 +154,28 @@ export default function App() {
     setDatePlans((current) => mergeDatePlansWithDefaults(current))
   }, [setDatePlans])
 
+  // Vibe-diverse match set: the user's chosen vibe is the primary plan, then
+  // we surface the strongest plan for *other* vibes in the same city so the
+  // results page can offer real "3 plans in this city" tabs (not three
+  // near-identical plans of the same focus). Falls back to the plain top-N
+  // when the vibe approach yields nothing (sparse cities still get a plan).
   const matchedPlans = useMemo(() => {
     if (!quizAnswers) return []
-    return getSmartMatchedPlans(datePlans, locations, quizAnswers, 2, {
-      feedbackByItem: dateFeedback,
-      savedPlaceIds,
-      clickedLocationCounts,
-    })
+    const opts = { feedbackByItem: dateFeedback, savedPlaceIds, clickedLocationCounts }
+    const primary = getSmartMatchedPlans(datePlans, locations, quizAnswers, 1, opts)[0]
+    if (!primary) return getSmartMatchedPlans(datePlans, locations, quizAnswers, 2, opts)
+    const FOCI = ['outdoors', 'food-drink', 'atmosphere', 'activity']
+    const chosen = quizAnswers.focus
+    const order = chosen ? FOCI.filter((f) => f !== chosen) : FOCI
+    const seen = new Set([primary.id])
+    const out = [primary]
+    for (const focus of order) {
+      if (out.length >= 3) break
+      const candidates = getSmartMatchedPlans(datePlans, locations, { ...quizAnswers, focus }, 4, opts)
+      const pick = candidates.find((p) => p.city === primary.city && !seen.has(p.id))
+      if (pick) { seen.add(pick.id); out.push(pick) }
+    }
+    return out
   }, [clickedLocationCounts, dateFeedback, datePlans, locations, quizAnswers, savedPlaceIds])
 
   useEffect(() => {
@@ -720,7 +735,9 @@ export default function App() {
           lang={lang}
           font={font}
           plan={currentPlan}
+          plans={matchedPlans}
           planIndex={resultIndex}
+          onSelectPlan={(i) => setResultIndex(i)}
           userId={authUser?.id}
           planCount={matchedPlans.length}
           alternatePlan={alternatePlan}

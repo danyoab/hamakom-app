@@ -24,13 +24,13 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
     ? {
         eyebrow: isHe ? 'שמרו את המקום' : 'Save This Place',
         title: isHe ? 'שמרו את המקום כדי לחזור אליו אחר כך' : 'Save this place so it is waiting for you later',
-        body: isHe ? 'כבר מצאנו מקום ששווה לשמור. עכשיו רק צריך דרך לשמור אותו בשבילכם.' : 'You found a place worth keeping. We just need a way to save it for you.',
+        body: isHe ? 'צרו חשבון חינמי כדי לשמור את המקומות האהובים עליכם — לוקח כמה שניות.' : 'Create a free account to save your favorite places — it takes a few seconds.',
         previewLabel: isHe ? 'מקום לשמירה' : 'Place to Save',
       }
     : {
         eyebrow: isHe ? 'שמרו את התוכנית' : 'Save Your Plan',
         title: isHe ? 'שמרו את הדייט כדי לחזור אליו אחר כך' : 'Save this date so it is waiting for you later',
-        body: isHe ? 'כבר בנינו את התוכנית. עכשיו רק צריך דרך לשמור אותה בשבילכם.' : 'The plan is already built. We just need a way to keep it for you.',
+        body: isHe ? 'צרו חשבון חינמי כדי לשמור את רעיונות הדייט שלכם — לוקח כמה שניות.' : 'Create a free account to save your date ideas — it takes a few seconds.',
         previewLabel: isHe ? 'התוכנית שתישמר' : 'Plan to Save',
       }
 

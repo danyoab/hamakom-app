@@ -29,8 +29,6 @@ export default function PlanStopsMap({ stops = [], lang, planCity }) {
     return { ...s, lat: fallback[0] + dlat, lng: fallback[1] + dlng, _approx: true }
   }).filter(Boolean)
 
-  if (stopsWithCoords.length < 2) return null
-
   useEffect(() => {
     if (instanceRef.current) return
 
@@ -102,6 +100,11 @@ export default function PlanStopsMap({ stops = [], lang, planCity }) {
       instanceRef.current = null
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Guard moved below the hooks so hook order stays stable across renders.
+  // When this returns null the map div is never mounted, so the effect's
+  // `if (!el) return` short-circuits harmlessly.
+  if (stopsWithCoords.length < 2) return null
 
   return (
     <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', marginBottom: 14 }}>

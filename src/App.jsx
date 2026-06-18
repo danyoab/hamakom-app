@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { t } from './lib/translations'
 import { useLocations } from './hooks/useLocations'
 import { useLocalStorage } from './hooks/useLocalStorage'
@@ -7,6 +7,7 @@ import { supabase } from './lib/supabase'
 import { getAuthRedirectUrl } from './lib/authRedirect'
 import { DATE_PLANS } from './data/datePlans'
 import { QUIZ_CITIES } from './lib/constants'
+import { isAdminUser } from './lib/appConfig'
 import {
   createRecommendationImpression,
   grantAnalyticsConsent,
@@ -425,6 +426,7 @@ export default function App() {
       setAuthUser(user)
 
       if (user && event === 'SIGNED_IN') {
+        void trackEvent('signup_completed', { userId: user.id })
         commitPendingSave()
         restoreQuiz()
         setOverlay((current) => (current === 'save-gate' ? saveGateItem?.returnOverlay ?? 'quiz-results' : current))
@@ -499,6 +501,98 @@ export default function App() {
     }
   }, [overlay, selectedLocation, currentPlan])
 
+  // ── Shared deep links ───────────────────────────────────────────────────
+  // A shared /location/<slug> URL must open the place directly (no login, no
+  // dead-end on the homepage). We resolve it once locations have loaded, and
+  // keep browser back/forward in sync via popstate. Only public, approved
+  // location data is exposed — no private user data is reachable by URL.
+  const deepLinkHandled = useRef(false)
+  useEffect(() => {
+    if (deepLinkHandled.current || loading || !locations.length) return
+    deepLinkHandled.current = true
+    const match = window.location.pathname.match(/^\/location\/([^/]+)\/?$/)
+    if (!match) return
+    const key = decodeURIComponent(match[1])
+    const loc = locations.find((l) => l.slug === key || String(l.id) === key)
+    if (!loc) {
+      // Unknown/stale slug: clean the URL so the user lands on a usable home.
+      window.history.replaceState({}, '', '/')
+      return
+    }
+    setDetailReturnOverlay(null)
+    setSelectedLocation(loc)
+    setOverlay('detail')
+    void trackEvent('location_detail_viewed', {
+      userId: authUser?.id,
+      itemType: 'place',
+      itemId: loc.id,
+      properties: { source: 'deep-link' },
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, locations])
+
+  useEffect(() => {
+    const onPop = () => {
+      const match = window.location.pathname.match(/^\/location\/([^/]+)\/?$/)
+      if (match) {
+        const key = decodeURIComponent(match[1])
+        const loc = locations.find((l) => l.slug === key || String(l.id) === key)
+        if (loc) {
+          setSelectedLocation(loc)
+          setOverlay('detail')
+          return
+        }
+      }
+      setOverlay((cur) => (cur === 'detail' ? null : cur))
+      setSelectedLocation(null)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [locations])
+
+  // ── Beta funnel analytics ───────────────────────────────────────────────
+  // Which result screen is showing. Drives the funnel events without firing on
+  // vibe-tab swaps (resultView is stable while a full plan stays shown).
+  const resultView =
+    currentPlan && (overlay === 'quiz-results' || (overlay === 'save-gate' && saveGateItem?.type !== 'place'))
+      ? 'full_plan'
+      : overlay === 'quiz-results' && !currentPlan && quizAnswers
+        ? (singleSpot ? 'single_spot' : 'no_plan')
+        : null
+
+  useEffect(() => {
+    if (!resultView) return
+    const shown = {
+      full_plan: 'full_plan_shown',
+      single_spot: 'single_spot_fallback_shown',
+      no_plan: 'no_plan_fallback_shown',
+    }[resultView]
+    const properties = {
+      city: quizAnswers?.city || null,
+      seriousness: quizAnswers?.seriousness || null,
+      length: quizAnswers?.length || null,
+      outcome: resultView,
+    }
+    void trackEvent('plan_generated', { userId: authUser?.id, properties })
+    void trackEvent(shown, { userId: authUser?.id, properties })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultView, quizAnswers])
+
+  useEffect(() => {
+    if (tab === 'home' && !overlay) void trackEvent('landing_page_view', { userId: authUser?.id })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, overlay])
+
+  useEffect(() => {
+    if (overlay === 'save-gate') {
+      void trackEvent('signup_started', {
+        userId: authUser?.id,
+        properties: { source: saveGateItem?.type || 'save-gate' },
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overlay])
+
   const selectTab = (nextTab) => {
     if (!PRIMARY_TABS.includes(nextTab)) return
     setTab(nextTab)
@@ -548,6 +642,13 @@ export default function App() {
 
   const handleSavePlan = () => {
     if (!currentPlan) return
+
+    void trackEvent('save_clicked', {
+      userId: authUser?.id,
+      itemType: 'plan',
+      itemId: currentPlan.id,
+      properties: { signed_in: Boolean(authUser) },
+    })
 
     if (authUser) {
       setSavedPlanIds((prev) => (prev.includes(currentPlan.id) ? prev : [...prev, currentPlan.id]))
@@ -628,6 +729,13 @@ export default function App() {
 
   const handleToggleSavePlace = (location, options = {}) => {
     if (!location) return
+
+    void trackEvent('save_clicked', {
+      userId: authUser?.id,
+      itemType: 'place',
+      itemId: location.id,
+      properties: { signed_in: Boolean(authUser) },
+    })
 
     if (authUser) {
       const willSave = !savedPlaceIds.includes(location.id)
@@ -951,6 +1059,12 @@ export default function App() {
           onNextPlan={matchedPlans.length > 1 ? () => setResultIndex((i) => (i + 1) % matchedPlans.length) : undefined}
           onOpenBackupLocation={openLocationFromResults}
           onOpenPlanMaps={() => {
+            void trackEvent('map_opened', {
+              userId: authUser?.id,
+              itemType: 'plan',
+              itemId: currentPlan.id,
+              properties: { stop_index: 0 },
+            })
             void trackEvent('plan_maps_opened', {
               userId: authUser?.id,
               itemType: 'plan',
@@ -961,6 +1075,12 @@ export default function App() {
           }}
           onSavePlan={handleSavePlan}
           onSharePlan={() => {
+            void trackEvent('share_clicked', {
+              userId: authUser?.id,
+              itemType: 'plan',
+              itemId: currentPlan.id,
+              properties: { channel: 'native-or-whatsapp' },
+            })
             void trackEvent('plan_shared', {
               userId: authUser?.id,
               itemType: 'plan',
@@ -1140,7 +1260,10 @@ export default function App() {
               onOpenQuiz={openQuiz}
               onOpenSuggest={() => setOverlay('suggest')}
               onOpenAdmin={() => setOverlay('admin')}
-              onOpenFeedback={() => setShowFeedbackModal(true)}
+              onOpenFeedback={() => {
+                void trackEvent('report_issue_clicked', { userId: authUser?.id })
+                setShowFeedbackModal(true)
+              }}
               onOpenPrivacy={() => setOverlay('privacy')}
               onOpenTerms={() => setOverlay('terms')}
               analyticsEnabled={analyticsEnabled}
@@ -2000,9 +2123,11 @@ function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz,
         <button onClick={onToggleLang} style={secondaryButtonStyle}>
           {tx.profileActionLanguage}
         </button>
-        <button onClick={onOpenAdmin} style={textLinkButtonStyle}>
-          {tx.profileActionAdmin}
-        </button>
+        {isAdminUser(authUser) ? (
+          <button onClick={onOpenAdmin} style={textLinkButtonStyle}>
+            {tx.profileActionAdmin}
+          </button>
+        ) : null}
       </ActionCard>
 
       <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 18 }}>

@@ -27,11 +27,13 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
   const dir  = isHe ? 'rtl' : 'ltr'
 
   // Quiz order is intentional:
-  //   1. city — hardest constraint, scoped everything downstream
+  //   1. city — hardest constraint, scopes everything downstream
   //   2. seriousness — sets the whole evening's tone
-  //   3. focus — refines what the night should deliver
-  //   4. length — optional pacing override (skippable: engine infers it
-  //      from focus + seriousness when omitted)
+  //   3. length — optional pacing override (skippable; engine infers it)
+  // We intentionally do NOT ask "what kind of experience?" here: the results
+  // page's vibe tabs already let people pick (and switch) the vibe live, so the
+  // quiz leads with the strongest plan across all vibes instead of forcing the
+  // choice up front.
   const questions = useMemo(() => [
     {
       id: 'city',
@@ -60,20 +62,6 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
         { value: 'just-met',          en: 'First few dates',              he: 'עדיין מתחילים',         suben: 'Keep it light, easy, low pressure',      subhe: 'קליל, קל, בלי לחץ' },
         { value: 'getting-to-know',   en: 'Getting to know each other',   he: 'מכירים אחד את השני',   suben: 'More time, better conversations',         subhe: 'יותר זמן, שיחות טובות יותר' },
         { value: 'getting-serious',   en: 'Already close',                he: 'כבר קרובים',            suben: 'Make the evening feel intentional',       subhe: 'לתת לערב להרגיש מכוון' },
-      ],
-    },
-    {
-      id: 'focus',
-      en: 'What kind of experience?',
-      he: 'איזה סוג חוויה?',
-      suben: 'Pick the one thing the night should deliver.',
-      subhe: 'בחרו את הדבר האחד שהערב צריך לספק.',
-      type: 'standard',
-      options: [
-        { value: 'food-drink',  en: 'Great food and conversation',  he: 'אוכל טוב ושיחה',     suben: 'A place that does the talking for you',       subhe: 'מקום שמדבר בשבילכם' },
-        { value: 'activity',    en: 'Something to do together',     he: 'פעילות משותפת',      suben: 'Shared experience, less pressure',             subhe: 'חוויה משותפת, פחות לחץ' },
-        { value: 'outdoors',    en: 'Outside and moving',           he: 'בחוץ ובתנועה',       suben: 'Fresh air, views, space to think',             subhe: 'אוויר, נוף, מרחב לחשוב' },
-        { value: 'atmosphere',  en: 'Atmosphere and ambiance',      he: 'אווירה ומקום',        suben: 'Somewhere that just feels right',              subhe: 'מקום שפשוט מרגיש נכון' },
       ],
     },
     {

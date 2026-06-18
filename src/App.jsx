@@ -18,6 +18,7 @@ import {
 } from './lib/analytics'
 import { getRecommendedLocations } from './lib/locationRecommendations'
 import { getSmartMatchedPlans, recordPlanImpression } from './lib/planRecommendations'
+import { isRealVenueRow, isOperational, sameCity, foodClassOf } from './lib/planGates'
 import {
   clearAnswersFromSession,
   clearPendingSaveFromSession,
@@ -98,6 +99,28 @@ function mergeDatePlansWithDefaults(currentPlans) {
   return changed ? merged : current
 }
 
+// Human label for a single-spot "simple date", derived from the same food
+// classification + category signals the engine already uses (no new data).
+// Returns { en, he } so the fallback can name the date honestly: a café is a
+// "coffee date", a park is a "scenic walk", etc. — never a fabricated route.
+function singleSpotKind(loc) {
+  const fc = foodClassOf(loc)
+  if (fc.is_food) {
+    if (fc.food_type === 'cafe') return { en: 'A simple coffee date', he: 'דייט קפה פשוט' }
+    if (fc.food_type === 'dessert') return { en: 'An easy dessert date', he: 'דייט קינוח קליל' }
+    if (fc.food_type === 'bar' || fc.food_type === 'winery') return { en: 'A relaxed drinks date', he: 'דייט משקאות רגוע' }
+    if (fc.food_type === 'restaurant') return { en: 'A one-stop dinner date', he: 'דייט ארוחת ערב במקום אחד' }
+  }
+  const cat = `${loc?.category || ''}`.toLowerCase()
+  if (/park|garden|beach|promenade|tayelet|trail|nature|outdoor|view|scenic|forest|reserve/.test(cat)) {
+    return { en: 'A scenic walk date', he: 'דייט טיול נופי' }
+  }
+  if (/museum|gallery|art|culture|theat|cinema|activit|experience|escape|bowling|workshop/.test(cat)) {
+    return { en: 'An activity date', he: 'דייט פעילות' }
+  }
+  return { en: 'A simple one-stop date', he: 'דייט פשוט במקום אחד' }
+}
+
 export default function App() {
   const [lang, setLang] = useState('en')
   useEffect(() => {
@@ -154,26 +177,34 @@ export default function App() {
     setDatePlans((current) => mergeDatePlansWithDefaults(current))
   }, [setDatePlans])
 
-  // Vibe-diverse match set: the user's chosen vibe is the primary plan, then
-  // we surface the strongest plan for *other* vibes in the same city so the
-  // results page can offer real "3 plans in this city" tabs (not three
-  // near-identical plans of the same focus). Falls back to the plain top-N
-  // when the vibe approach yields nothing (sparse cities still get a plan).
+  // Vibe-diverse match set. The quiz no longer asks for a vibe (it duplicated
+  // the results vibe tabs), so we lead with the objectively strongest plan
+  // across ALL vibes, then surface one plan per *other* vibe in the same city
+  // so the results page can offer real "3 plans in this city" tabs (not three
+  // near-identical plans). Generated plans are built per-focus, so each carries
+  // real focus_tags for the tab labels. Empty => the single-spot/honest
+  // fallback screen takes over.
   const matchedPlans = useMemo(() => {
     if (!quizAnswers) return []
     const opts = { feedbackByItem: dateFeedback, savedPlaceIds, clickedLocationCounts }
-    const primary = getSmartMatchedPlans(datePlans, locations, quizAnswers, 1, opts)[0]
-    if (!primary) return getSmartMatchedPlans(datePlans, locations, quizAnswers, 2, opts)
     const FOCI = ['outdoors', 'food-drink', 'atmosphere', 'activity']
-    const chosen = quizAnswers.focus
-    const order = chosen ? FOCI.filter((f) => f !== chosen) : FOCI
-    const seen = new Set([primary.id])
+    const perVibe = FOCI.flatMap((focus) =>
+      getSmartMatchedPlans(datePlans, locations, { ...quizAnswers, focus }, 4, opts),
+    )
+    if (!perVibe.length) return []
+    perVibe.sort((a, b) => (b._score || 0) - (a._score || 0))
+    const primary = perVibe[0]
     const out = [primary]
-    for (const focus of order) {
+    const seenIds = new Set([primary.id])
+    const seenVibes = new Set([primary.focus_tags?.[0]])
+    for (const plan of perVibe) {
       if (out.length >= 3) break
-      const candidates = getSmartMatchedPlans(datePlans, locations, { ...quizAnswers, focus }, 4, opts)
-      const pick = candidates.find((p) => p.city === primary.city && !seen.has(p.id))
-      if (pick) { seen.add(pick.id); out.push(pick) }
+      if (seenIds.has(plan.id) || plan.city !== primary.city) continue
+      const vibe = plan.focus_tags?.[0]
+      if (seenVibes.has(vibe)) continue
+      seenIds.add(plan.id)
+      seenVibes.add(vibe)
+      out.push(plan)
     }
     return out
   }, [clickedLocationCounts, dateFeedback, datePlans, locations, quizAnswers, savedPlaceIds])
@@ -204,6 +235,56 @@ export default function App() {
       feedbackByItem: dateFeedback,
     })
   }, [clickedLocationCounts, currentPlan?.source_location_ids, dateFeedback, locations, quizAnswers, savedPlaceIds])
+
+  // Single-spot date fallback (#6): when no full 2–3 stop plan can be built for
+  // the chosen city/vibe, offer the strongest single VERIFIED venue as an
+  // explicit one-stop "simple date" rather than dead-ending. Ranking reuses
+  // getRecommendedLocations (same city/operational/rating/category/vibe/stage/
+  // price/recency signals), but every candidate is then re-checked against the
+  // hard gates: real DB venue, operational only, known status only, and the
+  // correct city. No placeholder, no closed/temp-closed, no unknown status.
+  const singleSpot = useMemo(() => {
+    if (!quizAnswers || matchedPlans.length > 0) return null
+    const targetCity = quizAnswers.city && quizAnswers.city !== 'flexible' ? quizAnswers.city : null
+    const ranked = getRecommendedLocations(locations, quizAnswers, {
+      limit: 24,
+      savedPlaceIds,
+      clickedLocationCounts,
+      feedbackByItem: dateFeedback,
+    })
+    const eligible = ranked.filter(
+      (l) => isRealVenueRow(l) && isOperational(l) && (!targetCity || sameCity(l.city, targetCity)),
+    )
+    return eligible[0] || null
+  }, [clickedLocationCounts, dateFeedback, locations, matchedPlans.length, quizAnswers, savedPlaceIds])
+
+  // Proven recovery (#5): only options we can verify right now — never invented.
+  // `vibes`: other foci that DO yield a full plan in the same city.
+  // `cities`: other quiz cities that DO yield a full plan for the chosen vibe.
+  const recovery = useMemo(() => {
+    const empty = { vibes: [], cities: [] }
+    if (!quizAnswers || matchedPlans.length > 0) return empty
+    const opts = { feedbackByItem: dateFeedback, savedPlaceIds, clickedLocationCounts }
+    const FOCI = ['outdoors', 'food-drink', 'atmosphere', 'activity']
+    const city = quizAnswers.city
+    const vibes = []
+    if (city && city !== 'flexible') {
+      for (const f of FOCI) {
+        if (f === quizAnswers.focus) continue
+        const p = getSmartMatchedPlans(datePlans, locations, { ...quizAnswers, focus: f }, 1, opts)[0]
+        if (p && sameCity(p.city, city)) vibes.push(f)
+      }
+    }
+    const cities = []
+    for (const c of availablePlanCities) {
+      if (!c || c === 'flexible' || (city && sameCity(c, city))) continue
+      if (cities.length >= 3) break
+      const p = getSmartMatchedPlans(datePlans, locations, { ...quizAnswers, city: c }, 1, opts)[0]
+      if (p && sameCity(p.city, c)) cities.push(c)
+    }
+    return { vibes, cities }
+  }, [availablePlanCities, clickedLocationCounts, datePlans, dateFeedback, locations, matchedPlans.length, quizAnswers, savedPlaceIds])
+
   const curatedExploreSections = useMemo(
     () => [
       {
@@ -448,6 +529,23 @@ export default function App() {
     })
   }
 
+  // Re-run the results flow with patched answers (proven recovery actions:
+  // keep the city + change the vibe, or keep the vibe + change the city).
+  const applyRecovery = (patch) => {
+    if (!quizAnswers) return
+    // No re-seed needed: a recovery patch always changes the focus or city, so
+    // the answers object identity changes and the match memo recomputes.
+    const next = { ...quizAnswers, ...patch }
+    setQuizAnswers(next)
+    setResultIndex(0)
+    saveAnswersToSession(next)
+    setOverlay('quiz-results')
+    void trackEvent('quiz_recovery_applied', {
+      userId: authUser?.id,
+      properties: { ...patch, lang },
+    })
+  }
+
   const handleSavePlan = () => {
     if (!currentPlan) return
 
@@ -689,13 +787,100 @@ export default function App() {
     )
   }
 
-  // Empty-state fallback: the user finished the quiz but the engine found
-  // no plan that meets the geographic + focus bar for their answers. We'd
-  // rather say "not enough strong options yet" than fabricate a plan that
-  // ignores what they asked for.
+  // Empty-state fallback: the user finished the quiz but the engine found no
+  // full 2–3 stop plan that meets the geographic + focus bar for their answers.
+  // Rather than dead-end, we (1) try the strongest single VERIFIED venue as an
+  // explicit one-stop "simple date" (#6) and (2) offer only PROVEN recovery
+  // (vibes/cities we just confirmed yield a plan) (#5). Nothing fabricated.
   if (overlay === 'quiz-results' && !currentPlan && quizAnswers) {
     const isHe = lang === 'he'
     const cityLabel = quizAnswers.city && quizAnswers.city !== 'flexible' ? quizAnswers.city : null
+    const FOCUS_LABELS = {
+      'outdoors': { en: 'something outdoorsy', he: 'משהו בחוץ' },
+      'food-drink': { en: 'food & drinks', he: 'אוכל ושתייה' },
+      'atmosphere': { en: 'a more intimate vibe', he: 'אווירה אינטימית' },
+      'activity': { en: 'something to do together', he: 'פעילות משותפת' },
+    }
+    const hasRecovery = recovery.vibes.length > 0 || recovery.cities.length > 0
+
+    const chipStyle = { background: '#FFFFFF', color: '#241E16', border: '1px solid #E6DCC8', borderRadius: 999, padding: '9px 16px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }
+
+    const recoveryBlock = hasRecovery ? (
+        <div style={{ marginTop: 22, width: '100%', maxWidth: 460 }}>
+          <div style={{ fontSize: 12.5, letterSpacing: 0.5, textTransform: 'uppercase', color: '#8A7F6C', fontWeight: 700, marginBottom: 10 }}>
+            {isHe ? 'אפשרויות שכן עובדות' : 'Options that do work'}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {recovery.vibes.map((f) => (
+              <button key={`v-${f}`} onClick={() => applyRecovery({ focus: f })} style={chipStyle}>
+                {isHe
+                  ? `${cityLabel ? `להישאר ב${cityLabel}, ` : ''}${FOCUS_LABELS[f]?.he || f}`
+                  : `${cityLabel ? `Keep ${cityLabel} — ` : ''}${FOCUS_LABELS[f]?.en || f}`}
+              </button>
+            ))}
+            {recovery.cities.map((c) => (
+              <button key={`c-${c}`} onClick={() => applyRecovery({ city: c })} style={chipStyle}>
+                {isHe ? `לנסות ב${c}` : `Try ${c} instead`}
+              </button>
+            ))}
+          </div>
+        </div>
+    ) : null
+
+    // (A) Strong single verified venue exists → one-stop "simple date".
+    if (singleSpot) {
+      const kind = singleSpotKind(singleSpot)
+      const name = isHe ? singleSpot.name_he || singleSpot.name : singleSpot.name
+      const placeCity = isHe ? singleSpot.city_he || singleSpot.city : singleSpot.city
+      const blurb = isHe ? singleSpot.description_he || singleSpot.description : singleSpot.description
+      const saved = savedPlaceIds.includes(singleSpot.id)
+      return (
+        <div style={{ minHeight: '100dvh', background: '#F7F2E8', color: '#241E16', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 20px', textAlign: 'center' }}>
+          {/* Honest banner: this is one stop, not a route. */}
+          <div style={{ background: '#FBF4DF', border: '1px solid #E7D9A8', color: '#7A5E12', borderRadius: 12, padding: '11px 16px', fontSize: 13, lineHeight: 1.5, maxWidth: 460, marginBottom: 18 }}>
+            {isHe
+              ? 'אין מספיק עצירות קרובות למסלול מלא, אבל זו אופציה חזקה לדייט פשוט.'
+              : 'Not enough nearby stops for a full route, but this is a strong simple date option.'}
+          </div>
+          <div style={{ background: '#FFFFFF', border: '1px solid #EBE2D0', borderRadius: 18, padding: '22px 22px 20px', width: '100%', maxWidth: 460, textAlign: isHe ? 'right' : 'left' }}>
+            <div style={{ fontSize: 12.5, letterSpacing: 0.5, textTransform: 'uppercase', color: '#9A7A28', fontWeight: 700, marginBottom: 8 }}>
+              {isHe ? kind.he : kind.en}
+            </div>
+            <h1 style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 600, margin: '0 0 6px', lineHeight: 1.2 }}>{name}</h1>
+            {placeCity ? <div style={{ fontSize: 14, color: '#8A7F6C', marginBottom: blurb ? 12 : 0 }}>{placeCity}</div> : null}
+            {blurb ? <p style={{ fontSize: 14, color: '#6E6450', lineHeight: 1.55, margin: 0 }}>{blurb}</p> : null}
+            <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+              <button
+                onClick={() => openLocationFromResults(singleSpot)}
+                style={{ background: '#241E16', color: '#F4ECD8', border: 'none', borderRadius: 12, padding: '11px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flex: 1 }}
+              >
+                {isHe ? 'לפרטים ולמפה' : 'See details & map'}
+              </button>
+              <button
+                onClick={() => handleToggleSavePlace(singleSpot, { returnOverlay: 'quiz-results' })}
+                style={{ background: 'transparent', color: '#241E16', border: '1px solid #E6DCC8', borderRadius: 12, padding: '11px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                {saved ? (isHe ? '✓ נשמר' : '✓ Saved') : (isHe ? 'שמירה' : 'Save')}
+              </button>
+            </div>
+          </div>
+          {recoveryBlock}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 22 }}>
+            <button onClick={() => setOverlay('quiz')} style={chipStyle}>
+              {isHe ? 'לשנות תשובות' : 'Change answers'}
+            </button>
+            <button onClick={() => { setOverlay(null); setTab('explore'); setExploreExpanded(true) }} style={chipStyle}>
+              {isHe ? 'לעיין במקומות מאומתים' : 'Browse verified places'}
+            </button>
+            <button onClick={openCustomPlanBuilder} style={chipStyle}>
+              {isHe ? 'לבנות מסלול משלכם' : 'Build your own plan'}
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    // (B) No full plan and no single strong venue → honest fallback + proven recovery.
     return (
       <div style={{ minHeight: '100dvh', background: '#F7F2E8', color: '#241E16', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', textAlign: 'center' }}>
         <div style={{ fontSize: 36, marginBottom: 12 }}>🌒</div>
@@ -704,12 +889,13 @@ export default function App() {
             ? cityLabel ? `אין לנו עדיין מספיק אופציות חזקות ב${cityLabel}` : 'אין לנו עדיין מספיק אופציות חזקות לדייט הזה'
             : cityLabel ? `Not enough strong options in ${cityLabel} yet` : 'Not enough strong options for this date yet'}
         </h1>
-        <p style={{ fontSize: 14, color: '#8A7F6C', maxWidth: 420, lineHeight: 1.55, margin: '0 0 22px' }}>
+        <p style={{ fontSize: 14, color: '#8A7F6C', maxWidth: 420, lineHeight: 1.55, margin: '0 0 4px' }}>
           {isHe
-            ? 'עדיין אין לנו מספיק אופציות מאומתות בעיר הזו. נסו אזור קרוב או הקלו על ההעדפות שלכם.'
-            : 'We don’t have enough verified options in this city yet. Try a nearby area or loosen your preferences.'}
+            ? 'עדיין אין לנו מספיק אופציות מאומתות שמתאימות בדיוק לתשובות שלכם.'
+            : 'We don’t have enough verified options that match exactly what you asked for yet.'}
         </p>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {recoveryBlock}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 22 }}>
           <button
             onClick={() => setOverlay('quiz')}
             style={{ background: '#241E16', color: '#F4ECD8', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}

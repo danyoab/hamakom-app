@@ -171,7 +171,9 @@ export function getPlanFitSummary(plan, answers, lang) {
   }
 
   const lengthPart      = answers.length ? lengthText[answers.length] : null
-  const focusPart       = focusText[answers.focus]
+  // The quiz no longer asks for a vibe, so fall back to the plan's own vibe
+  // (focus_tags[0]) — the summary stays specific to whichever tab is showing.
+  const focusPart       = focusText[answers.focus || plan?.focus_tags?.[0]]
   const cityPart        = answers.city && answers.city !== 'flexible' ? cityText[answers.city] : null
   const seriousnessPart = seriousnessText[answers.seriousness]
 

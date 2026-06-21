@@ -5,8 +5,6 @@ import L from 'leaflet'
 import { CITY_COORDS } from '../lib/constants'
 import { getDistanceKm, formatWalkTime } from '../lib/distance'
 
-export { getDistanceKm, formatWalkTime }
-
 const ACCENT = '#C9A84C'
 const BG = '#F7F2E8'
 

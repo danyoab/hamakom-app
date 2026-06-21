@@ -704,13 +704,11 @@ export function getSmartMatchedPlans(curatedPlans, locations, answers, count = 2
   // anchors, return no generated plans. A wrong-category "plan" is worse
   // than an honest "not enough options yet" fallback. (Flexible city still
   // falls through because globally we always have in-focus anchors.)
-  let focusGap = false
   if (answers.focus) {
     const focusMatched = anchorPool.filter((l) => deriveFocusTags(l).includes(answers.focus))
     if (focusMatched.length > 0) {
       anchorPool = focusMatched
     } else if (answers.city && answers.city !== 'flexible') {
-      focusGap = true
       anchorPool = []
     }
   }

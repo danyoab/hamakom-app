@@ -19,7 +19,7 @@ export default function LoadingScreen({ lang, font, onComplete }) {
   const isHe  = lang === 'he'
   const steps = isHe ? STEPS_HE : STEPS_EN
 
-  const stableOnComplete = useCallback(onComplete, [onComplete])
+  const stableOnComplete = useCallback(() => onComplete?.(), [onComplete])
 
   useEffect(() => {
     const TOTAL_MS  = 3000

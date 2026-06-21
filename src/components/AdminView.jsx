@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 import { getDeploymentWarnings, isAdminUser } from '../lib/appConfig'
 import { usePending } from '../hooks/usePending'
 import { SEED_LOCATIONS } from '../data/locations'
-import CurateCard, { curationCompleteness, isRecommendationReady } from './CurateCard'
+import CurateCard from './CurateCard'
+import { isRecommendationReady } from '../lib/curation'
 import RecommendDebug from './RecommendDebug'
 import PlanComposeDebug from './PlanComposeDebug'
 import CuratorQueue from './CuratorQueue'
@@ -72,6 +73,10 @@ export default function AdminView({
 }) {
   const [adminTab, setAdminTab] = useState('plans')
   const [toast, setToast] = useState(null)
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3500)
+  }
   const [syncing, setSyncing] = useState(false)
 
   const [imgLocs, setImgLocs] = useState([])
@@ -124,20 +129,77 @@ export default function AdminView({
     }
   }, [adminTab, imgLocs.length])
 
-  useEffect(() => {
-    if (adminTab !== 'partners') return
+  async function loadPartners() {
     if (!supabase) return
     setPartnerLoading(true)
-    supabase
+    const { data } = await supabase
       .from('locations')
       .select('id, name, city, category, is_partner, partner_tier, reservation_url, partner_contact')
       .eq('is_partner', true)
       .order('name')
-      .then(({ data }) => {
-        setPartnerLocs(data || [])
-        setPartnerLoading(false)
-      })
+    setPartnerLocs(data || [])
+    setPartnerLoading(false)
+  }
+
+  useEffect(() => {
+    if (adminTab !== 'partners') return
+    loadPartners()
   }, [adminTab])
+
+  async function searchPartnerCandidates(query) {
+    const term = query.trim()
+    if (!supabase || term.length < 2) {
+      setPartnerCandidates([])
+      return
+    }
+    const { data } = await supabase
+      .from('locations')
+      .select('id, name, city, category, is_partner')
+      .ilike('name', `%${term}%`)
+      .order('name')
+      .limit(10)
+    setPartnerCandidates(data || [])
+  }
+
+  async function addPartner(loc) {
+    if (!supabase) return
+    const { error } = await supabase
+      .from('locations')
+      .update({ is_partner: true })
+      .eq('id', loc.id)
+    if (error) return showToast(error.message, 'error')
+    setPartnerSearch('')
+    setPartnerCandidates([])
+    await loadPartners()
+    showToast(`Added ${loc.name} to partner program`)
+  }
+
+  async function savePartnerFields(draft) {
+    if (!supabase) return
+    const { error } = await supabase
+      .from('locations')
+      .update({
+        partner_tier:     draft.partner_tier || null,
+        reservation_url:  draft.reservation_url || null,
+        partner_contact:  draft.partner_contact || null,
+      })
+      .eq('id', draft.id)
+    if (error) return showToast(error.message, 'error')
+    await loadPartners()
+    showToast(`Saved ${draft.name}`)
+  }
+
+  async function removePartner(id, name) {
+    if (!supabase) return
+    if (!window.confirm(`Remove "${name}" from the partner program?`)) return
+    const { error } = await supabase
+      .from('locations')
+      .update({ is_partner: false, partner_tier: null })
+      .eq('id', id)
+    if (error) return showToast(error.message, 'error')
+    await loadPartners()
+    showToast(`Removed ${name} from partner program`)
+  }
 
   async function loadCurateQueue() {
     if (!supabase) return
@@ -331,11 +393,6 @@ export default function AdminView({
     fontSize: 13,
     fontWeight: 600,
     fontFamily: 'inherit',
-  }
-
-  function showToast(msg, type = 'success') {
-    setToast({ msg, type })
-    setTimeout(() => setToast(null), 3500)
   }
 
   async function handleUpload(loc, file) {

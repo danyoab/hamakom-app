@@ -1715,7 +1715,7 @@ function ExplorePage({
   )
 }
 
-function TonightPlanCard({ lang, tx, plan, onOpenPlan }) {
+function TonightPlanCard({ lang, plan, onOpenPlan }) {
   if (!plan) return null
   const isHe = lang === 'he'
   const meta = [

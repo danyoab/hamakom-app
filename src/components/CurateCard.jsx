@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { curationCompleteness, isRecommendationReady } from '../lib/curation'
 
 const VIBE_TAGS = [
   'romantic', 'cozy', 'intimate', 'lively', 'late-night',
@@ -118,30 +119,6 @@ function missingCritical(draft) {
     if (Array.isArray(v)) return v.length === 0
     return v == null
   })
-}
-
-export function curationCompleteness(loc) {
-  const checks = [
-    loc.vibe_tags?.length > 0,
-    loc.indoor_outdoor != null,
-    loc.best_time?.length > 0,
-    loc.weather_fit?.length > 0,
-    loc.romantic_score != null,
-    loc.conversation_score != null,
-    loc.energy_score != null,
-    loc.quietness_score != null,
-    loc.activity_vs_food_score != null,
-    loc.group_vs_intimate_score != null,
-    loc.duration_min != null,
-  ]
-  return Math.round((checks.filter(Boolean).length / checks.length) * 100)
-}
-
-export function isRecommendationReady(loc) {
-  return loc.vibe_tags?.length > 0
-    && loc.indoor_outdoor != null
-    && loc.romantic_score != null
-    && loc.energy_score != null
 }
 
 function Chip({ active, onClick, children }) {

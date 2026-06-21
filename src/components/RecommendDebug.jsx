@@ -53,7 +53,7 @@ function qualityLabel(loc) {
   return { tone: '#9CA3AF', label: 'fallback — auto-enrichment only' }
 }
 
-export default function RecommendDebug({ inputStyle, btnStyle }) {
+export default function RecommendDebug({ inputStyle }) {
   const [answers, setAnswers] = useState({ city: 'Jerusalem', focus: 'atmosphere', seriousness: 'getting-serious', length: 'medium', when: 'tonight' })
   const [locations, setLocations] = useState([])
   const [loading, setLoading] = useState(false)

@@ -8,7 +8,7 @@ import {
   sameLocale,
   distanceKm,
 } from './planCoherence.js'
-import { plannableLocations, isRealPlan, sameCity, violatesFoodPairing, MAX_LEG_KM } from './planGates.js'
+import { plannableLocations, isRealPlan, sameCity, violatesFoodPairing, foodClassOf, MAX_LEG_KM } from './planGates.js'
 
 // Variety knobs — see /plans/the-plans-feel-limited-quiet-moon.md
 const SCORE_BAND_WIDTH = 2.5
@@ -406,6 +406,21 @@ function scoreSupportStop(primary, candidate, answers, usageProfile, stopIndex, 
   if (candidateCategory !== primaryCategory) score += 1.8
   score += candidateStages.filter((stage) => primaryStages.includes(stage)).length * 1.3
 
+  // Anti-repetition (RULE 2): a date is not three sit-down food/café spots in a
+  // row. Each additional sit-down food stop after the first takes a heavy
+  // penalty, so a walk / activity / dessert / bar wins whenever one is viable.
+  // It only survives when nothing else clears the bar ("unless no better option").
+  const isSitDownFood = (loc) => {
+    const w = foodClassOf(loc).meal_weight
+    return w === 'heavy' || w === 'medium'
+  }
+  const sitDownSoFar = (selectedStops || []).filter(isSitDownFood).length
+  if (isSitDownFood(candidate) && sitDownSoFar >= 1) score -= 4
+
+  // Change-of-energy (RULE 1): the middle stop should reset the pace, so reward
+  // a broad category change specifically at the transition slot.
+  if (stopIndex === 1 && candidateCategory !== primaryCategory) score += 2
+
   if (answers.length === 'short' && candidate.price <= 2) score += 1
   if (answers.length === 'long' && candidate.price >= 3) score += 0.9
   if (candidateOccasions.has('romantic') || candidateOccasions.has('views') || candidateOccasions.has('evening')) score += 0.75
@@ -449,36 +464,114 @@ function buildSupportStops(primary, locations, answers, usageProfile) {
   return chosen
 }
 
-function buildPrimaryStop(location) {
+// Finer-grained stop type than normalizeCategory: splits food into
+// restaurant / café / dessert / bar so copy and timing can differ.
+function stopKind(location) {
   const category = normalizeCategory(location.category)
-  let instructionEn = `Start at ${location.name}. Let this be the anchor of the night.`
-  let instructionHe = `מתחילים ב${location.name_he || location.name}. זה העוגן של הערב.`
-  let orderTipEn = ''
-  let orderTipHe = ''
-
   if (category === 'food') {
-    instructionEn = `Start at ${location.name} and keep the first stop easy and conversational.`
-    instructionHe = `מתחילים ב${location.name_he || location.name} ושומרים על התחנה הראשונה קלה ונעימה לשיחה.`
-    orderTipEn = 'Do not over-order at the beginning of the date.'
-    orderTipHe = 'אל תזמינו יותר מדי בתחילת הדייט.'
-  } else if (category === 'outdoors') {
-    instructionEn = `Start outdoors at ${location.name} and let the movement open the conversation naturally.`
-    instructionHe = `מתחילים בחוץ ב${location.name_he || location.name} ונותנים לתנועה לפתוח את השיחה טבעי.`
-  } else if (category === 'activity' || category === 'culture') {
-    instructionEn = `Open the night at ${location.name} with one shared activity, not a marathon.`
-    instructionHe = `פותחים את הערב ב${location.name_he || location.name} עם פעילות אחת משותפת, לא מרתון.`
-  } else if (category === 'lounges' || category === 'winery') {
-    instructionEn = `Begin at ${location.name} and keep this part refined but not too heavy.`
-    instructionHe = `מתחילים ב${location.name_he || location.name} ושומרים על החלק הזה מוקפד אבל לא כבד מדי.`
+    const ftype = foodClassOf(location).food_type
+    if (ftype === 'dessert') return 'dessert'
+    if (ftype === 'cafe') return 'cafe'
+    if (ftype === 'bar') return 'bar'
+    return 'food' // sit-down restaurant
+  }
+  return category // outdoors | activity | culture | lounges | winery | other
+}
+
+// Rough, honest per-stop time estimate (RULE 5). Deliberately fuzzy ("about")
+// since real dwell time varies — it's for pacing expectation, not a schedule.
+function stopDurationText(kind, lang) {
+  const map = {
+    food:     { en: 'about 1 hr',   he: 'כשעה' },
+    cafe:     { en: 'about 40 min', he: 'כ-40 דק׳' },
+    dessert:  { en: 'about 30 min', he: 'כ-30 דק׳' },
+    bar:      { en: 'about 45 min', he: 'כ-45 דק׳' },
+    lounges:  { en: 'about 45 min', he: 'כ-45 דק׳' },
+    winery:   { en: 'about 45 min', he: 'כ-45 דק׳' },
+    outdoors: { en: '30–40 min',    he: '30–40 דק׳' },
+    activity: { en: 'about 1 hr',   he: 'כשעה' },
+    culture:  { en: 'about 1 hr',   he: 'כשעה' },
+    other:    { en: 'about 45 min', he: 'כ-45 דק׳' },
+  }
+  return (map[kind] || map.other)[lang]
+}
+
+// Role-aware stop copy (RULE 4). Each role has a distinct purpose:
+//   anchor     → easy start / food / conversation
+//   transition → reset the energy / short walk / dessert / lighter activity
+//   extension  → optional, only if the night is going well
+function buildStop(location, role) {
+  const kind = stopKind(location)
+  let instruction_en = ''
+  let instruction_he = ''
+  let order_tip_en = ''
+  let order_tip_he = ''
+
+  if (role === 'anchor') {
+    if (kind === 'food' || kind === 'cafe') {
+      instruction_en = 'Start here and settle in — keep the first stop easy and conversational.'
+      instruction_he = 'מתחילים כאן ומתמקמים — שומרים על התחנה הראשונה קלה ונעימה לשיחה.'
+      order_tip_en = 'Don’t over-order at the start — leave room for the rest of the night.'
+      order_tip_he = 'אל תזמינו יותר מדי בהתחלה — תשאירו מקום להמשך.'
+    } else if (kind === 'outdoors') {
+      instruction_en = 'Begin outside — a little movement makes the first conversation easy.'
+      instruction_he = 'מתחילים בחוץ — קצת תנועה עושה את השיחה הראשונה קלה.'
+    } else if (kind === 'activity' || kind === 'culture') {
+      instruction_en = 'Open with one thing to do together — it takes the pressure off talking.'
+      instruction_he = 'פותחים בפעילות משותפת אחת — זה מוריד את הלחץ מהשיחה.'
+    } else {
+      instruction_en = 'Start here and let this set the tone for the night.'
+      instruction_he = 'מתחילים כאן ונותנים לזה לקבוע את הטון של הערב.'
+    }
+  } else if (role === 'transition') {
+    if (kind === 'outdoors') {
+      instruction_en = 'Walk it off here — a change of scene resets the energy and keeps things moving.'
+      instruction_he = 'עושים הליכה כאן — שינוי תפאורה מאפס את האנרגיה ושומר על תנועה.'
+    } else if (kind === 'dessert') {
+      instruction_en = 'Switch to something sweet — a lighter beat after sitting down.'
+      instruction_he = 'עוברים למשהו מתוק — תחנה קלילה אחרי הישיבה.'
+    } else if (kind === 'cafe') {
+      instruction_en = 'Move to a calmer table to shift gears and keep the conversation going.'
+      instruction_he = 'עוברים לשולחן רגוע יותר כדי להחליף הילוך ולהמשיך בשיחה.'
+    } else if (kind === 'activity' || kind === 'culture') {
+      instruction_en = 'Do something together here — it changes the rhythm of the date.'
+      instruction_he = 'עושים משהו יחד כאן — זה משנה את הקצב של הדייט.'
+    } else if (kind === 'bar' || kind === 'lounges' || kind === 'winery') {
+      instruction_en = 'Move somewhere with a bit more mood and let the pace slow down.'
+      instruction_he = 'עוברים למקום עם קצת יותר אווירה ונותנים לקצב להאט.'
+    } else {
+      instruction_en = 'Change the scene here to give the night a natural second beat.'
+      instruction_he = 'מחליפים תפאורה כאן כדי לתת לערב פעימה שנייה טבעית.'
+    }
+  } else { // extension
+    if (kind === 'dessert') {
+      instruction_en = 'End on something sweet — only if the night still has momentum.'
+      instruction_he = 'מסיימים במשהו מתוק — רק אם הערב עדיין זורם.'
+    } else if (kind === 'outdoors') {
+      instruction_en = 'A last stroll to stretch the evening — only if it’s going well.'
+      instruction_he = 'סיבוב אחרון להאריך את הערב — רק אם הולך טוב.'
+    } else if (kind === 'bar' || kind === 'lounges' || kind === 'winery') {
+      instruction_en = 'A relaxed nightcap to round things off — if you’re both still into it.'
+      instruction_he = 'כוסית רגועה לסיום — אם בא לשניכם להמשיך.'
+    } else {
+      instruction_en = 'A relaxed last stop to round off the night — if the timing feels right.'
+      instruction_he = 'תחנה אחרונה רגועה לסיום הערב — אם העיתוי מרגיש נכון.'
+    }
+    order_tip_en = 'Totally optional — end earlier with zero guilt if it feels right.'
+    order_tip_he = 'אופציונלי לגמרי — אפשר לסיים מוקדם בלי שום אשמה.'
   }
 
   return {
     name_en: location.name,
     name_he: location.name_he || location.name,
-    instruction_en: instructionEn,
-    instruction_he: instructionHe,
-    order_tip_en: orderTipEn,
-    order_tip_he: orderTipHe,
+    role,
+    kind,
+    duration_text_en: stopDurationText(kind, 'en'),
+    duration_text_he: stopDurationText(kind, 'he'),
+    instruction_en,
+    instruction_he,
+    order_tip_en,
+    order_tip_he,
     maps_query: location.maps_query,
     lat: location.lat,
     lng: location.lng,
@@ -486,37 +579,28 @@ function buildPrimaryStop(location) {
   }
 }
 
-function buildFollowUpStop(location, index) {
-  const category = normalizeCategory(location.category)
-  let instructionEn = `Continue at ${location.name} so the night has a natural second beat.`
-  let instructionHe = `ממשיכים ל${location.name_he || location.name} כדי לתת לערב תחנה שנייה טבעית.`
+// "Why this route works" (RULE 5) — built from the actual stop roles + types,
+// plus a positive framing when the stops form a tight walkable cluster (RULE 3).
+function buildRouteReason(stops, walkCluster, lang) {
+  const kinds = stops.map((s) => s.kind)
+  const hasExtension = stops.some((s) => s.role === 'extension')
+  const allFood = kinds.every((k) => ['food', 'cafe', 'dessert', 'bar'].includes(k))
 
-  if (category === 'food') {
-    instructionEn = `Move to ${location.name} once you are ready to sit down and keep talking.`
-    instructionHe = `עוברים ל${location.name_he || location.name} כשמוכנים לשבת ולהמשיך לדבר.`
-  } else if (category === 'outdoors') {
-    instructionEn = `Take a short stretch at ${location.name} before deciding how much longer to stay out.`
-    instructionHe = `עושים מקטע קצר ב${location.name_he || location.name} לפני שמחליטים כמה עוד נשארים בחוץ.`
-  } else if (category === 'activity' || category === 'culture') {
-    instructionEn = `Use ${location.name} as the playful middle beat of the date.`
-    instructionHe = `השתמשו ב${location.name_he || location.name} כתחנת האמצע המשחקית של הדייט.`
-  } else if (category === 'lounges' || category === 'winery') {
-    instructionEn = `Let ${location.name} be the refined second half of the night.`
-    instructionHe = `תנו ל${location.name_he || location.name} להיות החצי היותר מוקפד של הערב.`
+  if (lang === 'he') {
+    let base = hasExtension
+      ? 'מקום מרכזי אחד להתמקם בו, שינוי קצב באמצע, וסיום אופציונלי אם הערב זורם.'
+      : 'מקום מרכזי אחד להתמקם בו ואז שינוי קצב — מספיק כדי שהערב ירגיש מתוכנן בלי להעמיס.'
+    if (allFood) base = 'כל העצירות סביב אוכל ושתייה, אבל בנויות לעלות בהדרגה מקליל לסיום מתוק — לא אותו דבר שלוש פעמים.'
+    if (walkCluster) base += ' הכול במרחק כמה דקות הליכה, כך שאף פעם לא רצים בין המקומות.'
+    return base
   }
 
-  return {
-    name_en: location.name,
-    name_he: location.name_he || location.name,
-    instruction_en: instructionEn,
-    instruction_he: instructionHe,
-    order_tip_en: index > 2 ? 'Only add this if the night still feels good.' : '',
-    order_tip_he: index > 2 ? 'מוסיפים את זה רק אם הערב עדיין מרגיש טוב.' : '',
-    maps_query: location.maps_query,
-    lat: location.lat,
-    lng: location.lng,
-    source_location_id: location.id,
-  }
+  let base = hasExtension
+    ? 'One main spot to settle into, a change of pace in the middle, and an optional finish if the night’s going well.'
+    : 'One main spot to settle into, then a change of pace — enough to feel planned without overloading the night.'
+  if (allFood) base = 'These all center on food and drink, but they’re sequenced to build from easy to a sweeter finish — not the same thing three times.'
+  if (walkCluster) base += ' Everything’s within a couple of minutes’ walk, so you’re never rushing between stops.'
+  return base
 }
 
 function buildGeneratedNarrative(primary, answers, lang) {
@@ -609,7 +693,29 @@ function buildGeneratedPlan(location, locations, answers, behavior, usageProfile
   const title_he = buildGeneratedTitle(location, { ...answers, focus }, 'he')
   const narrative_en = buildGeneratedNarrative(location, { ...answers, focus, seriousness, length: chosenLength }, 'en')
   const narrative_he = buildGeneratedNarrative(location, { ...answers, focus, seriousness, length: chosenLength }, 'he')
-  const stops = [buildPrimaryStop(location), ...supportLocations.map((stop, index) => buildFollowUpStop(stop, index + 2))]
+  // Role-based composition (RULE 1): anchor → transition → optional extension.
+  // 2-stop plans are anchor + transition; the 3rd (when present) is the extension.
+  const stopLocations = [location, ...supportLocations]
+  const lastIndex = stopLocations.length - 1
+  const stops = stopLocations.map((loc, index) => {
+    const role = index === 0
+      ? 'anchor'
+      : index === lastIndex && stopLocations.length >= 3
+        ? 'extension'
+        : 'transition'
+    return buildStop(loc, role)
+  })
+
+  // Leg distances → "walkable cluster" framing (RULE 3) + route reason (RULE 5).
+  const legKms = []
+  for (let i = 1; i < stopLocations.length; i += 1) {
+    const d = distanceKm(stopLocations[i - 1], stopLocations[i])
+    if (d != null) legKms.push(d)
+  }
+  const walkCluster = legKms.length > 0 && legKms.every((d) => d <= 0.4)
+  const route_reason_en = buildRouteReason(stops, walkCluster, 'en')
+  const route_reason_he = buildRouteReason(stops, walkCluster, 'he')
+
   const supportScore = supportLocations.reduce((sum, stop) => sum + Math.max(usageProfile.locationWeights[String(stop.id)] || 0, 0), 0)
 
   // Coherence metadata: same source rows the engine actually scored against
@@ -647,6 +753,9 @@ function buildGeneratedPlan(location, locations, answers, behavior, usageProfile
     budget_text_he: buildBudgetText(location.price, 'he'),
     share_summary_en: buildGeneratedShareSummary(location, supportLocations, 'en'),
     share_summary_he: buildGeneratedShareSummary(location, supportLocations, 'he'),
+    route_reason_en,
+    route_reason_he,
+    walk_cluster: walkCluster,
     featured: Boolean(location.featured),
     tonight_pick_weight: 0,
     stops,

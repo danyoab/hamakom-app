@@ -39,7 +39,15 @@ function getLocalizedPlanText(plan, lang) {
     duration:     isHe ? plan.duration_text_he : plan.duration_text_en,
     budget:       isHe ? plan.budget_text_he   : plan.budget_text_en,
     shareSummary: isHe ? plan.share_summary_he : plan.share_summary_en,
+    routeReason:  isHe ? plan.route_reason_he  : plan.route_reason_en,
   }
+}
+
+// Role → short, human label shown above each stop title (RULE 1 hierarchy).
+const ROLE_LABELS = {
+  anchor:     { en: 'The anchor',        he: 'עוגן הערב' },
+  transition: { en: 'Change of pace',    he: 'שינוי קצב' },
+  extension:  { en: 'Optional extension', he: 'תוספת אופציונלית' },
 }
 
 export default function ResultsPage({
@@ -191,6 +199,18 @@ export default function ResultsPage({
           <div style={{ fontSize: 10, letterSpacing: '0.16em', color: MUTED, textTransform: 'uppercase', marginBottom: 14 }}>
             {isHe ? 'איך הערב נבנה' : 'How the night unfolds'}
           </div>
+
+          {text.routeReason ? (
+            <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start', background: '#FBF4E1', border: `1px solid #EBDFC0`, borderRadius: 12, padding: '11px 13px', marginBottom: 16 }}>
+              <span style={{ fontSize: 13, flexShrink: 0, lineHeight: 1.4 }}>✨</span>
+              <div>
+                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', color: ACCENT, textTransform: 'uppercase', marginBottom: 3 }}>
+                  {isHe ? 'למה המסלול הזה עובד' : 'Why this route works'}
+                </div>
+                <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: SOFT }}>{text.routeReason}</p>
+              </div>
+            </div>
+          ) : null}
 
           <div style={{ display: 'grid', gap: 10 }}>
             {primaryStops.map((stop, i) => (
@@ -358,12 +378,20 @@ function StopCard({ stop, index, lang, total }) {
   const orderTip    = isHe ? stop.order_tip_he    : stop.order_tip_en
   const mapsUrl     = getMapsUrl(stop.maps_query)
   const isLast      = index === total - 1
+  const roleLabel   = stop.role ? ROLE_LABELS[stop.role]?.[isHe ? 'he' : 'en'] : null
+  const duration    = isHe ? stop.duration_text_he : stop.duration_text_en
+  const isExtension = stop.role === 'extension'
 
   return (
     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
       {/* Number + connector */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-        <div style={{ width: 30, height: 30, borderRadius: '50%', background: GOLD, color: INK, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800 }}>
+        <div style={{
+          width: 30, height: 30, borderRadius: '50%',
+          background: isExtension ? 'transparent' : GOLD,
+          border: isExtension ? `1.5px dashed ${GOLD}` : 'none',
+          color: INK, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800,
+        }}>
           {index + 1}
         </div>
         {!isLast ? <div style={{ width: 2, flex: 1, background: 'linear-gradient(#E4DAC4,#EFE7D6)', marginTop: 4, minHeight: 18 }} /> : null}
@@ -371,12 +399,28 @@ function StopCard({ stop, index, lang, total }) {
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0, paddingBottom: isLast ? 0 : 14 }}>
+        {/* Role + time row */}
+        {(roleLabel || duration) ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 3 }}>
+            {roleLabel ? (
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: isExtension ? MUTED : ACCENT }}>
+                {roleLabel}
+              </span>
+            ) : <span />}
+            {duration ? (
+              <span style={{ fontSize: 11, color: MUTED, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span aria-hidden style={{ opacity: 0.7 }}>◷</span>{duration}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
         <div style={{ fontFamily: SERIF, fontSize: 17.5, fontWeight: 600, marginBottom: 4, color: TEXT }}>{title}</div>
         <div style={{ fontSize: 13.5, lineHeight: 1.55, color: '#6E6450', marginBottom: orderTip ? 6 : 0 }}>{instruction}</div>
         {orderTip ? (
-          <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, background: '#FAF6EC', borderRadius: 10, padding: '9px 12px', marginTop: 6 }}>
-            💡
-            {orderTip}
+          <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, background: '#FAF6EC', borderRadius: 10, padding: '9px 12px', marginTop: 6, display: 'flex', gap: 7 }}>
+            <span aria-hidden style={{ flexShrink: 0 }}>💡</span>
+            <span>{orderTip}</span>
           </div>
         ) : null}
         {mapsUrl ? (

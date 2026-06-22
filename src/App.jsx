@@ -1248,6 +1248,9 @@ export default function App() {
               tx={tx}
               authUser={authUser}
               savedCount={savedCount}
+              savedPlansCount={savedPlans.length}
+              savedPlacesCount={savedPlaces.length}
+              onOpenSaved={() => selectTab('saved')}
               onToggleLang={() => setLang((current) => (current === 'en' ? 'he' : 'en'))}
               onOpenQuiz={openQuiz}
               onOpenSuggest={() => setOverlay('suggest')}
@@ -2006,108 +2009,357 @@ function FeedbackComposer({ lang, rating, again, onSetWent, onSetRating, onSetAg
   )
 }
 
-function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz, onOpenSuggest, onOpenAdmin, onOpenPrivacy, onOpenTerms, analyticsEnabled, onToggleAnalytics, onDeleteAccount, onOpenFeedback }) {
-  const cards = [
-    { label: tx.profileStatsSaved, value: savedCount },
-    { label: lang === 'he' ? 'כרגע' : 'Right now', value: lang === 'he' ? 'תוכנית אחת' : 'One strong plan' },
-    { label: tx.profileStatsLanguage, value: lang === 'he' ? 'HE' : 'EN' },
+function ProfilePage({
+  lang,
+  tx,
+  authUser,
+  savedCount,
+  savedPlansCount,
+  savedPlacesCount,
+  onOpenSaved,
+  onToggleLang,
+  onOpenQuiz,
+  onOpenSuggest,
+  onOpenAdmin,
+  onOpenPrivacy,
+  onOpenTerms,
+  analyticsEnabled,
+  onToggleAnalytics,
+  onDeleteAccount,
+  onOpenFeedback,
+}) {
+  const isHe = lang === 'he'
+  const displayName = authUser?.email
+    ? authUser.email.split('@')[0]
+    : (isHe ? 'אורח' : 'Guest')
+  const initial = displayName.charAt(0).toUpperCase()
+  const savedBreakdown = isHe
+    ? `${savedPlansCount} תוכניות · ${savedPlacesCount} מקומות`
+    : `${savedPlansCount} plans · ${savedPlacesCount} places`
+
+  const quickActions = [
+    {
+      key: 'quiz',
+      title: tx.profileActionQuiz,
+      subtitle: isHe ? 'דייט מותאם בערך דקה' : 'A tailored date in about a minute',
+      onClick: onOpenQuiz,
+      featured: true,
+    },
+    ...(savedCount > 0
+      ? [{
+          key: 'saved',
+          title: isHe ? 'השמורים שלכם' : 'Your saves',
+          subtitle: savedBreakdown,
+          onClick: onOpenSaved,
+        }]
+      : []),
+    {
+      key: 'suggest',
+      title: tx.profileActionSuggest,
+      subtitle: isHe ? 'הוסיפו מקום שחסר לנו' : 'Add a place we are missing',
+      onClick: onOpenSuggest,
+    },
+    {
+      key: 'feedback',
+      title: isHe ? 'דווחו / משוב' : 'Report / feedback',
+      subtitle: isHe ? 'עזרו לנו לדייק את ההמלצות' : 'Help us sharpen recommendations',
+      onClick: onOpenFeedback,
+    },
+    {
+      key: 'language',
+      title: tx.profileActionLanguage,
+      subtitle: lang === 'he' ? 'English' : 'עברית',
+      onClick: onToggleLang,
+    },
+    ...(isAdminUser(authUser)
+      ? [{
+          key: 'admin',
+          title: tx.profileActionAdmin,
+          subtitle: isHe ? 'ניהול תוכן ומערכת' : 'Content and system tools',
+          onClick: onOpenAdmin,
+        }]
+      : []),
   ]
 
   return (
-    <div style={{ display: 'grid', gap: 14 }}>
-      <section style={{ background: '#FFFFFF', border: `1px solid ${APP_BORDER}`, borderRadius: 20, padding: 20 }}>
-        <div style={{ fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: APP_MUTED }}>{tx.profileCardEyebrow}</div>
-        <h2 style={{ fontSize: 26, margin: '6px 0 8px', lineHeight: 1.08 }}>{tx.profileCardTitle}</h2>
-        <p style={{ margin: 0, color: '#6E6450', fontSize: 14 }}>{authUser?.email ? authUser.email : tx.profileGuest}</p>
+    <div style={{ position: 'relative' }}>
+      <div
+        className="hm-glow"
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: -120,
+          left: '50%',
+          marginLeft: -200,
+          width: 400,
+          height: 400,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(201,168,76,0.16), rgba(201,168,76,0) 68%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 10, marginTop: 18 }}>
-          {cards.map((card) => (
-            <div key={card.label} style={{ background: '#FBF7EE', border: '1px solid #EDE5D4', borderRadius: 12, padding: '14px 12px' }}>
-              <div style={{ fontSize: 24, color: APP_ACCENT, lineHeight: 1.1 }}>{card.value}</div>
-              <div style={{ marginTop: 4, fontSize: 11, color: APP_MUTED, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{card.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <ActionCard title={tx.profileActionsTitle} text={tx.profileActionsText}>
-        <button onClick={onOpenQuiz} style={primaryButtonStyle}>
-          {tx.profileActionQuiz}
-        </button>
-        <button onClick={onOpenSuggest} style={secondaryButtonStyle}>
-          {tx.profileActionSuggest}
-        </button>
-        <button onClick={onOpenFeedback} style={secondaryButtonStyle}>
-          {lang === 'he' ? 'דווח על בעיה / משוב' : 'Report a problem / Feedback'}
-        </button>
-        <button onClick={onToggleLang} style={secondaryButtonStyle}>
-          {tx.profileActionLanguage}
-        </button>
-        {isAdminUser(authUser) ? (
-          <button onClick={onOpenAdmin} style={textLinkButtonStyle}>
-            {tx.profileActionAdmin}
-          </button>
-        ) : null}
-      </ActionCard>
-
-      <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 18 }}>
-        <h3 style={{ fontSize: 18, margin: '0 0 14px' }}>{lang === 'he' ? 'הגדרות' : 'Settings'}</h3>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: `1px solid ${APP_BORDER}` }}>
-          <div>
-            <div style={{ fontSize: 14, color: APP_TEXT }}>{lang === 'he' ? 'נתוני שימוש' : 'Usage analytics'}</div>
-            <div style={{ fontSize: 12, color: APP_MUTED, marginTop: 2 }}>{lang === 'he' ? 'עוזר לנו לשפר את ההמלצות' : 'Helps us improve recommendations'}</div>
+      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gap: 22 }}>
+        <section style={{ padding: '4px 0 2px' }}>
+          <div className="hm-reveal" style={{ animationDelay: '0.02s', fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: APP_ACCENT, textTransform: 'uppercase', marginBottom: 12 }}>
+            {tx.profileCardEyebrow}
           </div>
-          <button
-            onClick={onToggleAnalytics}
-            style={{
-              width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
-              background: analyticsEnabled ? APP_ACCENT : '#E6DCC8',
-              position: 'relative', transition: 'background 0.2s',
-            }}
-            aria-label={analyticsEnabled ? 'Disable analytics' : 'Enable analytics'}
-          >
-            <span style={{
-              position: 'absolute', top: 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
-              left: analyticsEnabled ? 23 : 3,
-            }} />
-          </button>
-        </div>
-        <div style={{ display: 'flex', gap: 16, paddingTop: 14 }}>
-          <button onClick={onOpenPrivacy} style={{ ...textLinkButtonStyle, padding: '4px 0', fontSize: 12 }}>
-            {lang === 'he' ? 'מדיניות פרטיות' : 'Privacy Policy'}
-          </button>
-          <button onClick={onOpenTerms} style={{ ...textLinkButtonStyle, padding: '4px 0', fontSize: 12 }}>
-            {lang === 'he' ? 'תנאי שירות' : 'Terms of Service'}
-          </button>
-        </div>
+          <h1 className="hm-reveal" style={{ animationDelay: '0.08s', fontFamily: SERIF, margin: '0 0 10px', fontSize: 'clamp(28px, 7vw, 36px)', lineHeight: 1.08, fontWeight: 600 }}>
+            {tx.profileCardTitle}
+          </h1>
+          <p className="hm-reveal" style={{ animationDelay: '0.14s', margin: 0, color: APP_SOFT, fontSize: 15, lineHeight: 1.55, maxWidth: '34ch' }}>
+            {tx.profileSubtitle}
+          </p>
+        </section>
+
+        <section
+          className="hm-reveal hm-lift"
+          style={{
+            animationDelay: '0.2s',
+            background: APP_PANEL,
+            border: `1px solid ${APP_BORDER}`,
+            borderRadius: 22,
+            padding: 18,
+            boxShadow: '0 10px 30px -20px rgba(40,30,12,0.45)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div
+              style={{
+                width: 54,
+                height: 54,
+                borderRadius: 16,
+                background: authUser ? 'linear-gradient(145deg, #F4ECD8, #E8D9B8)' : '#FBF7EE',
+                border: `1px solid ${authUser ? '#D8C49A' : APP_BORDER}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: SERIF,
+                fontSize: 24,
+                fontWeight: 600,
+                color: APP_ACCENT,
+                flexShrink: 0,
+              }}
+            >
+              {initial}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                <div style={{ fontSize: 17, fontWeight: 700, color: APP_TEXT, lineHeight: 1.2 }}>{displayName}</div>
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: authUser ? '#4F7144' : APP_MUTED,
+                    background: authUser ? '#E9F0E4' : '#F3EDE2',
+                    borderRadius: 999,
+                    padding: '4px 8px',
+                  }}
+                >
+                  {authUser ? (isHe ? 'מחובר' : 'Signed in') : tx.profileGuest}
+                </span>
+              </div>
+              <div style={{ fontSize: 13, color: APP_SOFT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {authUser?.email || (isHe ? 'התחברו כדי לסנכרן שמורים בין מכשירים' : 'Sign in to sync saves across devices')}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 16, paddingTop: 16, borderTop: '1px solid #F0E9DA' }}>
+            <ProfileStat label={tx.profileStatsSaved} value={savedCount} hint={savedBreakdown} />
+            <ProfileStat label={tx.profileStatsLanguage} value={lang === 'he' ? 'HE' : 'EN'} hint={lang === 'he' ? 'עברית' : 'English'} />
+            <ProfileStat
+              label={isHe ? 'סטטוס' : 'Status'}
+              value={authUser ? '✓' : '—'}
+              hint={authUser ? (isHe ? 'מסונכרן' : 'Synced') : (isHe ? 'מקומי' : 'Local only')}
+            />
+          </div>
+        </section>
+
+        <section className="hm-reveal" style={{ animationDelay: '0.28s' }}>
+          <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
+            {tx.profileActionsTitle}
+          </div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {quickActions.map((action) => (
+              <ProfileMenuRow
+                key={action.key}
+                title={action.title}
+                subtitle={action.subtitle}
+                featured={action.featured}
+                onClick={action.onClick}
+                isHe={isHe}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section className="hm-reveal" style={{ animationDelay: '0.36s' }}>
+          <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
+            {isHe ? 'הגדרות' : 'Settings'}
+          </div>
+          <div style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 18, overflow: 'hidden' }}>
+            <ProfileToggleRow
+              title={isHe ? 'נתוני שימוש' : 'Usage analytics'}
+              subtitle={isHe ? 'עוזר לנו לשפר את ההמלצות' : 'Helps us improve recommendations'}
+              enabled={analyticsEnabled}
+              onToggle={onToggleAnalytics}
+            />
+            <ProfileMenuRow
+              title={isHe ? 'מדיניות פרטיות' : 'Privacy Policy'}
+              onClick={onOpenPrivacy}
+              isHe={isHe}
+              compact
+              borderTop
+            />
+            <ProfileMenuRow
+              title={isHe ? 'תנאי שירות' : 'Terms of Service'}
+              onClick={onOpenTerms}
+              isHe={isHe}
+              compact
+              borderTop
+            />
+          </div>
+        </section>
 
         {authUser ? (
-          <div style={{ paddingTop: 18, borderTop: `1px solid ${APP_BORDER}`, marginTop: 14 }}>
-            <button
-              onClick={onDeleteAccount}
-              style={{ background: 'none', border: '1px solid #7F1D1D', color: '#F87171', borderRadius: 10, padding: '9px 16px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', fontWeight: 600 }}
-            >
-              {lang === 'he' ? 'מחיקת חשבון' : 'Delete Account'}
-            </button>
-            <p style={{ margin: '8px 0 0', fontSize: 11, color: APP_MUTED }}>
-              {lang === 'he' ? 'פעולה בלתי הפיכה. כל הנתונים יימחקו.' : 'Permanent. All your data will be deleted.'}
-            </p>
-          </div>
+          <section className="hm-reveal" style={{ animationDelay: '0.42s' }}>
+            <div style={{ background: '#FFF8F8', border: '1px solid #F0D4D4', borderRadius: 16, padding: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#9B2C2C', marginBottom: 4 }}>
+                {isHe ? 'אזור מסוכן' : 'Danger zone'}
+              </div>
+              <p style={{ margin: '0 0 12px', fontSize: 13, color: '#8A5A5A', lineHeight: 1.5 }}>
+                {isHe ? 'מחיקת החשבון תסיר לצמיתות את כל השמורים, ההעדפות והנתונים שלכם.' : 'Deleting your account permanently removes all saves, preferences, and data.'}
+              </p>
+              <button
+                onClick={onDeleteAccount}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #C97A7A',
+                  color: '#B42318',
+                  borderRadius: 12,
+                  padding: '10px 14px',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'inherit',
+                  fontWeight: 700,
+                }}
+              >
+                {isHe ? 'מחיקת חשבון' : 'Delete account'}
+              </button>
+            </div>
+          </section>
         ) : null}
-      </section>
 
-      <ActionCard title={tx.profileNotesTitle} text={tx.profileNotesText} />
+        <section
+          className="hm-reveal"
+          style={{
+            animationDelay: '0.48s',
+            background: '#FBF7EE',
+            border: '1px solid #EDE5D4',
+            borderRadius: 16,
+            padding: '14px 16px',
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: APP_ACCENT, marginBottom: 6 }}>
+            {tx.profileNotesTitle}
+          </div>
+          <p style={{ margin: 0, fontSize: 13.5, color: APP_SOFT, lineHeight: 1.55 }}>{tx.profileNotesText}</p>
+        </section>
+      </div>
     </div>
   )
 }
 
-function ActionCard({ title, text, children }) {
+function ProfileStat({ label, value, hint }) {
   return (
-    <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 18 }}>
-      <h3 style={{ fontSize: 18, margin: '0 0 6px' }}>{title}</h3>
-      <p style={{ margin: children ? '0 0 16px' : 0, color: '#8A7F6C', fontSize: 14 }}>{text}</p>
-      {children ? <div style={{ display: 'grid', gap: 10 }}>{children}</div> : null}
-    </section>
+    <div style={{ textAlign: 'center', padding: '2px 4px' }}>
+      <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 600, color: APP_ACCENT, lineHeight: 1 }}>{value}</div>
+      <div style={{ marginTop: 5, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: APP_MUTED }}>{label}</div>
+      {hint ? <div style={{ marginTop: 3, fontSize: 11, color: '#9A8F7C', lineHeight: 1.3 }}>{hint}</div> : null}
+    </div>
+  )
+}
+
+function ProfileMenuRow({ title, subtitle, onClick, isHe, featured = false, compact = false, borderTop = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={featured ? 'hm-lift' : undefined}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        textAlign: isHe ? 'right' : 'left',
+        background: featured ? APP_INK : APP_PANEL,
+        color: featured ? '#F4ECD8' : APP_TEXT,
+        border: featured ? 'none' : 'none',
+        borderTop: borderTop ? `1px solid ${APP_BORDER}` : 'none',
+        borderRadius: featured ? 18 : 0,
+        padding: compact ? '13px 16px' : '15px 16px',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        boxShadow: featured ? '0 14px 26px -14px rgba(36,30,22,0.55)' : 'none',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: compact ? 14 : 15, fontWeight: 700, lineHeight: 1.25 }}>{title}</div>
+        {subtitle ? (
+          <div style={{ marginTop: 3, fontSize: 12.5, lineHeight: 1.4, color: featured ? '#D8C89A' : APP_MUTED }}>
+            {subtitle}
+          </div>
+        ) : null}
+      </div>
+      <span style={{ fontSize: 15, color: featured ? '#E0BE58' : APP_ACCENT, flexShrink: 0, fontWeight: 700 }}>
+        {isHe ? '←' : '→'}
+      </span>
+    </button>
+  )
+}
+
+function ProfileToggleRow({ title, subtitle, enabled, onToggle }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '14px 16px' }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: APP_TEXT }}>{title}</div>
+        <div style={{ fontSize: 12.5, color: APP_MUTED, marginTop: 3, lineHeight: 1.4 }}>{subtitle}</div>
+      </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{
+          width: 46,
+          height: 26,
+          borderRadius: 13,
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+          flexShrink: 0,
+          background: enabled ? APP_ACCENT : '#E6DCC8',
+          position: 'relative',
+          transition: 'background 0.2s',
+        }}
+        aria-label={enabled ? 'Disable analytics' : 'Enable analytics'}
+      >
+        <span
+          style={{
+            position: 'absolute',
+            top: 3,
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            background: '#fff',
+            transition: 'inset-inline-start 0.2s',
+            insetInlineStart: enabled ? 23 : 3,
+          }}
+        />
+      </button>
+    </div>
   )
 }
 

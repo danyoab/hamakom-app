@@ -157,7 +157,7 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
 
       {/* Question content */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 18px 36px' }}>
-        <div style={{ width: '100%', maxWidth: 520 }}>
+        <div key={step} className="hm-step-fade" style={{ width: '100%', maxWidth: 520 }}>
 
           {/* Question header */}
           <div style={{ marginBottom: 22 }}>
@@ -197,18 +197,24 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
                     key={option.value}
                     onClick={() => handleSelect(option.value)}
                     disabled={chosen !== null}
+                    className="hm-lift"
                     style={{
                       position: 'relative',
                       height: 100,
-                      borderRadius: 14,
+                      borderRadius: 16,
                       overflow: 'hidden',
-                      border: `2px solid ${isChosen ? ACCENT : 'transparent'}`,
+                      border: `1px solid ${isChosen ? ACCENT : BORDER}`,
                       cursor: chosen !== null ? 'default' : 'pointer',
                       padding: 0,
-                      background: isFlexible ? PANEL : '#111',
-                      transition: 'border-color 0.15s, transform 0.15s',
-                      transform: isChosen ? 'scale(0.97)' : 'scale(1)',
-                      boxShadow: isChosen ? `0 0 0 1px ${ACCENT}40, 0 4px 16px rgba(201,168,76,0.2)` : 'none',
+                      background: isFlexible ? PANEL : '#EDE7D9',
+                      transition: 'border-color 0.15s, transform 0.15s, box-shadow 0.2s',
+                      // Leave the resting transform unset so the `.hm-lift:hover`
+                      // rule can apply — an inline transform would win on
+                      // specificity and silently kill the hover lift.
+                      transform: isChosen ? 'scale(0.97)' : undefined,
+                      boxShadow: isChosen
+                        ? `0 0 0 1px ${ACCENT}55, 0 8px 22px -10px rgba(201,168,76,0.45)`
+                        : '0 4px 14px -12px rgba(40,30,12,0.35)',
                     }}
                   >
                     {/* Photo background */}
@@ -216,19 +222,20 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
                       <img
                         src={imgUrl}
                         alt={isHe ? option.he : option.en}
+                        className="hm-img-fade"
                         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         onError={e => { e.currentTarget.style.display = 'none' }}
                       />
                     ) : null}
 
-                    {/* Gradient overlay */}
+                    {/* Gradient overlay — lighter, bottom-weighted so it reads as cream-editorial */}
                     <div style={{
                       position: 'absolute', inset: 0,
                       background: isFlexible
                         ? 'none'
                         : isChosen
-                          ? 'linear-gradient(180deg, rgba(201,168,76,0.18) 0%, rgba(0,0,0,0.72) 100%)'
-                          : 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.68) 100%)',
+                          ? 'linear-gradient(180deg, rgba(201,168,76,0.10) 30%, rgba(0,0,0,0.60) 100%)'
+                          : 'linear-gradient(180deg, rgba(0,0,0,0) 38%, rgba(0,0,0,0.52) 100%)',
                       transition: 'background 0.2s',
                     }} />
 

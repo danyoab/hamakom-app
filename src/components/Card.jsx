@@ -47,6 +47,7 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
             alt={name}
             onError={() => setImgFailed(true)}
             loading="lazy"
+            className="hm-img-fade"
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
         ) : (

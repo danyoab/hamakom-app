@@ -30,6 +30,7 @@ import {
 } from './lib/quiz'
 import { lazy, Suspense } from 'react'
 import Card from './components/Card'
+import { SkeletonCardGrid } from './components/Skeleton'
 import DetailView from './components/DetailView'
 import SuggestView from './components/SuggestView'
 import FilterBar from './components/FilterBar'
@@ -1192,19 +1193,7 @@ export default function App() {
                 void trackEvent('surprise_me_clicked', { userId: authUser?.id, properties: { city: randomCity } })
                 setOverlay('plan-preview')
               }}
-              onBuildYourOwnPlan={openCustomPlanBuilder}
               onOpenTonightPlan={openPlanPreview}
-              onOpenExplore={() => selectTab('explore')}
-              onBrowseByCategory={(cat) => {
-                setBrowseFilters((prev) => ({ ...prev, categoryFilter: cat }))
-                setExploreExpanded(true)
-                selectTab('explore')
-              }}
-              onBrowseByCity={(city) => {
-                setBrowseFilters((prev) => ({ ...prev, cityFilter: city }))
-                setExploreExpanded(true)
-                selectTab('explore')
-              }}
             />
           ) : null}
 
@@ -1233,6 +1222,7 @@ export default function App() {
           ) : null}
 
           {tab === 'saved' ? (
+            <div className="hm-tab-fade">
             <SavedPage
               lang={lang}
               tx={tx}
@@ -1248,9 +1238,11 @@ export default function App() {
               onOpenPlace={openDetail}
               onGoHome={() => selectTab('home')}
             />
+            </div>
           ) : null}
 
           {tab === 'profile' ? (
+            <div className="hm-tab-fade">
             <ProfilePage
               lang={lang}
               tx={tx}
@@ -1301,6 +1293,7 @@ export default function App() {
                 }
               }}
             />
+            </div>
           ) : null}
         </main>
       </div>
@@ -1382,23 +1375,6 @@ function AppHeader({ lang, onToggleLang }) {
   )
 }
 
-const HOME_CATEGORY_TILES = [
-  { cat: 'Hotels & Lounges',        emoji: '✨', label_en: 'Hotels & Lounges',  label_he: 'מלונות ולאונג\'' },
-  { cat: 'Cafés & Restaurants',     emoji: '☕', label_en: 'Cafés & Dining',    label_he: 'קפה ומסעדות'    },
-  { cat: 'Parks & Outdoors',        emoji: '🌿', label_en: 'Parks & Outdoors',  label_he: 'פארקים וטבע'    },
-  { cat: 'Activities & Experiences',emoji: '🎯', label_en: 'Activities',         label_he: 'פעילויות'       },
-  { cat: 'Museums & Culture',       emoji: '🏛', label_en: 'Museums & Culture', label_he: 'תרבות'           },
-  { cat: 'Wineries',                emoji: '🍷', label_en: 'Wineries',          label_he: 'יקבים'          },
-]
-
-const HOME_CITY_CHIPS = [
-  { city: 'Jerusalem',    label_en: 'Jerusalem',    label_he: 'ירושלים'   },
-  { city: 'Beit Shemesh', label_en: 'Beit Shemesh', label_he: 'בית שמש'   },
-  { city: 'Tel Aviv',     label_en: 'Tel Aviv',     label_he: 'תל אביב'   },
-  { city: "Modi'in",      label_en: "Modi'in",      label_he: 'מודיעין'   },
-  { city: 'Tzur Hadassah',label_en: 'Tzur Hadassah',label_he: 'צור הדסה'  },
-]
-
 function HomePage({
   lang,
   tx,
@@ -1407,139 +1383,82 @@ function HomePage({
   error,
   onStartQuiz,
   onSurpriseMe,
-  onBuildYourOwnPlan,
   onOpenTonightPlan,
-  onOpenExplore,
-  onBrowseByCategory,
-  onBrowseByCity,
 }) {
   const isHe = lang === 'he'
   return (
-    <div style={{ display: 'grid', gap: 24 }}>
+    <div style={{ position: 'relative' }}>
+      {/* Ambient gold glow behind the hero — adds depth without clutter */}
+      <div
+        className="hm-glow"
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: -150,
+          left: '50%',
+          marginLeft: -230,
+          width: 460,
+          height: 460,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(201,168,76,0.20), rgba(201,168,76,0) 68%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
 
-      {/* Hero — open section, no panel box */}
-      <section style={{ padding: '8px 0 4px' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: APP_ACCENT, textTransform: 'uppercase', marginBottom: 14 }}>
-          {tx.planHeroEyebrow}
-        </div>
-        <h1 style={{ fontFamily: SERIF, margin: '0 0 14px', fontSize: 'clamp(30px, 8vw, 40px)', lineHeight: 1.08, fontWeight: 600, letterSpacing: '-0.01em' }}>
-          {tx.planHeroTitle}
-        </h1>
-        <p style={{ margin: '0 0 22px', color: APP_SOFT, fontSize: 15.5, lineHeight: 1.6, maxWidth: '32ch' }}>{tx.planHeroText}</p>
+      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gap: 24 }}>
 
-        {/* Trust chips */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
-          {(isHe
-            ? ['חידון של 60 שניות', 'מסלולים מובחרים', 'מודע לכשרות']
-            : ['60-second quiz', 'Curated routes', 'Kosher-aware']
-          ).map((label) => (
-            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 7, background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 999, padding: '7px 13px' }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#C9A84C', flexShrink: 0 }} />
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: '#5A5142' }}>{label}</span>
+        {/* Hero — open section, no panel box */}
+        <section style={{ padding: '8px 0 4px' }}>
+          <div className="hm-reveal" style={{ animationDelay: '0.02s', fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: APP_ACCENT, textTransform: 'uppercase', marginBottom: 14 }}>
+            {tx.planHeroEyebrow}
+          </div>
+          <h1 className="hm-reveal" style={{ animationDelay: '0.09s', fontFamily: SERIF, margin: '0 0 14px', fontSize: 'clamp(30px, 8vw, 40px)', lineHeight: 1.08, fontWeight: 600, letterSpacing: '-0.01em' }}>
+            {tx.planHeroTitle}
+          </h1>
+          <p className="hm-reveal" style={{ animationDelay: '0.17s', margin: '0 0 22px', color: APP_SOFT, fontSize: 15.5, lineHeight: 1.6, maxWidth: '32ch' }}>{tx.planHeroText}</p>
+
+          {/* Trust line — single subtle row, no chip boxes */}
+          <div className="hm-reveal" style={{ animationDelay: '0.23s', fontSize: 13, color: '#9A8F7C', marginBottom: 24 }}>
+            {isHe
+              ? 'חידון של 60 שניות · מסלולים מובחרים · מודע לכשרות'
+              : '60-second quiz · Curated routes · Kosher-aware'}
+          </div>
+
+          <div className="hm-reveal" style={{ animationDelay: '0.29s' }}>
+            <button onClick={onStartQuiz} className="hm-cta" style={{ ...primaryButtonStyle, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
+              {tx.planHeroAction} <span className="hm-arrow" style={{ color: '#E0BE58' }}>{isHe ? '←' : '→'}</span>
+            </button>
+          </div>
+          <div className="hm-reveal" style={{ animationDelay: '0.35s', textAlign: 'center', margin: '15px 0 4px' }}>
+            <span style={{ fontSize: 13.5, color: '#9A8F7C' }}>
+              {isHe ? 'בערך דקה · 3 הקשות מהירות' : 'Takes about a minute · 3 quick taps'}
             </span>
-          ))}
-        </div>
-
-        <button onClick={onStartQuiz} style={{ ...primaryButtonStyle, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
-          {tx.planHeroAction} <span style={{ color: '#E0BE58' }}>→</span>
-        </button>
-        <div style={{ textAlign: 'center', margin: '15px 0 4px' }}>
-          <span style={{ fontSize: 13.5, color: '#9A8F7C' }}>
-            {isHe ? 'בערך דקה · 4 הקשות מהירות' : 'Takes about a minute · 4 quick taps'}
-          </span>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <button onClick={onSurpriseMe} style={{ ...textLinkButtonStyle, fontSize: 13 }}>
-            {isHe ? '🎲 הפתיעו אותי הלילה' : '🎲 Surprise me tonight'}
-          </button>
-        </div>
-      </section>
-
-      {/* Tonight's Pick — standalone card, no outer panel wrapper */}
-      <section>
-        <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
-          {tx.tonightsPick}
-        </div>
-        <TonightPlanCard lang={lang} tx={tx} plan={tonightPlan} onOpenPlan={onOpenTonightPlan} onStartQuiz={onStartQuiz} />
-      </section>
-
-      {/* Browse by type — open section */}
-      <section>
-        <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
-          {isHe ? 'לפי סוג' : 'Browse by type'}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-          {HOME_CATEGORY_TILES.map(({ cat, emoji, label_en, label_he }) => (
-            <button
-              key={cat}
-              onClick={() => onBrowseByCategory(cat)}
-              style={{
-                background: APP_PANEL,
-                border: `1px solid ${APP_BORDER}`,
-                borderRadius: 12,
-                padding: '14px 8px',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 7,
-                fontFamily: 'inherit',
-              }}
-            >
-              <span style={{ fontSize: 20 }}>{emoji}</span>
-              <span style={{ fontSize: 11, color: APP_TEXT, lineHeight: 1.25, textAlign: 'center' }}>
-                {isHe ? label_he : label_en}
-              </span>
+          </div>
+          <div className="hm-reveal" style={{ animationDelay: '0.4s', textAlign: 'center' }}>
+            <button onClick={onSurpriseMe} className="hm-link" style={{ ...textLinkButtonStyle, fontSize: 13 }}>
+              {isHe ? '🎲 הפתיעו אותי הלילה' : '🎲 Surprise me tonight'}
             </button>
-          ))}
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Browse by city — open section */}
-      <section>
-        <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
-          {isHe ? 'לפי עיר' : 'Browse by city'}
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {HOME_CITY_CHIPS.map(({ city, label_en, label_he }) => (
-            <button
-              key={city}
-              onClick={() => onBrowseByCity(city)}
-              style={{
-                background: APP_PANEL,
-                border: `1px solid ${APP_BORDER}`,
-                borderRadius: 16,
-                padding: '8px 16px',
-                cursor: 'pointer',
-                fontSize: 13,
-                color: APP_TEXT,
-                fontFamily: 'inherit',
-              }}
-            >
-              {isHe ? label_he : label_en}
-            </button>
-          ))}
-        </div>
-      </section>
+        {/* Tonight's Pick — standalone card, no outer panel wrapper */}
+        <section className="hm-reveal" style={{ animationDelay: '0.48s' }}>
+          <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
+            {tx.tonightsPick}
+          </div>
+          <TonightPlanCard lang={lang} tx={tx} plan={tonightPlan} onOpenPlan={onOpenTonightPlan} onStartQuiz={onStartQuiz} />
+        </section>
 
-      {/* Explore footer — minimal */}
-      <section style={{ paddingBottom: 8 }}>
+        {/* Connection feedback only — discovery lives in the Browse tab */}
         {error ? (
-          <div style={{ background: '#1A1010', border: '1px solid #5A2020', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#F87171' }}>
+          <div style={{ background: '#1A1010', border: '1px solid #5A2020', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#F87171' }}>
             {isHe ? 'לא ניתן להתחבר לשרת, מוצגים נתוני גיבוי.' : 'Could not reach the server, showing cached data.'}
           </div>
         ) : null}
-        {loading ? <div style={{ padding: '10px 0', color: APP_MUTED, fontSize: 13 }}>{tx.loading}</div> : null}
-        <div style={{ display: 'grid', gap: 10 }}>
-          <button onClick={onOpenExplore} style={{ ...secondaryButtonStyle, width: '100%' }}>
-            {tx.openExplore}
-          </button>
-          <button onClick={onBuildYourOwnPlan} style={textLinkButtonStyle}>
-            {tx.buildYourOwnPlan}
-          </button>
-        </div>
-      </section>
+        {loading ? <div style={{ color: APP_MUTED, fontSize: 13 }}>{tx.loading}</div> : null}
 
+      </div>
     </div>
   )
 }
@@ -1662,7 +1581,7 @@ function ExplorePage({
             />
 
             {loading ? (
-              <div style={{ textAlign: 'center', padding: '36px 0', color: APP_MUTED }}>{tx.loading}</div>
+              <SkeletonCardGrid count={6} label={tx.loading} />
             ) : showCurated ? (
               <div style={{ display: 'grid', gap: 14 }}>
                 {curatedSections.map((section) => (
@@ -1727,6 +1646,7 @@ function TonightPlanCard({ lang, plan, onOpenPlan }) {
   return (
     <button
       onClick={onOpenPlan}
+      className="hm-lift"
       style={{
         display: 'block', width: '100%', textAlign: isHe ? 'right' : 'left',
         background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 22,

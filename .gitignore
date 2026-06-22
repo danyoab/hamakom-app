@@ -33,3 +33,6 @@ dist-ssr
 
 # Supabase CLI scratch
 supabase/.temp/
+
+# AI / ChatGPT handoff dumps — generated context, not part of the app
+CHATGPT_HANDOFF*.md

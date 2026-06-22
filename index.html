@@ -47,6 +47,75 @@
       body {
         background: #f7f2e8;
       }
+
+      /* ---- Home page motion & micro-interactions ---- */
+      /* Defaults are fully visible / static so reduced-motion and no-JS
+         users always see complete, usable content. */
+      .hm-reveal { opacity: 1; }
+      .hm-arrow  { display: inline-block; }
+      .hm-glow   { opacity: 0.6; }
+
+      /* Hover/press feedback — pointer-only, harmless with reduced motion. */
+      .hm-cta { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+      .hm-cta:hover  { transform: translateY(-2px); box-shadow: 0 22px 34px -16px rgba(36,30,22,0.6); }
+      .hm-cta:active { transform: translateY(0); }
+      .hm-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+      .hm-lift:hover { transform: translateY(-3px); box-shadow: 0 26px 46px -24px rgba(40,30,12,0.5); }
+      .hm-link { transition: opacity 0.15s ease; }
+      .hm-link:hover { opacity: 0.62; }
+
+      @keyframes hm-fade-up {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes hm-arrow-nudge {
+        0%, 100% { transform: translateX(0); }
+        50%      { transform: translateX(4px); }
+      }
+      @keyframes hm-glow-pulse {
+        0%, 100% { opacity: 0.5; transform: scale(1); }
+        50%      { opacity: 0.85; transform: scale(1.07); }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .hm-reveal {
+          opacity: 0;
+          animation: hm-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .hm-arrow { animation: hm-arrow-nudge 1.8s ease-in-out infinite; }
+        .hm-glow  { animation: hm-glow-pulse 7s ease-in-out infinite; }
+      }
+
+      /* ---- Whole-app flow: tab + step transitions ---- */
+      @keyframes hm-tab-in  { from { opacity: 0; transform: translateY(8px);  } to { opacity: 1; transform: none; } }
+      @keyframes hm-step-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+      .hm-tab-fade  { animation: hm-tab-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
+      .hm-step-fade { animation: hm-step-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+      /* ---- Skeleton loading shimmer ---- */
+      .hm-skeleton {
+        position: relative;
+        overflow: hidden;
+        background: #ECE4D4;
+        border-radius: 8px;
+      }
+      .hm-skeleton::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.55) 50%, rgba(255,255,255,0) 100%);
+        animation: hm-shimmer 1.4s ease-in-out infinite;
+      }
+      @keyframes hm-shimmer { 100% { transform: translateX(100%); } }
+
+      /* Image fade-in once loaded */
+      .hm-img-fade { animation: hm-fade-up 0.5s ease both; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .hm-tab-fade, .hm-step-fade, .hm-img-fade { animation: none; }
+        .hm-skeleton::after { animation: none; }
+      }
     </style>
   </head>
   <body>

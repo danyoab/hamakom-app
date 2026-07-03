@@ -89,6 +89,13 @@ export default function AdminView({
   const [partnerLoading, setPartnerLoading] = useState(false)
   const [partnerSearch, setPartnerSearch] = useState('')
   const [partnerCandidates, setPartnerCandidates] = useState([])
+  const [inquiries, setInquiries] = useState([])
+  const [inquiriesLoading, setInquiriesLoading] = useState(false)
+
+  const [kashLocs, setKashLocs] = useState([])
+  const [kashLoading, setKashLoading] = useState(false)
+  const [kashShowAll, setKashShowAll] = useState(false)
+  const [kashDrafts, setKashDrafts] = useState({})
 
   const [curateQueue, setCurateQueue] = useState([])
   const [curateLoading, setCurateLoading] = useState(false)
@@ -144,7 +151,27 @@ export default function AdminView({
   useEffect(() => {
     if (adminTab !== 'partners') return
     loadPartners()
+    loadInquiries()
   }, [adminTab])
+
+  async function loadInquiries() {
+    if (!supabase) return
+    setInquiriesLoading(true)
+    const { data } = await supabase
+      .from('partner_inquiries')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    setInquiries(data || [])
+    setInquiriesLoading(false)
+  }
+
+  async function setInquiryStatus(id, status) {
+    if (!supabase) return
+    const { error } = await supabase.from('partner_inquiries').update({ status }).eq('id', id)
+    if (error) return showToast(error.message, 'error')
+    setInquiries((prev) => prev.map((q) => (q.id === id ? { ...q, status } : q)))
+  }
 
   async function searchPartnerCandidates(query) {
     const term = query.trim()
@@ -199,6 +226,52 @@ export default function AdminView({
     if (error) return showToast(error.message, 'error')
     await loadPartners()
     showToast(`Removed ${name} from partner program`)
+  }
+
+  async function loadKashrutQueue(showAll = kashShowAll) {
+    if (!supabase) return
+    setKashLoading(true)
+    // Food-adjacent categories where kashrut matters most; best-known venues first
+    let query = supabase
+      .from('locations')
+      .select('id, name, city, category, kashrus, website, phone, google_rating, featured, manual_edits')
+      .eq('status', 'approved')
+      .in('category', ['Cafés & Restaurants', 'Hotels & Lounges', 'Wineries'])
+      .order('featured', { ascending: false })
+      .order('google_rating', { ascending: false, nullsFirst: false })
+    if (!showAll) query = query.or('kashrus.is.null,kashrus.eq.')
+    const { data, error } = await query
+    if (error) { showToast(error.message, 'error'); setKashLoading(false); return }
+    setKashLocs(data || [])
+    setKashLoading(false)
+  }
+
+  useEffect(() => {
+    if (adminTab !== 'kashrut') return
+    loadKashrutQueue()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminTab])
+
+  async function saveKashrus(row, value) {
+    if (!supabase) return
+    const kashrus = value.trim() || null
+    const lockedFields = new Set(row.manual_edits?.fields || [])
+    lockedFields.add('kashrus')
+    const { error } = await supabase
+      .from('locations')
+      .update({
+        kashrus,
+        manual_edits: { ...(row.manual_edits || {}), fields: Array.from(lockedFields) },
+        last_curated_at: new Date().toISOString(),
+        curated_by: authUser?.id || null,
+      })
+      .eq('id', row.id)
+    if (error) return showToast(error.message, 'error')
+    setKashLocs((prev) => kashShowAll
+      ? prev.map((r) => (r.id === row.id ? { ...r, kashrus } : r))
+      : prev.filter((r) => r.id !== row.id))
+    setKashDrafts((prev) => { const next = { ...prev }; delete next[row.id]; return next })
+    showToast(`Saved kashrut for ${row.name}`)
   }
 
   async function loadCurateQueue() {
@@ -564,6 +637,8 @@ export default function AdminView({
 
   const tabs = [
     ['plans', `Date Plans (${datePlans.length})`],
+    ['partners', 'Partners'],
+    ['kashrut', 'Kashrut'],
     ['curate', 'Curate'],
     ['queue', 'Curator Queue'],
     ['coverage', 'Coverage Matrix'],
@@ -1194,6 +1269,60 @@ export default function AdminView({
                   )}
                 </div>
 
+                <div style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#C9A84C' }}>
+                      Partner Inquiries
+                      {inquiries.filter((q) => q.status === 'new').length > 0 ? (
+                        <span style={{ marginLeft: 8, background: '#4ADE80', color: '#0B0F14', borderRadius: 999, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>
+                          {inquiries.filter((q) => q.status === 'new').length} new
+                        </span>
+                      ) : null}
+                    </div>
+                    <button onClick={loadInquiries} style={ghostBtnStyle}>Refresh</button>
+                  </div>
+                  {inquiriesLoading ? (
+                    <div style={{ color: '#9CA3AF', fontSize: 12 }}>Loading inquiries...</div>
+                  ) : inquiries.length === 0 ? (
+                    <div style={{ color: '#6B7280', fontSize: 12 }}>No inquiries yet. They arrive from the For Businesses page.</div>
+                  ) : (
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {inquiries.map((q) => (
+                        <div key={q.id} style={{ background: '#121722', border: `1px solid ${q.status === 'new' ? '#4ADE80' : '#232A39'}`, borderRadius: 8, padding: '10px 12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                            <div style={{ fontSize: 13, color: '#E8DCC8', fontWeight: 600 }}>
+                              {q.business_name}
+                              {q.city ? <span style={{ color: '#C9A84C', fontWeight: 400 }}> · {q.city}</span> : null}
+                            </div>
+                            <div style={{ fontSize: 10, color: '#6B7280' }}>{q.created_at ? new Date(q.created_at).toLocaleDateString() : ''}</div>
+                          </div>
+                          <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
+                            {[q.contact_name, q.phone, q.email].filter(Boolean).join(' · ') || '—'}
+                          </div>
+                          {q.message ? <div style={{ fontSize: 12, color: '#B9AE97', marginTop: 6, whiteSpace: 'pre-wrap' }}>{q.message}</div> : null}
+                          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                            {['new', 'contacted', 'closed'].map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => setInquiryStatus(q.id, s)}
+                                style={{
+                                  ...ghostBtnStyle,
+                                  fontSize: 11,
+                                  padding: '3px 10px',
+                                  color: q.status === s ? '#0B0F14' : '#9CA3AF',
+                                  background: q.status === s ? (s === 'new' ? '#4ADE80' : s === 'contacted' ? '#C9A84C' : '#6B7280') : 'transparent',
+                                }}
+                              >
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {partnerLocs.length === 0 ? (
                   <div style={{ color: '#6B7280', fontSize: 13, padding: 20, textAlign: 'center' }}>No partner locations yet. Add one above.</div>
                 ) : (
@@ -1209,6 +1338,83 @@ export default function AdminView({
                         onRemove={removePartner}
                       />
                     ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : null}
+
+        {adminTab === 'kashrut' ? (
+          <div>
+            {!supabase ? (
+              <div style={{ background: '#3A1A1A', border: '1px solid #DC2626', borderRadius: 10, padding: 16, color: '#FCA5A5', fontSize: 13 }}>
+                Kashrut tab requires a live Supabase connection.
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+                  <button onClick={() => { const next = !kashShowAll; setKashShowAll(next); loadKashrutQueue(next) }} style={btnStyle()}>
+                    {kashShowAll ? 'Show missing only' : 'Show all food venues'}
+                  </button>
+                  <div style={{ fontSize: 12, color: '#6B7280' }}>
+                    {kashLoading ? 'Loading…' : `${kashLocs.length} venue${kashLocs.length === 1 ? '' : 's'} ${kashShowAll ? 'total' : 'missing kashrut'} · sorted best-known first`}
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: '#6B7280', marginBottom: 14, lineHeight: 1.5 }}>
+                  Enter the certification exactly as it appears on the te'udah (e.g. <span style={{ color: '#C9A84C' }}>Rabbanut Jerusalem</span>, <span style={{ color: '#C9A84C' }}>Mehadrin</span>, <span style={{ color: '#C9A84C' }}>Badatz Eida Chareidis</span>).
+                  Use <span style={{ color: '#C9A84C' }}>Not certified</span> only when verified — never guess. Saving locks the field against enrichment overwrites.
+                </div>
+                {kashLoading ? (
+                  <div style={{ color: '#9CA3AF', textAlign: 'center', padding: 60 }}>Loading…</div>
+                ) : kashLocs.length === 0 ? (
+                  <div style={{ color: '#4ADE80', textAlign: 'center', padding: 60 }}>All food venues have kashrut info. 🎉</div>
+                ) : (
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {kashLocs.map((row) => {
+                      const draft = kashDrafts[row.id] ?? row.kashrus ?? ''
+                      return (
+                        <div key={row.id} style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 10, padding: '12px 14px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                            <div>
+                              <span style={{ fontSize: 14, color: '#E8DCC8', fontWeight: 600 }}>{row.name}</span>
+                              <span style={{ fontSize: 12, color: '#C9A84C' }}> · {row.city}</span>
+                              <span style={{ fontSize: 11, color: '#6B7280' }}> · {row.category}{row.google_rating ? ` · ★${row.google_rating}` : ''}</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, fontSize: 11 }}>
+                              {row.website ? <a href={row.website} target="_blank" rel="noopener noreferrer" style={{ color: '#60A5FA' }}>site</a> : null}
+                              <a href={`https://www.google.com/search?q=${encodeURIComponent(`${row.name} ${row.city} כשרות`)}`} target="_blank" rel="noopener noreferrer" style={{ color: '#60A5FA' }}>
+                                search kashrut
+                              </a>
+                              {row.phone ? <span style={{ color: '#9CA3AF' }}>{row.phone}</span> : null}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                            {['Rabbanut', 'Mehadrin', 'Badatz', 'Tzohar', 'Not certified'].map((preset) => (
+                              <button
+                                key={preset}
+                                onClick={() => setKashDrafts((prev) => ({ ...prev, [row.id]: preset }))}
+                                style={{ ...ghostBtnStyle, fontSize: 11, padding: '3px 10px', color: draft === preset ? '#C9A84C' : '#9CA3AF', borderColor: draft === preset ? '#C9A84C' : '#374151' }}
+                              >
+                                {preset}
+                              </button>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                            <input
+                              value={draft}
+                              onChange={(event) => setKashDrafts((prev) => ({ ...prev, [row.id]: event.target.value }))}
+                              onKeyDown={(event) => { if (event.key === 'Enter' && draft.trim()) saveKashrus(row, draft) }}
+                              placeholder="Certification (as on the te'udah)..."
+                              style={{ ...inputStyle, flex: 1 }}
+                            />
+                            <button onClick={() => saveKashrus(row, draft)} disabled={!draft.trim()} style={{ ...btnStyle('#4ADE80'), opacity: draft.trim() ? 1 : 0.4 }}>
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </>

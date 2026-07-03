@@ -5,6 +5,8 @@ import { useLocalStorage } from './hooks/useLocalStorage'
 import { useSyncSaves } from './hooks/useSyncSaves'
 import { supabase } from './lib/supabase'
 import { getAuthRedirectUrl } from './lib/authRedirect'
+import { isNativeApp } from './lib/native'
+import { initNativeAuth, signInWithGoogleNative } from './lib/nativeAuth'
 import { DATE_PLANS } from './data/datePlans'
 import { QUIZ_CITIES } from './lib/constants'
 import { isAdminUser } from './lib/appConfig'
@@ -41,6 +43,7 @@ import PlanPreviewPage from './components/PlanPreviewPage'
 import CustomPlanBuilder from './components/CustomPlanBuilder'
 import PrivacyPage from './components/PrivacyPage'
 import TermsPage from './components/TermsPage'
+import BusinessesPage from './components/BusinessesPage'
 import FeedbackModal from './components/FeedbackModal'
 const AdminView = lazy(() => import('./components/AdminView'))
 const MapView = lazy(() => import('./components/MapView'))
@@ -339,7 +342,9 @@ export default function App() {
       }
 
       return true
-    })
+      // Partners surface first in browse only — quiz recommendations are never
+      // influenced by partner status (that ranking is not for sale).
+    }).sort((a, b) => (b.is_partner === true) - (a.is_partner === true))
   }, [browseFilters, browseSearch, lang, locations])
 
   useEffect(() => {
@@ -384,6 +389,22 @@ export default function App() {
       },
     })
   }, [authUser?.id, browseFilters, browseSearch, tab])
+
+  // Partner-card impressions in browse — the numbers shown to venues. Each
+  // partner is counted at most once per session, however often filters change.
+  const seenPartnerImpressions = useRef(new Set())
+  useEffect(() => {
+    if (tab !== 'explore') return
+    const freshIds = filteredLocations
+      .filter((location) => location.is_partner && !seenPartnerImpressions.current.has(location.id))
+      .map((location) => location.id)
+    if (freshIds.length === 0) return
+    freshIds.forEach((id) => seenPartnerImpressions.current.add(id))
+    void trackEvent('partner_impression', {
+      userId: authUser?.id,
+      properties: { location_ids: freshIds, source: 'explore' },
+    })
+  }, [authUser?.id, filteredLocations, tab])
 
   useEffect(() => {
     if (!supabase) return undefined
@@ -435,7 +456,12 @@ export default function App() {
       }
     })
 
-    return () => subscription.unsubscribe()
+    const disposeNativeAuth = initNativeAuth(supabase)
+
+    return () => {
+      subscription.unsubscribe()
+      disposeNativeAuth()
+    }
   }, [saveGateItem, setSavedPlaceIds, setSavedPlanIds])
 
   useEffect(() => {
@@ -830,6 +856,17 @@ export default function App() {
         showSave
         dateFeedback={dateFeedback}
         setDateFeedback={setDateFeedback}
+        onMapOpen={(loc) => void trackEvent('map_opened', {
+          userId: authUser?.id,
+          itemType: 'place',
+          itemId: loc.id,
+          properties: { is_partner: Boolean(loc.is_partner) },
+        })}
+        onReserve={(loc) => void trackEvent('partner_reserve_clicked', {
+          userId: authUser?.id,
+          itemType: 'place',
+          itemId: loc.id,
+        })}
         onBack={() => {
           setOverlay(detailReturnOverlay)
           setSelectedLocation(null)
@@ -846,6 +883,17 @@ export default function App() {
 
   if (overlay === 'privacy') {
     return <PrivacyPage lang={lang} font={font} onBack={() => setOverlay(null)} />
+  }
+
+  if (overlay === 'businesses') {
+    return (
+      <BusinessesPage
+        tx={tx}
+        font={font}
+        onBack={() => setOverlay(null)}
+        onSubmitted={() => void trackEvent('partner_inquiry_submitted', { userId: authUser?.id })}
+      />
+    )
   }
 
   if (overlay === 'terms') {
@@ -1261,6 +1309,10 @@ export default function App() {
               }}
               onOpenPrivacy={() => setOverlay('privacy')}
               onOpenTerms={() => setOverlay('terms')}
+              onOpenBusinesses={() => {
+                void trackEvent('for_businesses_opened', { userId: authUser?.id })
+                setOverlay('businesses')
+              }}
               analyticsEnabled={analyticsEnabled}
               onDeleteAccount={async () => {
                 const confirmed = window.confirm(
@@ -1756,6 +1808,10 @@ function SavedSignInCard({ lang, onGoHome }) {
     if (!supabase) return
     setError('')
     try {
+      if (isNativeApp()) {
+        await signInWithGoogleNative(supabase)
+        return
+      }
       const { error: err } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: getAuthRedirectUrl() },
@@ -2023,6 +2079,7 @@ function ProfilePage({
   onOpenAdmin,
   onOpenPrivacy,
   onOpenTerms,
+  onOpenBusinesses,
   analyticsEnabled,
   onToggleAnalytics,
   onDeleteAccount,
@@ -2207,6 +2264,13 @@ function ProfilePage({
               subtitle={isHe ? 'עוזר לנו לשפר את ההמלצות' : 'Helps us improve recommendations'}
               enabled={analyticsEnabled}
               onToggle={onToggleAnalytics}
+            />
+            <ProfileMenuRow
+              title={tx.forBusinesses}
+              subtitle={tx.forBusinessesSub}
+              onClick={onOpenBusinesses}
+              isHe={isHe}
+              borderTop
             />
             <ProfileMenuRow
               title={isHe ? 'מדיניות פרטיות' : 'Privacy Policy'}

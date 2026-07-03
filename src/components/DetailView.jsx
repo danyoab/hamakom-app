@@ -63,11 +63,18 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         </div>
         <div style={{ fontSize: 15, color: '#C9A84C', marginTop: 4, fontStyle: 'italic' }}>{city}</div>
 
-        {loc.kashrus ? (
-          <div style={{ marginTop: 8, display: 'inline-block', background: '#1A3A2A', border: '1px solid #2D6A4F', borderRadius: 6, padding: '4px 12px' }}>
-            <span style={{ fontSize: 12, color: '#4ADE80' }}>✓ {loc.kashrus}</span>
-          </div>
-        ) : null}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {loc.kashrus ? (
+            <div style={{ marginTop: 8, display: 'inline-block', background: '#1A3A2A', border: '1px solid #2D6A4F', borderRadius: 6, padding: '4px 12px' }}>
+              <span style={{ fontSize: 12, color: '#4ADE80' }}>✓ {loc.kashrus}</span>
+            </div>
+          ) : null}
+          {loc.is_partner ? (
+            <div style={{ marginTop: 8, display: 'inline-block', background: '#1A1608', border: '1px solid #C9A84C55', borderRadius: 6, padding: '4px 12px' }}>
+              <span style={{ fontSize: 12, color: '#C9A84C' }}>✦ {lang === 'he' ? 'שותף של המקום' : 'HaMakom Partner'}</span>
+            </div>
+          ) : null}
+        </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
           {stages.map((stage) => (

@@ -354,7 +354,7 @@ export function buildFeedbackProfile(behavior = {}) {
   const positiveVibeCount = {}    // 'romantic' → 3 (vibe tags of items user loved)
   const negativeVibeCount = {}    // 'lively'   → 2 (vibe tags of items user disliked)
 
-  for (const [key, fb] of entries) {
+  for (const [, fb] of entries) {
     if (!fb || (fb.ts && (now - fb.ts) > FEEDBACK_RECENCY_MS)) continue
     const tags = fb.tags || []
     for (const t of tags) tagCount[t] = (tagCount[t] || 0) + 1

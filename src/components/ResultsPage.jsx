@@ -34,7 +34,6 @@ export default function ResultsPage({
   answers,
   saved,
   reminderSet,
-  userId,
   cityLocationCount = null,
   onBrowseAll,
   onNextPlan,
@@ -249,6 +248,13 @@ export default function ResultsPage({
 
         {/* ── Bottom links ─────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, paddingTop: 8 }}>
+          {onNextPlan && planCount > 1 ? (
+            <button onClick={onNextPlan} style={{ ...linkBtn(font), color: ACCENT }}>
+              {isHe
+                ? `הראו לי תוכנית אחרת (${planIndex + 1}/${planCount})`
+                : `Show me a different plan (${planIndex + 1}/${planCount})`}
+            </button>
+          ) : null}
           <button onClick={onRetakeQuiz} style={linkBtn(font)}>
             {isHe ? 'ענו שוב על השאלות' : 'Retake the quiz'}
           </button>

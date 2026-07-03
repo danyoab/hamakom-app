@@ -29,10 +29,10 @@ export default function PlanStopsMap({ stops = [], lang, planCity }) {
     return { ...s, lat: fallback[0] + dlat, lng: fallback[1] + dlng, _approx: true }
   }).filter(Boolean)
 
-  if (stopsWithCoords.length < 2) return null
+  const hasEnoughStops = stopsWithCoords.length >= 2
 
   useEffect(() => {
-    if (instanceRef.current) return
+    if (!hasEnoughStops || instanceRef.current) return
 
     import('leaflet').then(L => {
       const el = mapRef.current
@@ -101,7 +101,9 @@ export default function PlanStopsMap({ stops = [], lang, planCity }) {
       instanceRef.current?.remove()
       instanceRef.current = null
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hasEnoughStops]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!hasEnoughStops) return null
 
   return (
     <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', marginBottom: 14 }}>

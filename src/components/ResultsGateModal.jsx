@@ -10,6 +10,7 @@ const ALLOWED_REDIRECT_ORIGINS = new Set([
 ])
 
 const OTP_COOLDOWN_MS = 60_000
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 function getAuthRedirectUrl() {
   const configuredUrl = import.meta.env.VITE_PUBLIC_APP_URL
@@ -28,6 +29,7 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [otpCooldownUntil, setOtpCooldownUntil] = useState(0)
+  const [resendCountdown, setResendCountdown] = useState(0)
   const isHe = lang === 'he'
   const dir = isHe ? 'rtl' : 'ltr'
   const isPlace = itemType === 'place'
@@ -289,6 +291,23 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
             <div style={{ fontSize: 38, marginBottom: 10, color: '#C9A84C' }}>✉</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6, color: '#F5EBD8' }}>{isHe ? 'בדקו את תיבת המייל' : 'Check your inbox'}</div>
             <div style={{ fontSize: 14, color: '#C8BDA8', lineHeight: 1.5 }}>{isHe ? `שלחנו קישור ל-${email}` : `We sent a link to ${email}`}</div>
+            <button
+              onClick={handleResend}
+              disabled={loading || resendCountdown > 0}
+              style={{
+                background: 'none', border: 'none', marginTop: 14, padding: '6px 0',
+                color: resendCountdown > 0 ? '#6B7280' : '#C9A84C',
+                fontSize: 13, fontFamily: 'inherit',
+                cursor: loading || resendCountdown > 0 ? 'default' : 'pointer',
+                textDecoration: resendCountdown > 0 ? 'none' : 'underline',
+                textUnderlineOffset: 3,
+              }}
+            >
+              {resendCountdown > 0
+                ? (isHe ? `שליחה חוזרת בעוד ${resendCountdown} שניות` : `Resend in ${resendCountdown}s`)
+                : (isHe ? 'לא הגיע? שלחו שוב' : "Didn't arrive? Resend")}
+            </button>
+            {error ? <div style={{ fontSize: 12, color: '#F87171', marginTop: 6 }}>{error}</div> : null}
           </div>
         )}
       </div>

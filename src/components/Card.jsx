@@ -53,7 +53,25 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
           <span style={{ fontSize: 36 }}>{CATEGORY_EMOJI[loc.category]}</span>
         )}
 
-        {loc.featured ? (
+        {loc.is_partner ? (
+          <div
+            style={{
+              position: 'absolute',
+              top: 8,
+              [isHe ? 'right' : 'left']: 8,
+              background: 'rgba(201,168,76,0.92)',
+              color: '#0D1117',
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              padding: '3px 8px',
+              borderRadius: 999,
+            }}
+          >
+            ✦ {isHe ? 'שותף' : 'Partner'}
+          </div>
+        ) : loc.featured ? (
           <div
             style={{
               position: 'absolute',

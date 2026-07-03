@@ -38,6 +38,7 @@ import PlanPreviewPage from './components/PlanPreviewPage'
 import CustomPlanBuilder from './components/CustomPlanBuilder'
 import PrivacyPage from './components/PrivacyPage'
 import TermsPage from './components/TermsPage'
+import BusinessPage from './components/BusinessPage'
 import FeedbackModal from './components/FeedbackModal'
 import LoadingScreen from './components/LoadingScreen'
 const AdminView = lazy(() => import('./components/AdminView'))
@@ -238,7 +239,8 @@ export default function App() {
       }
 
       return true
-    })
+    // Partners surface first in browse — placement is labeled with a Partner badge
+    }).sort((a, b) => (b.is_partner === true) - (a.is_partner === true))
   }, [browseFilters, browseSearch, lang, locations])
 
   useEffect(() => {
@@ -632,6 +634,10 @@ export default function App() {
     return <TermsPage lang={lang} font={font} onBack={() => setOverlay(null)} />
   }
 
+  if (overlay === 'business') {
+    return <BusinessPage lang={lang} font={font} onBack={() => setOverlay(null)} />
+  }
+
   if (overlay === 'admin' && isAdminUser(authUser)) {
     return (
       <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0D1117' }} />}>
@@ -925,6 +931,7 @@ export default function App() {
               onOpenFeedback={() => setShowFeedbackModal(true)}
               onOpenPrivacy={() => setOverlay('privacy')}
               onOpenTerms={() => setOverlay('terms')}
+              onOpenBusiness={() => setOverlay('business')}
               analyticsEnabled={analyticsEnabled}
               onDeleteAccount={async () => {
                 const confirmed = window.confirm(
@@ -1722,7 +1729,7 @@ function FeedbackComposer({ lang, rating, again, onSetWent, onSetRating, onSetAg
   )
 }
 
-function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz, onOpenSuggest, onOpenAdmin, onOpenPrivacy, onOpenTerms, analyticsEnabled, onToggleAnalytics, onDeleteAccount, onOpenFeedback }) {
+function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz, onOpenSuggest, onOpenAdmin, onOpenPrivacy, onOpenTerms, onOpenBusiness, analyticsEnabled, onToggleAnalytics, onDeleteAccount, onOpenFeedback }) {
   const cards = [
     { label: tx.profileStatsSaved, value: savedCount },
     { label: lang === 'he' ? 'כרגע' : 'Right now', value: lang === 'he' ? 'תוכנית אחת' : 'One strong plan' },
@@ -1794,6 +1801,9 @@ function ProfilePage({ lang, tx, authUser, savedCount, onToggleLang, onOpenQuiz,
           </button>
           <button onClick={onOpenTerms} style={{ ...textLinkButtonStyle, padding: '4px 0', fontSize: 12 }}>
             {lang === 'he' ? 'תנאי שירות' : 'Terms of Service'}
+          </button>
+          <button onClick={onOpenBusiness} style={{ ...textLinkButtonStyle, padding: '4px 0', fontSize: 12, color: APP_ACCENT }}>
+            {lang === 'he' ? 'לעסקים' : 'For Businesses'}
           </button>
         </div>
 

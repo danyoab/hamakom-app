@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { getDeploymentWarnings, isAdminUser } from '../lib/appConfig'
 import { usePending } from '../hooks/usePending'
 import { SEED_LOCATIONS } from '../data/locations'
-import CurateCard, { curationCompleteness, isRecommendationReady } from './CurateCard'
+import CurateCard, { isRecommendationReady } from './CurateCard'
 import RecommendDebug from './RecommendDebug'
 import PlanComposeDebug from './PlanComposeDebug'
 import CuratorQueue from './CuratorQueue'
@@ -137,6 +137,57 @@ export default function AdminView({
         setPartnerLoading(false)
       })
   }, [adminTab])
+
+  async function searchPartnerCandidates(query) {
+    if (!supabase) return
+    const q = query.trim()
+    if (q.length < 2) { setPartnerCandidates([]); return }
+    const { data } = await supabase
+      .from('locations')
+      .select('id, name, city, category, is_partner')
+      .eq('status', 'approved')
+      .ilike('name', `%${q}%`)
+      .limit(8)
+    setPartnerCandidates(data || [])
+  }
+
+  async function addPartner(loc) {
+    const { error } = await supabase
+      .from('locations')
+      .update({ is_partner: true, partner_tier: 'basic' })
+      .eq('id', loc.id)
+    if (error) { showToast(error.message, 'error'); return }
+    showToast(`${loc.name} added to partner program`)
+    setPartnerSearch('')
+    setPartnerCandidates([])
+    setPartnerLocs((prev) =>
+      [...prev, { ...loc, is_partner: true, partner_tier: 'basic' }].sort((a, b) => a.name.localeCompare(b.name))
+    )
+  }
+
+  async function savePartnerFields(draft) {
+    const { error } = await supabase
+      .from('locations')
+      .update({
+        partner_tier: draft.partner_tier || null,
+        reservation_url: draft.reservation_url || null,
+        partner_contact: draft.partner_contact || null,
+      })
+      .eq('id', draft.id)
+    if (error) { showToast(error.message, 'error'); return }
+    showToast('Partner saved')
+    setPartnerLocs((prev) => prev.map((l) => (l.id === draft.id ? { ...l, ...draft } : l)))
+  }
+
+  async function removePartner(id, name) {
+    const { error } = await supabase
+      .from('locations')
+      .update({ is_partner: false, partner_tier: null })
+      .eq('id', id)
+    if (error) { showToast(error.message, 'error'); return }
+    showToast(`${name} removed from partner program`)
+    setPartnerLocs((prev) => prev.filter((l) => l.id !== id))
+  }
 
   async function loadCurateQueue() {
     if (!supabase) return

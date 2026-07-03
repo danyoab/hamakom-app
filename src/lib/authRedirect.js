@@ -1,3 +1,5 @@
+import { isNativeApp, NATIVE_AUTH_REDIRECT } from './native'
+
 const ALLOWED_REDIRECT_ORIGINS = new Set([
   'https://hamakom.app',
   'https://www.hamakom.app',
@@ -7,6 +9,9 @@ const ALLOWED_REDIRECT_ORIGINS = new Set([
 ])
 
 export function getAuthRedirectUrl() {
+  // Inside the native shell, auth must return through the custom URL scheme
+  // so the deep-link listener can complete the session.
+  if (isNativeApp()) return NATIVE_AUTH_REDIRECT
   const configured = import.meta.env.VITE_PUBLIC_APP_URL
   if (configured) return configured
   if (typeof window === 'undefined') return 'https://hamakom.app'

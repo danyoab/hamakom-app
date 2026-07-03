@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { getAuthRedirectUrl } from '../lib/authRedirect'
+import { isNativeApp } from '../lib/native'
+import { signInWithGoogleNative } from '../lib/nativeAuth'
 
 const OTP_COOLDOWN_MS = 60_000
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -46,6 +48,10 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
 
     setError('')
     try {
+      if (isNativeApp()) {
+        await signInWithGoogleNative(supabase)
+        return
+      }
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: authRedirectUrl },

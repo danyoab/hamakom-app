@@ -13,9 +13,20 @@
     "cache:photos": "node --env-file=.env scripts/cache-photos.mjs",
     "cache:photos:dry": "node --env-file=.env scripts/cache-photos.mjs --dry-run --limit=5",
     "plans:audit": "node scripts/audit-plan-coherence.mjs",
-    "plans:audit:full": "node scripts/audit-plan-coverage.mjs"
+    "plans:audit:full": "node scripts/audit-plan-coverage.mjs",
+    "cap:sync": "npm run build && cap sync",
+    "cap:assets": "capacitor-assets generate --iconBackgroundColor #F7F2E8 --splashBackgroundColor #F7F2E8",
+    "android": "npm run build && cap sync android && cap open android",
+    "android:run": "npm run build && cap sync android && cap run android",
+    "ios": "npm run build && cap sync ios && cap open ios"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/browser": "^8.0.3",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/geolocation": "^8.2.0",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@sentry/react": "^10.53.1",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.3",
@@ -25,6 +36,10 @@
     "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/ios": "^8.4.1",
     "@eslint/js": "^9.39.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

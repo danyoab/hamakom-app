@@ -510,7 +510,43 @@ begin
 end;
 $$;
 
+-- Columns the rating-sync trigger writes into (must exist before reviews land)
+alter table locations add column if not exists avg_rating numeric(2,1);
+alter table locations add column if not exists review_count int not null default 0;
+
 drop trigger if exists location_rating_sync on location_reviews;
 create trigger location_rating_sync
   after insert or update or delete on location_reviews
   for each row execute function sync_location_rating();
+
+-- ── Partner Program (Phase 3 revenue) ──────────
+-- Partners get browse placement + a labeled badge. Quiz recommendation
+-- ranking is never influenced by partner status.
+
+alter table locations add column if not exists is_partner boolean not null default false;
+alter table locations add column if not exists partner_since timestamptz;
+alter table locations add column if not exists partner_tier text;
+alter table locations add column if not exists reservation_url text;
+alter table locations add column if not exists partner_contact text;
+
+create table if not exists partner_inquiries (
+  id            uuid primary key default gen_random_uuid(),
+  business_name text not null check (char_length(business_name) between 1 and 120),
+  contact_name  text check (char_length(contact_name) <= 120),
+  phone         text check (char_length(phone) <= 40),
+  email         text check (char_length(email) <= 200),
+  city          text check (char_length(city) <= 80),
+  message       text check (char_length(message) <= 2000),
+  status        text not null default 'new' check (status in ('new', 'contacted', 'closed')),
+  created_at    timestamptz default now()
+);
+
+alter table partner_inquiries enable row level security;
+drop policy if exists "public_insert_inquiry" on partner_inquiries;
+create policy "public_insert_inquiry" on partner_inquiries for insert with check (true);
+drop policy if exists "admin_read_inquiries" on partner_inquiries;
+create policy "admin_read_inquiries" on partner_inquiries for select
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+drop policy if exists "admin_update_inquiries" on partner_inquiries;
+create policy "admin_update_inquiries" on partner_inquiries for update
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');

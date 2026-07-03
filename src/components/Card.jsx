@@ -54,13 +54,13 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
           <span style={{ fontSize: 36 }}>{CATEGORY_EMOJI[loc.category]}</span>
         )}
 
-        {loc.featured ? (
+        {loc.is_partner || loc.featured ? (
           <div
             style={{
               position: 'absolute',
               top: 8,
               [isHe ? 'right' : 'left']: 8,
-              background: 'rgba(201,168,76,0.92)',
+              background: loc.is_partner ? 'rgba(154,122,40,0.94)' : 'rgba(201,168,76,0.92)',
               color: '#F4ECD8',
               fontSize: 10,
               fontWeight: 700,
@@ -70,7 +70,7 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
               borderRadius: 999,
             }}
           >
-            {isHe ? 'מומלץ' : 'Featured'}
+            {loc.is_partner ? tx.partnerBadge : (isHe ? 'מומלץ' : 'Featured')}
           </div>
         ) : null}
 
@@ -128,6 +128,17 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
             </>
           ) : null}
         </div>
+        {loc.kashrus ? (
+          /not certified/i.test(loc.kashrus) ? (
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#A99A85', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {isHe ? 'ללא תעודת כשרות' : 'Not certified'}
+            </div>
+          ) : (
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#4F7144', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              ✓ {loc.kashrus}
+            </div>
+          )
+        ) : null}
       </div>
     </div>
   )

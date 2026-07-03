@@ -3,7 +3,7 @@ import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getInviteUrl, getMa
 import FeedbackModal from './FeedbackModal'
 import FeedbackStrip from './FeedbackStrip'
 
-export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true, dateFeedback, setDateFeedback }) {
+export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true, dateFeedback, setDateFeedback, onMapOpen, onReserve }) {
   const [imgFailed, setImgFailed] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const name = lang === 'he' ? loc.name_he || loc.name : loc.name
@@ -63,11 +63,24 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         </div>
         <div style={{ fontSize: 15, color: '#9A7A28', marginTop: 4, fontStyle: 'italic' }}>{city}</div>
 
-        {loc.kashrus ? (
-          <div style={{ marginTop: 8, display: 'inline-block', background: '#E9F0E4', border: '1px solid #C7DCBC', borderRadius: 999, padding: '4px 12px' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#4F7144' }}>✓ {loc.kashrus}</span>
-          </div>
-        ) : null}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {loc.is_partner ? (
+            <div style={{ marginTop: 8, display: 'inline-block', background: '#F6EEDA', border: '1px solid #D8C49A', borderRadius: 999, padding: '4px 12px' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#9A7A28' }}>{tx.partnerBadge}</span>
+            </div>
+          ) : null}
+          {loc.kashrus ? (
+            /not certified/i.test(loc.kashrus) ? (
+              <div style={{ marginTop: 8, display: 'inline-block', background: '#F2EBDB', border: '1px solid #E6DCC8', borderRadius: 999, padding: '4px 12px' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#8A7F6C' }}>{lang === 'he' ? 'ללא תעודת כשרות' : 'Not certified'}</span>
+              </div>
+            ) : (
+              <div style={{ marginTop: 8, display: 'inline-block', background: '#E9F0E4', border: '1px solid #C7DCBC', borderRadius: 999, padding: '4px 12px' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#4F7144' }}>✓ {loc.kashrus}</span>
+              </div>
+            )
+          ) : null}
+        </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
           {stages.map((stage) => (
@@ -88,11 +101,37 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         </div>
 
         <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
+          {loc.is_partner && loc.reservation_url ? (
+            <a
+              href={loc.reservation_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => onReserve?.(loc)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: '#9A7A28',
+                border: '1px solid #9A7A28',
+                borderRadius: 10,
+                padding: '13px 16px',
+                textDecoration: 'none',
+                color: '#F7F2E8',
+                fontSize: 14,
+                fontWeight: 700,
+                fontFamily: font,
+              }}
+            >
+              <span>🗓 {tx.reserveButton}</span>
+              <span style={{ fontSize: 18 }}>→</span>
+            </a>
+          ) : null}
           {mapsUrl ? (
             <a
               href={mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => onMapOpen?.(loc)}
               style={{
                 display: 'flex',
                 alignItems: 'center',

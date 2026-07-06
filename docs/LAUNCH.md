@@ -13,8 +13,9 @@ production users have no sign-in, no saved-plan sync, no feedback capture, no
 analytics, and no partner-inquiry inbox — the app silently falls back to
 bundled data.
 
-1. **Create a Supabase project** (free tier is fine to start) — region `eu-central-1`
-   (closest to Israel).
+1. **Supabase project exists**: ref `kyenbpkgxnjrknebbiyr` →
+   `VITE_SUPABASE_URL=https://kyenbpkgxnjrknebbiyr.supabase.co`
+   (anon key: Supabase dashboard → Settings → API).
 2. Run the schema: paste `supabase/migrations/20260614000000_hamakom_core.sql`
    into the SQL editor (or `supabase db push`).
 3. Import the locations: `node --env-file=.env scripts/sync-locations-to-supabase.mjs`

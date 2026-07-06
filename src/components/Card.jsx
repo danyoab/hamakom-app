@@ -157,6 +157,9 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
         <div style={{ fontSize: 12, color: '#9CA3AF', lineHeight: 1.3, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <span aria-hidden>{CATEGORY_EMOJI[loc.category]}</span>
           <span style={{ color: '#C9A84C' }}>{city}</span>
+          {loc.rating >= 4 ? (
+            <span style={{ color: '#E8C96A', fontWeight: 600 }}>★ {loc.rating}</span>
+          ) : null}
           {priceLabel ? (
             <>
               <span style={{ color: '#4B5563' }}>·</span>

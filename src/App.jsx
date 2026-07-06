@@ -55,6 +55,7 @@ const NAV_HEIGHT = 82
 const INITIAL_FILTERS = {
   cityFilter: 'All Cities',
   categoryFilter: 'All',
+  gemsFilter: false,
   occasionFilter: 'All',
   priceFilter: 0,
   dateFilter: 'all',
@@ -66,8 +67,38 @@ function areFiltersDefault(filters) {
     filters.categoryFilter === INITIAL_FILTERS.categoryFilter &&
     filters.occasionFilter === INITIAL_FILTERS.occasionFilter &&
     filters.priceFilter === INITIAL_FILTERS.priceFilter &&
-    filters.dateFilter === INITIAL_FILTERS.dateFilter
+    filters.dateFilter === INITIAL_FILTERS.dateFilter &&
+    filters.gemsFilter === INITIAL_FILTERS.gemsFilter
   )
+}
+
+// URL slug for a location: "214-café-yehoshua" — id prefix keeps parsing exact,
+// name suffix keeps shared links human-readable
+function locationSlug(location) {
+  const namePart = (location.name || '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+  return namePart ? `${location.id}-${namePart}` : String(location.id)
+}
+
+function parseLocationIdFromPath(pathname) {
+  const match = /^\/location\/(\d+)/.exec(pathname)
+  return match ? Number(match[1]) : null
+}
+
+// Day-aware label for the daily pick — Thursday is the big date night in Israel,
+// and Friday/Saturday the app should speak Motzei-Shabbat, not "tonight"
+function getTonightLabel(lang, fallback) {
+  const weekday = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', weekday: 'short' }).format(new Date())
+  if (weekday === 'Fri' || weekday === 'Sat') {
+    return lang === 'he' ? 'לצאת במוצ״ש 🌙' : 'For After Shabbat 🌙'
+  }
+  if (weekday === 'Thu') {
+    return lang === 'he' ? 'בחירת ליל חמישי 🔥' : 'Thursday Night Pick 🔥'
+  }
+  return fallback
 }
 
 function getTonightPlan(plans) {
@@ -93,10 +124,17 @@ function mergeDatePlansWithDefaults(currentPlans) {
 }
 
 export default function App() {
-  const [lang, setLang] = useState('en')
+  const [lang, setLang] = useState(() => {
+    try {
+      const saved = localStorage.getItem('hamakom-lang')
+      if (saved === 'he' || saved === 'en') return saved
+    } catch { /* private mode */ }
+    return typeof navigator !== 'undefined' && navigator.language?.startsWith('he') ? 'he' : 'en'
+  })
   useEffect(() => {
     document.documentElement.lang = lang
     document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr'
+    try { localStorage.setItem('hamakom-lang', lang) } catch { /* private mode */ }
   }, [lang])
   const [tab, setTab] = useState('home')
   const [overlay, setOverlay] = useState(null)
@@ -151,6 +189,31 @@ export default function App() {
   useEffect(() => {
     setDatePlans((current) => mergeDatePlansWithDefaults(current))
   }, [setDatePlans])
+
+  // Deep links: restore /location/:slug on load (shared WhatsApp links), close on back
+  useEffect(() => {
+    const id = parseLocationIdFromPath(window.location.pathname)
+    if (id == null) return
+    const target = locations.find((l) => l.id === id)
+    if (target) {
+      setSelectedLocation(target)
+      setDetailReturnOverlay(null)
+      setOverlay('detail')
+    }
+  // Run once with whatever locations are available at boot (seed data is synchronous)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (parseLocationIdFromPath(window.location.pathname) == null) {
+        setOverlay((current) => (current === 'detail' ? null : current))
+        setSelectedLocation((current) => (current ? null : current))
+      }
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
 
   const matchedPlans = useMemo(() => {
     if (!quizAnswers) return []
@@ -211,7 +274,7 @@ export default function App() {
     [clickedLocationCounts, dateFeedback, lang, locations, savedPlaceIds]
   )
   const filteredLocations = useMemo(() => {
-    const { cityFilter, categoryFilter, occasionFilter, priceFilter, dateFilter } = browseFilters
+    const { cityFilter, categoryFilter, occasionFilter, priceFilter, dateFilter, gemsFilter } = browseFilters
     const query = browseSearch.trim().toLowerCase()
 
     return locations.filter((location) => {
@@ -232,6 +295,7 @@ export default function App() {
       if (categoryFilter !== 'All' && location.category !== categoryFilter) return false
       if (occasionFilter !== 'All' && !location.occasion?.includes(occasionFilter)) return false
       if (priceFilter > 0 && location.price !== priceFilter) return false
+      if (gemsFilter && !location.hidden_gem) return false
 
       if (dateFilter !== 'all') {
         const stages = Array.isArray(location.date_stage) ? location.date_stage : [location.date_stage]
@@ -548,13 +612,12 @@ export default function App() {
       userId: authUser?.id,
       itemType: 'place',
       itemId: location.id,
-      properties: { source: overlay || tab },
+      properties: { source: overlay || tab, is_partner: location.is_partner || false },
     })
     setDetailReturnOverlay(overlay)
     setSelectedLocation(location)
     setOverlay('detail')
-    const slug = location.slug || location.id
-    window.history.pushState({}, '', `/location/${slug}`)
+    window.history.pushState({}, '', `/location/${locationSlug(location)}`)
   }
 
   const openLocationFromResults = (location) => {
@@ -571,8 +634,7 @@ export default function App() {
     setDetailReturnOverlay('quiz-results')
     setSelectedLocation(location)
     setOverlay('detail')
-    const slug = location.slug || location.id
-    window.history.pushState({}, '', `/location/${slug}`)
+    window.history.pushState({}, '', `/location/${locationSlug(location)}`)
   }
 
   const openQuiz = () => {
@@ -662,7 +724,7 @@ export default function App() {
         lang={lang}
         font={font}
         plan={previewPlan || tonightPlan}
-        title={previewPlan ? (lang === 'he' ? 'הפתעה שלך' : 'Your Surprise') : tx.tonightsPick}
+        title={previewPlan ? (lang === 'he' ? 'הפתעה שלך' : 'Your Surprise') : getTonightLabel(lang, tx.tonightsPick)}
         onBack={() => setOverlay(null)}
         onPlanMyOwnDate={openQuiz}
       />
@@ -1103,7 +1165,7 @@ function HomePage({
       {/* Tonight's Pick — standalone card, no outer panel wrapper */}
       <section>
         <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
-          {tx.tonightsPick}
+          {getTonightLabel(lang, tx.tonightsPick)}
         </div>
         <TonightPlanCard lang={lang} tx={tx} plan={tonightPlan} onOpenPlan={onOpenTonightPlan} onStartQuiz={onStartQuiz} />
       </section>

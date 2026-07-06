@@ -10,22 +10,38 @@ export function useLocations() {
   useEffect(() => {
     if (!supabase) return
 
-    setLoading(true)
-    supabase
-      .from('locations')
-      .select('*')
-      .eq('status', 'approved')
-      .order('featured', { ascending: false })
-      .order('name')
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Supabase fetch error:', error)
-          setError(error.message)
-        } else if (data && data.length > 0) {
-          setLocations(data)
-        }
-        setLoading(false)
-      })
+    let cancelled = false
+    let retryTimer = null
+
+    const fetchLocations = (attempt = 0) => {
+      setLoading(true)
+      supabase
+        .from('locations')
+        .select('*')
+        .eq('status', 'approved')
+        .order('featured', { ascending: false })
+        .order('name')
+        .then(({ data, error }) => {
+          if (cancelled) return
+          if (error) {
+            console.error('Supabase fetch error:', error)
+            setError(error.message)
+            // One quiet retry — transient network blips shouldn't leave a
+            // permanent error banner over perfectly good seed data
+            if (attempt === 0) retryTimer = setTimeout(() => fetchLocations(1), 4000)
+          } else if (data && data.length > 0) {
+            setLocations(data)
+            setError(null)
+          }
+          setLoading(false)
+        })
+    }
+
+    fetchLocations()
+    return () => {
+      cancelled = true
+      if (retryTimer) clearTimeout(retryTimer)
+    }
   }, [])
 
   return { locations, loading, error }

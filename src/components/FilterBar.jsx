@@ -11,6 +11,7 @@ const DEFAULTS = {
   occasionFilter: 'All',
   priceFilter: 0,
   dateFilter: 'all',
+  gemsFilter: false,
 }
 
 function chipStyle(active) {
@@ -30,7 +31,7 @@ function chipStyle(active) {
 }
 
 export default function FilterBar({ tx, filters, setFilters }) {
-  const { cityFilter, categoryFilter, priceFilter, dateFilter } = filters
+  const { cityFilter, categoryFilter, priceFilter, dateFilter, gemsFilter } = filters
   const set = (key, val) => setFilters(prev => ({ ...prev, [key]: val }))
 
   const cityOptions = CITIES.filter(c => c !== 'All Cities')
@@ -53,7 +54,8 @@ export default function FilterBar({ tx, filters, setFilters }) {
     cityFilter !== DEFAULTS.cityFilter ||
     categoryFilter !== DEFAULTS.categoryFilter ||
     dateFilter !== DEFAULTS.dateFilter ||
-    priceFilter !== DEFAULTS.priceFilter
+    priceFilter !== DEFAULTS.priceFilter ||
+    gemsFilter !== DEFAULTS.gemsFilter
 
   const clearAll = () => setFilters(prev => ({ ...prev, ...DEFAULTS }))
 
@@ -73,6 +75,13 @@ export default function FilterBar({ tx, filters, setFilters }) {
           {tx.dir === 'rtl' ? 'נקה' : 'Clear'} ✕
         </button>
       ) : null}
+
+      <button
+        onClick={() => set('gemsFilter', !gemsFilter)}
+        style={chipStyle(gemsFilter)}
+      >
+        💎 {tx.dir === 'rtl' ? 'פנינות' : 'Gems'}
+      </button>
 
       {stageChips.map(({ val, label }) => (
         <button

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getInviteUrl, getMapsUrl, getWhatsAppUrl } from '../lib/constants'
+import { trackEvent } from '../lib/analytics'
 import FeedbackModal from './FeedbackModal'
 import FeedbackStrip from './FeedbackStrip'
 
@@ -74,6 +75,16 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
               <span style={{ fontSize: 12, color: '#C9A84C' }}>✦ {lang === 'he' ? 'שותף של המקום' : 'HaMakom Partner'}</span>
             </div>
           ) : null}
+          {loc.rating >= 4 ? (
+            <div style={{ marginTop: 8, display: 'inline-block', background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 6, padding: '4px 12px' }}>
+              <span style={{ fontSize: 12, color: '#E8DCC8' }}>{'★'.repeat(loc.rating)} {lang === 'he' ? 'בחירת העורכים' : "Curators' pick"}</span>
+            </div>
+          ) : null}
+          {loc.hidden_gem ? (
+            <div style={{ marginTop: 8, display: 'inline-block', background: '#141022', border: '1px solid rgba(167,139,250,0.35)', borderRadius: 6, padding: '4px 12px' }}>
+              <span style={{ fontSize: 12, color: '#A78BFA' }}>💎 {lang === 'he' ? 'פנינה נסתרת' : 'Hidden gem'}</span>
+            </div>
+          ) : null}
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
@@ -95,6 +106,30 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         </div>
 
         <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
+          {loc.reservation_url ? (
+            <a
+              href={loc.reservation_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('reservation_clicked', { itemType: 'place', itemId: loc.id, properties: { is_partner: loc.is_partner || false } })}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg,#C9A84C 0%,#E8B84B 100%)',
+                border: 'none',
+                borderRadius: 10,
+                padding: '14px 16px',
+                textDecoration: 'none',
+                color: '#0D1117',
+                fontSize: 15,
+                fontWeight: 700,
+                fontFamily: font,
+              }}
+            >
+              🍽 {lang === 'he' ? 'הזמינו שולחן' : 'Reserve a table'}
+            </a>
+          ) : null}
           {mapsUrl ? (
             <a
               href={mapsUrl}

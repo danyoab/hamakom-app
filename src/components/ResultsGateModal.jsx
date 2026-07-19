@@ -124,7 +124,7 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
           border: '1px solid #EBE2D0',
           borderBottom: 'none',
           borderRadius: '24px 24px 0 0',
-          padding: '14px 22px 34px',
+          padding: '14px 22px calc(34px + var(--hm-sab, 0px))',
           boxSizing: 'border-box',
           color: '#241E16',
         }}
@@ -134,15 +134,15 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
           <div style={{ fontSize: 30, marginBottom: 8, color: '#9A7A28' }}>◍</div>
           <div style={{ fontSize: 12, letterSpacing: '0.16em', color: '#9A7A28', textTransform: 'uppercase', marginBottom: 8 }}>{copy.eyebrow}</div>
-          <h2 style={{ fontSize: 24, lineHeight: 1.15, margin: '0 0 8px', color: '#F5EBD8' }}>{copy.title}</h2>
-          <p style={{ margin: 0, color: '#C8BDA8', fontSize: 15, lineHeight: 1.6 }}>{copy.body}</p>
+          <h2 style={{ fontSize: 24, lineHeight: 1.15, margin: '0 0 8px', color: '#241E16' }}>{copy.title}</h2>
+          <p style={{ margin: 0, color: '#6E6450', fontSize: 15, lineHeight: 1.6 }}>{copy.body}</p>
         </div>
 
         {previewTitle ? (
           <div style={{ background: '#FBF7EE', border: '1px solid #EBE2D0', borderRadius: 16, padding: 14, marginBottom: 18 }}>
-            <div style={{ fontSize: 11, letterSpacing: '0.12em', color: '#8E97A8', textTransform: 'uppercase', marginBottom: 6 }}>{copy.previewLabel}</div>
-            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: '#F3E7D1' }}>{previewTitle}</div>
-            {previewSubtitle ? <div style={{ fontSize: 13, color: '#B6A88F' }}>{previewSubtitle}</div> : null}
+            <div style={{ fontSize: 11, letterSpacing: '0.12em', color: '#9A7A28', textTransform: 'uppercase', marginBottom: 6 }}>{copy.previewLabel}</div>
+            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: '#241E16' }}>{previewTitle}</div>
+            {previewSubtitle ? <div style={{ fontSize: 13, color: '#8A7F6C' }}>{previewSubtitle}</div> : null}
           </div>
         ) : null}
 
@@ -153,8 +153,8 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
                 <button
                   onClick={handleGoogle}
                   style={{
-                    background: '#FFFFFF',
-                    color: '#111827',
+                    background: '#241E16',
+                    color: '#F4ECD8',
                     border: 'none',
                     borderRadius: 12,
                     padding: '14px 18px',
@@ -186,7 +186,7 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
 
                 <button
                   onClick={onClose}
-                  style={{ background: 'none', border: 'none', color: '#8A94A6', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', paddingTop: 4 }}
+                  style={{ background: 'none', border: 'none', color: '#8A7F6C', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', paddingTop: 4 }}
                 >
                   {isHe ? 'לא עכשיו' : 'Not now'}
                 </button>
@@ -248,8 +248,8 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
         ) : (
           <div style={{ textAlign: 'center', paddingTop: 6 }}>
             <div style={{ fontSize: 38, marginBottom: 10, color: '#9A7A28' }}>✉</div>
-            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6, color: '#F5EBD8' }}>{isHe ? 'בדקו את תיבת המייל' : 'Check your inbox'}</div>
-            <div style={{ fontSize: 14, color: '#C8BDA8', lineHeight: 1.5 }}>{isHe ? `שלחנו קישור ל-${email}` : `We sent a link to ${email}`}</div>
+            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6, color: '#241E16' }}>{isHe ? 'בדקו את תיבת המייל' : 'Check your inbox'}</div>
+            <div style={{ fontSize: 14, color: '#6E6450', lineHeight: 1.5 }}>{isHe ? `שלחנו קישור ל-${email}` : `We sent a link to ${email}`}</div>
           </div>
         )}
       </div>

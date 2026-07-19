@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CATEGORY_EMOJI, getCategoryColor } from '../lib/constants'
+import { locationPath } from '../lib/seo'
 
 export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, showSave = true }) {
   const [hovered, setHovered] = useState(false)
@@ -10,10 +11,15 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
   const color = getCategoryColor(loc.category)
   const showImg = loc.image_url && !imgFailed
   const priceLabel = tx.priceLabels[loc.price]?.split(' ')[0] || ''
+  const href = locationPath(loc)
 
   return (
-    <div
-      onClick={onClick}
+    <a
+      href={href}
+      onClick={(event) => {
+        event.preventDefault()
+        onClick?.()
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -24,6 +30,8 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        textDecoration: 'none',
+        color: 'inherit',
         transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
         boxShadow: hovered ? '0 10px 24px -14px rgba(40,30,12,0.4)' : 'none',
         minWidth: 0,
@@ -130,7 +138,7 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
         </div>
         {loc.kashrus ? (
           /not certified/i.test(loc.kashrus) ? (
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#A99A85', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#8A6A3B', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {isHe ? 'ללא תעודת כשרות' : 'Not certified'}
             </div>
           ) : (
@@ -140,6 +148,6 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
           )
         ) : null}
       </div>
-    </div>
+    </a>
   )
 }

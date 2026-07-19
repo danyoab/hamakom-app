@@ -50,3 +50,8 @@ assets/splash-dark.png
 
 # AI / ChatGPT handoff dumps — generated context, not part of the app
 CHATGPT_HANDOFF*.md
+
+# Android release signing (never commit)
+android/key.properties
+*.jks
+*.keystore

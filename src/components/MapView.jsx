@@ -3,6 +3,8 @@ import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { CATEGORY_EMOJI, CITY_COORDS, getCategoryColor } from '../lib/constants'
+import { locationPath } from '../lib/seo'
+import { getUserPosition } from '../lib/geolocation'
 
 function cityIcon(count, active) {
   return L.divIcon({
@@ -70,12 +72,24 @@ export default function MapView({
   const [selectedCity, setSelectedCity] = useState(null)
   const [flyTarget, setFlyTarget] = useState(null)
   const [userPos, setUserPos] = useState(null)
+  const [locDenied, setLocDenied] = useState(false)
+  const [locLoading, setLocLoading] = useState(false)
+
+  const loadUserPosition = async () => {
+    setLocLoading(true)
+    const pos = await getUserPosition()
+    setLocLoading(false)
+    if (pos) {
+      setUserPos([pos.lat, pos.lng])
+      setLocDenied(false)
+      setFlyTarget([pos.lat, pos.lng])
+    } else {
+      setLocDenied(true)
+    }
+  }
 
   useEffect(() => {
-    navigator.geolocation?.getCurrentPosition(
-      (position) => setUserPos([position.coords.latitude, position.coords.longitude]),
-      () => {}
-    )
+    void loadUserPosition()
   }, [])
 
   const cityGroups = {}
@@ -191,6 +205,54 @@ export default function MapView({
 
           {userPos ? <Marker position={userPos} icon={YOU_ICON} /> : null}
         </MapContainer>
+
+        <button
+          type="button"
+          onClick={() => void loadUserPosition()}
+          disabled={locLoading}
+          style={{
+            position: 'absolute',
+            bottom: 16,
+            [lang === 'he' ? 'left' : 'right']: 16,
+            zIndex: 2001,
+            background: '#FFFFFF',
+            border: '1px solid #D8CCB2',
+            borderRadius: 999,
+            padding: '8px 14px',
+            fontSize: 12,
+            fontWeight: 700,
+            color: '#9A7A28',
+            cursor: locLoading ? 'wait' : 'pointer',
+            fontFamily: 'inherit',
+            boxShadow: '0 6px 18px rgba(40,30,12,0.18)',
+          }}
+        >
+          {locLoading
+            ? (lang === 'he' ? 'מאתר…' : 'Locating…')
+            : userPos
+              ? (lang === 'he' ? 'עדכן מיקום' : 'Update location')
+              : (lang === 'he' ? 'מקומות לידי' : 'Near me')}
+        </button>
+        {locDenied && !locLoading ? (
+          <div
+            style={{
+              position: 'absolute',
+              left: 12,
+              right: 12,
+              bottom: 56,
+              zIndex: 2001,
+              background: 'rgba(255,255,255,0.94)',
+              border: '1px solid #EBE2D0',
+              borderRadius: 10,
+              padding: '8px 12px',
+              fontSize: 12,
+              color: '#6E6450',
+              textAlign: 'center',
+            }}
+          >
+            {lang === 'he' ? 'אפשרו גישה למיקום כדי לראות מקומות קרובים' : 'Allow location to see nearby places'}
+          </div>
+        ) : null}
       </div>
 
       {selectedCity ? (
@@ -204,6 +266,7 @@ export default function MapView({
             </span>
             <button
               onClick={() => setSelectedCity(null)}
+              aria-label={lang === 'he' ? 'סגירה' : 'Close city list'}
               style={{ background: 'none', border: 'none', color: '#8A7F6C', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: '0 4px' }}
             >
               ×
@@ -216,10 +279,15 @@ export default function MapView({
               const desc = lang === 'he' ? location.description_he || location.description : location.description
 
               return (
-                <div
+                <a
                   key={location.id}
-                  onClick={() => onOpenDetail(location)}
+                  href={locationPath(location)}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    onOpenDetail(location)
+                  }}
                   style={{
+                    display: 'block',
                     background: '#F2EBDB',
                     border: '1px solid #EBE2D0',
                     borderLeft: lang === 'en' ? `3px solid ${getCategoryColor(location.category)}` : undefined,
@@ -228,6 +296,8 @@ export default function MapView({
                     padding: '9px 12px',
                     marginBottom: 6,
                     cursor: 'pointer',
+                    textDecoration: 'none',
+                    color: 'inherit',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
@@ -242,7 +312,7 @@ export default function MapView({
                       {desc}
                     </div>
                   ) : null}
-                </div>
+                </a>
               )
             })}
           </div>

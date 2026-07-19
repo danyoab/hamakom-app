@@ -14,7 +14,7 @@ export default function PlanPreviewPage({ lang, font, plan, title, onBack, onPla
 
   return (
     <div dir={dir} style={{ minHeight: '100vh', background: '#F7F2E8', color: '#241E16', fontFamily: font }}>
-      <div style={{ background: 'linear-gradient(165deg,#F7F2E8 0%,#F1EAD9 100%)', borderBottom: '1px solid #EBE2D0', padding: '26px 24px 20px' }}>
+      <div style={{ background: 'linear-gradient(165deg,#F7F2E8 0%,#F1EAD9 100%)', borderBottom: '1px solid #EBE2D0', padding: 'calc(26px + var(--hm-sat, 0px)) 24px 20px' }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
           <button
             onClick={onBack}

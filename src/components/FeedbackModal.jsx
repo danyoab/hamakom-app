@@ -68,7 +68,7 @@ export default function FeedbackModal({ lang, font, locationName, locationId, on
           background: '#FFFFFF',
           border: '1px solid #EBE2D0', borderBottom: 'none',
           borderRadius: '24px 24px 0 0',
-          padding: '14px 22px 40px',
+          padding: '14px 22px calc(40px + var(--hm-sab, 0px))',
           boxSizing: 'border-box', color: '#241E16',
         }}
       >

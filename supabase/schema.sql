@@ -19,6 +19,11 @@ create table if not exists locations (
   description_he text,
   maps_query  text,
   kashrus     text,
+  kashrut_status text not null default 'unknown' check (kashrut_status in ('unknown', 'verified', 'not_certified', 'expired')),
+  kashrut_authority text,
+  kashrut_certificate_expiry date,
+  kashrut_last_verified_at timestamptz,
+  kashrut_verification_source text,
   featured    boolean   default false,
   status      text      default 'approved',
   slug        text,
@@ -190,10 +195,20 @@ create table if not exists recommendation_outcomes (
 alter table recommendation_outcomes enable row level security;
 
 drop policy if exists "anon_upsert_outcomes" on recommendation_outcomes;
+drop policy if exists "anon_insert_outcomes" on recommendation_outcomes;
+drop policy if exists "anon_update_outcomes" on recommendation_outcomes;
+drop policy if exists "admin_read_outcomes" on recommendation_outcomes;
 
-create policy "anon_upsert_outcomes"
-  on recommendation_outcomes for all
-  with check (true);
+create policy "anon_insert_outcomes" on recommendation_outcomes for insert with check (true);
+create policy "anon_update_outcomes" on recommendation_outcomes for update using (true) with check (true);
+
+create policy "admin_read_outcomes"
+  on recommendation_outcomes for select
+  to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+revoke select on analytics_events, recommendation_impressions, recommendation_outcomes from anon;
+grant select on analytics_events, recommendation_impressions, recommendation_outcomes to authenticated;
 
 -- ──────────────────────────────────────────────
 
@@ -537,16 +552,62 @@ create table if not exists partner_inquiries (
   email         text check (char_length(email) <= 200),
   city          text check (char_length(city) <= 80),
   message       text check (char_length(message) <= 2000),
+  location_id   bigint references locations(id) on delete set null,
+  inquiry_type  text not null default 'partner' check (inquiry_type in ('partner', 'claim')),
+  source         text,
+  utm_source     text,
+  utm_medium     text,
+  utm_campaign   text,
+  notified_at    timestamptz,
   status        text not null default 'new' check (status in ('new', 'contacted', 'closed')),
   created_at    timestamptz default now()
 );
 
 alter table partner_inquiries enable row level security;
 drop policy if exists "public_insert_inquiry" on partner_inquiries;
-create policy "public_insert_inquiry" on partner_inquiries for insert with check (true);
+revoke insert on partner_inquiries from anon, authenticated;
 drop policy if exists "admin_read_inquiries" on partner_inquiries;
 create policy "admin_read_inquiries" on partner_inquiries for select
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 drop policy if exists "admin_update_inquiries" on partner_inquiries;
 create policy "admin_update_inquiries" on partner_inquiries for update
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+create or replace function submit_partner_inquiry(
+  p_business_name text,
+  p_contact_name text default null,
+  p_phone text default null,
+  p_email text default null,
+  p_city text default null,
+  p_message text default null,
+  p_location_id bigint default null,
+  p_inquiry_type text default 'partner',
+  p_source text default 'direct_url',
+  p_utm_source text default null,
+  p_utm_medium text default null,
+  p_utm_campaign text default null
+) returns uuid language plpgsql security definer set search_path = public as $$
+declare inquiry_id uuid;
+begin
+  if nullif(trim(p_business_name), '') is null then raise exception 'Business name is required'; end if;
+  if nullif(trim(coalesce(p_phone, '')), '') is null and nullif(trim(coalesce(p_email, '')), '') is null then
+    raise exception 'A phone number or email is required';
+  end if;
+  if p_inquiry_type not in ('partner', 'claim') then raise exception 'Invalid inquiry type'; end if;
+  insert into partner_inquiries (
+    business_name, contact_name, phone, email, city, message, location_id,
+    inquiry_type, source, utm_source, utm_medium, utm_campaign
+  ) values (
+    left(trim(p_business_name), 120), nullif(left(trim(coalesce(p_contact_name, '')), 120), ''),
+    nullif(left(trim(coalesce(p_phone, '')), 40), ''), nullif(left(trim(coalesce(p_email, '')), 200), ''),
+    nullif(left(trim(coalesce(p_city, '')), 80), ''), nullif(left(trim(coalesce(p_message, '')), 2000), ''),
+    p_location_id, p_inquiry_type, nullif(left(trim(coalesce(p_source, '')), 80), ''),
+    nullif(left(trim(coalesce(p_utm_source, '')), 120), ''), nullif(left(trim(coalesce(p_utm_medium, '')), 120), ''),
+    nullif(left(trim(coalesce(p_utm_campaign, '')), 160), '')
+  ) returning id into inquiry_id;
+  return inquiry_id;
+end;
+$$;
+
+revoke all on function submit_partner_inquiry(text,text,text,text,text,text,bigint,text,text,text,text,text) from public;
+grant execute on function submit_partner_inquiry(text,text,text,text,text,text,bigint,text,text,text,text,text) to anon, authenticated;

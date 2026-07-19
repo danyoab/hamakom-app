@@ -79,10 +79,8 @@ export const CITIES = [
   'Tzur Yigal',
   'Ganey Tal',
   'Ein Carmel',
-  'Binyamina',
   'Moshav Hamad',
   'Beer Yaakov',
-  'Various',
 ]
 
 export const OCCASION_KEYS = [

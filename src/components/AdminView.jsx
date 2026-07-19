@@ -89,6 +89,7 @@ export default function AdminView({
   const [partnerLoading, setPartnerLoading] = useState(false)
   const [partnerSearch, setPartnerSearch] = useState('')
   const [partnerCandidates, setPartnerCandidates] = useState([])
+  const [partnerEvents, setPartnerEvents] = useState([])
   const [inquiries, setInquiries] = useState([])
   const [inquiriesLoading, setInquiriesLoading] = useState(false)
 
@@ -139,12 +140,25 @@ export default function AdminView({
   async function loadPartners() {
     if (!supabase) return
     setPartnerLoading(true)
-    const { data } = await supabase
-      .from('locations')
-      .select('id, name, city, category, is_partner, partner_tier, reservation_url, partner_contact')
-      .eq('is_partner', true)
-      .order('name')
-    setPartnerLocs(data || [])
+    const since = new Date(Date.now() - 30 * 86400000).toISOString()
+    const [locationsRes, eventsRes] = await Promise.all([
+      supabase
+        .from('locations')
+        .select('id, name, city, category, is_partner, partner_tier, partner_since, reservation_url, partner_contact')
+        .eq('is_partner', true)
+        .order('name'),
+      supabase
+        .from('analytics_events')
+        .select('event_name,item_id,session_id,created_at')
+        .eq('item_type', 'place')
+        .gte('created_at', since)
+        .in('event_name', ['partner_impression', 'location_detail_viewed', 'map_opened', 'partner_reserve_clicked', 'partner_phone_clicked', 'venue_shared'])
+        .limit(5000),
+    ])
+    if (locationsRes.error) showToast(locationsRes.error.message, 'error')
+    if (eventsRes.error) showToast(eventsRes.error.message, 'error')
+    setPartnerLocs(locationsRes.data || [])
+    setPartnerEvents(eventsRes.data || [])
     setPartnerLoading(false)
   }
 
@@ -152,6 +166,8 @@ export default function AdminView({
     if (adminTab !== 'partners') return
     loadPartners()
     loadInquiries()
+    // This tab load is intentionally triggered only when the selected tab changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminTab])
 
   async function loadInquiries() {
@@ -234,12 +250,12 @@ export default function AdminView({
     // Food-adjacent categories where kashrut matters most; best-known venues first
     let query = supabase
       .from('locations')
-      .select('id, name, city, category, kashrus, website, phone, google_rating, featured, manual_edits')
+      .select('id, name, city, category, kashrus, kashrut_status, kashrut_authority, kashrut_certificate_expiry, kashrut_last_verified_at, kashrut_verification_source, website, phone, google_rating, featured, manual_edits')
       .eq('status', 'approved')
       .in('category', ['Cafés & Restaurants', 'Hotels & Lounges', 'Wineries'])
       .order('featured', { ascending: false })
       .order('google_rating', { ascending: false, nullsFirst: false })
-    if (!showAll) query = query.or('kashrus.is.null,kashrus.eq.')
+    if (!showAll) query = query.or('kashrus.is.null,kashrus.eq.,kashrut_status.eq.unknown')
     const { data, error } = await query
     if (error) { showToast(error.message, 'error'); setKashLoading(false); return }
     setKashLocs(data || [])
@@ -252,15 +268,24 @@ export default function AdminView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminTab])
 
-  async function saveKashrus(row, value) {
+  async function saveKashrus(row, draft) {
     if (!supabase) return
-    const kashrus = value.trim() || null
+    const status = draft.status || 'unknown'
+    const authority = status === 'not_certified' ? null : draft.authority.trim() || null
+    const kashrus = status === 'not_certified' ? 'Not certified' : authority
     const lockedFields = new Set(row.manual_edits?.fields || [])
-    lockedFields.add('kashrus')
+    ;['kashrus', 'kashrut_status', 'kashrut_authority', 'kashrut_certificate_expiry', 'kashrut_last_verified_at', 'kashrut_verification_source']
+      .forEach((field) => lockedFields.add(field))
+    const verifiedAt = status === 'unknown' ? null : new Date().toISOString()
     const { error } = await supabase
       .from('locations')
       .update({
         kashrus,
+        kashrut_status: status,
+        kashrut_authority: authority,
+        kashrut_certificate_expiry: draft.expiry || null,
+        kashrut_last_verified_at: verifiedAt,
+        kashrut_verification_source: draft.source.trim() || null,
         manual_edits: { ...(row.manual_edits || {}), fields: Array.from(lockedFields) },
         last_curated_at: new Date().toISOString(),
         curated_by: authUser?.id || null,
@@ -268,7 +293,11 @@ export default function AdminView({
       .eq('id', row.id)
     if (error) return showToast(error.message, 'error')
     setKashLocs((prev) => kashShowAll
-      ? prev.map((r) => (r.id === row.id ? { ...r, kashrus } : r))
+      ? prev.map((r) => (r.id === row.id ? {
+          ...r, kashrus, kashrut_status: status, kashrut_authority: authority,
+          kashrut_certificate_expiry: draft.expiry || null, kashrut_last_verified_at: verifiedAt,
+          kashrut_verification_source: draft.source.trim() || null,
+        } : r))
       : prev.filter((r) => r.id !== row.id))
     setKashDrafts((prev) => { const next = { ...prev }; delete next[row.id]; return next })
     showToast(`Saved kashrut for ${row.name}`)
@@ -312,6 +341,8 @@ export default function AdminView({
     if (adminTab !== 'curate') return
     if (curateQueue.length > 0) return
     loadCurateQueue()
+    // Reloading whenever the queue shrinks would repopulate items as the curator handles them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminTab])
 
   async function handleCurateSave(id, patch, changedKeys) {
@@ -678,7 +709,7 @@ export default function AdminView({
         </div>
       ) : null}
 
-      <div style={{ background: '#161B27', borderBottom: '1px solid #2A2F3E', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ background: '#161B27', borderBottom: '1px solid #2A2F3E', padding: 'calc(16px + var(--hm-sat, 0px)) 20px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#C9A84C', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}>
           ← Back
         </button>
@@ -1293,11 +1324,17 @@ export default function AdminView({
                             <div style={{ fontSize: 13, color: '#E8DCC8', fontWeight: 600 }}>
                               {q.business_name}
                               {q.city ? <span style={{ color: '#C9A84C', fontWeight: 400 }}> · {q.city}</span> : null}
+                              {q.inquiry_type === 'claim' ? <span style={{ marginLeft: 7, fontSize: 9, color: '#60A5FA', border: '1px solid #1D4E89', borderRadius: 999, padding: '2px 6px' }}>LISTING CLAIM</span> : null}
                             </div>
                             <div style={{ fontSize: 10, color: '#6B7280' }}>{q.created_at ? new Date(q.created_at).toLocaleDateString() : ''}</div>
                           </div>
                           <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
                             {[q.contact_name, q.phone, q.email].filter(Boolean).join(' · ') || '—'}
+                          </div>
+                          <div style={{ fontSize: 10, color: '#6B7280', marginTop: 4 }}>
+                            Source: {q.source || 'legacy/unknown'}{q.location_id ? ` · Location #${q.location_id}` : ''}
+                            {q.utm_campaign ? ` · Campaign: ${q.utm_campaign}` : ''}
+                            {q.notified_at ? ' · Telegram notified' : ''}
                           </div>
                           {q.message ? <div style={{ fontSize: 12, color: '#B9AE97', marginTop: 6, whiteSpace: 'pre-wrap' }}>{q.message}</div> : null}
                           <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
@@ -1336,6 +1373,7 @@ export default function AdminView({
                         ghostBtnStyle={ghostBtnStyle}
                         onSave={savePartnerFields}
                         onRemove={removePartner}
+                        metrics={buildPartnerMetrics(partnerEvents, loc.id)}
                       />
                     ))}
                   </div>
@@ -1372,7 +1410,13 @@ export default function AdminView({
                 ) : (
                   <div style={{ display: 'grid', gap: 10 }}>
                     {kashLocs.map((row) => {
-                      const draft = kashDrafts[row.id] ?? row.kashrus ?? ''
+                      const draft = kashDrafts[row.id] || {
+                        status: row.kashrut_status || (/not certified/i.test(row.kashrus || '') ? 'not_certified' : row.kashrus ? 'verified' : 'unknown'),
+                        authority: row.kashrut_authority || (/not certified/i.test(row.kashrus || '') ? '' : row.kashrus || ''),
+                        expiry: row.kashrut_certificate_expiry || '',
+                        source: row.kashrut_verification_source || '',
+                      }
+                      const updateDraft = (patch) => setKashDrafts((prev) => ({ ...prev, [row.id]: { ...draft, ...patch } }))
                       return (
                         <div key={row.id} style={{ background: '#161B27', border: '1px solid #2A2F3E', borderRadius: 10, padding: '12px 14px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
@@ -1393,22 +1437,34 @@ export default function AdminView({
                             {['Rabbanut', 'Mehadrin', 'Badatz', 'Tzohar', 'Not certified'].map((preset) => (
                               <button
                                 key={preset}
-                                onClick={() => setKashDrafts((prev) => ({ ...prev, [row.id]: preset }))}
-                                style={{ ...ghostBtnStyle, fontSize: 11, padding: '3px 10px', color: draft === preset ? '#C9A84C' : '#9CA3AF', borderColor: draft === preset ? '#C9A84C' : '#374151' }}
+                                onClick={() => updateDraft(preset === 'Not certified'
+                                  ? { status: 'not_certified', authority: '' }
+                                  : { status: 'verified', authority: preset })}
+                                style={{ ...ghostBtnStyle, fontSize: 11, padding: '3px 10px', color: draft.authority === preset || (preset === 'Not certified' && draft.status === 'not_certified') ? '#C9A84C' : '#9CA3AF', borderColor: draft.authority === preset || (preset === 'Not certified' && draft.status === 'not_certified') ? '#C9A84C' : '#374151' }}
                               >
                                 {preset}
                               </button>
                             ))}
                           </div>
-                          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, .7fr) minmax(180px, 1.3fr)', gap: 8, marginTop: 8 }}>
+                            <select value={draft.status} onChange={(event) => updateDraft({ status: event.target.value })} style={inputStyle}>
+                              <option value="unknown">Unknown</option>
+                              <option value="verified">Verified</option>
+                              <option value="not_certified">Not certified</option>
+                              <option value="expired">Expired</option>
+                            </select>
                             <input
-                              value={draft}
-                              onChange={(event) => setKashDrafts((prev) => ({ ...prev, [row.id]: event.target.value }))}
-                              onKeyDown={(event) => { if (event.key === 'Enter' && draft.trim()) saveKashrus(row, draft) }}
-                              placeholder="Certification (as on the te'udah)..."
-                              style={{ ...inputStyle, flex: 1 }}
+                              value={draft.authority}
+                              onChange={(event) => updateDraft({ authority: event.target.value, status: event.target.value ? 'verified' : draft.status })}
+                              placeholder="Certifying authority (as on the te'udah)..."
+                              style={inputStyle}
+                              disabled={draft.status === 'not_certified'}
                             />
-                            <button onClick={() => saveKashrus(row, draft)} disabled={!draft.trim()} style={{ ...btnStyle('#4ADE80'), opacity: draft.trim() ? 1 : 0.4 }}>
+                            <input type="date" value={draft.expiry} onChange={(event) => updateDraft({ expiry: event.target.value })} style={inputStyle} />
+                            <input value={draft.source} onChange={(event) => updateDraft({ source: event.target.value })} placeholder="Verification source or certificate URL..." style={inputStyle} />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                            <button onClick={() => saveKashrus(row, draft)} disabled={draft.status === 'verified' && !draft.authority.trim()} style={{ ...btnStyle('#4ADE80'), opacity: draft.status === 'verified' && !draft.authority.trim() ? 0.4 : 1 }}>
                               Save
                             </button>
                           </div>
@@ -1508,7 +1564,7 @@ export default function AdminView({
   )
 }
 
-function PartnerCard({ loc, inputStyle, btnStyle, ghostBtnStyle, onSave, onRemove }) {
+function PartnerCard({ loc, inputStyle, btnStyle, ghostBtnStyle, onSave, onRemove, metrics }) {
   const [draft, setDraft] = useState({ ...loc })
   const update = (key, value) => setDraft((prev) => ({ ...prev, [key]: value }))
   const tierColors = { featured: '#C9A84C', basic: '#4ADE80' }
@@ -1523,6 +1579,24 @@ function PartnerCard({ loc, inputStyle, btnStyle, ghostBtnStyle, onSave, onRemov
         <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 999, background: '#2A2A0A', color: tierColors[draft.partner_tier] || '#9CA3AF', fontWeight: 700, border: `1px solid ${tierColors[draft.partner_tier] || '#374151'}44` }}>
           {draft.partner_tier || 'no tier'}
         </span>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 10, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Last 30 days · unique sessions</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
+          {[
+            ['Impressions', metrics.impressions],
+            ['Details', metrics.details],
+            ['Directions', metrics.directions],
+            ['Reservations', metrics.reservations],
+            ['Calls', metrics.calls],
+          ].map(([label, value]) => (
+            <div key={label} style={{ background: '#0D1117', border: '1px solid #232A39', borderRadius: 7, padding: '7px 8px' }}>
+              <div style={{ fontSize: 9, color: '#6B7280', marginBottom: 2 }}>{label}</div>
+              <div style={{ fontSize: 16, color: '#E8DCC8', fontWeight: 700 }}>{value}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -1565,6 +1639,25 @@ function PartnerCard({ loc, inputStyle, btnStyle, ghostBtnStyle, onSave, onRemov
       </div>
     </div>
   )
+}
+
+function buildPartnerMetrics(events, locationId) {
+  const names = {
+    partner_impression: 'impressions',
+    location_detail_viewed: 'details',
+    map_opened: 'directions',
+    partner_reserve_clicked: 'reservations',
+    partner_phone_clicked: 'calls',
+    venue_shared: 'shares',
+  }
+  const buckets = Object.fromEntries(Object.values(names).map((name) => [name, new Set()]))
+  events.forEach((event, index) => {
+    if (String(event.item_id) !== String(locationId)) return
+    const bucket = buckets[names[event.event_name]]
+    if (!bucket) return
+    bucket.add(event.session_id || `${event.event_name}-${index}`)
+  })
+  return Object.fromEntries(Object.entries(buckets).map(([name, sessions]) => [name, sessions.size]))
 }
 
 function Section({ title, children }) {

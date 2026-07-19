@@ -853,10 +853,14 @@ export function getSmartMatchedPlans(curatedPlans, locations, answers, count = 2
     else tail.push(plan)
   })
 
+  // Keep the objectively strongest plan pinned in slot 0 — the band shuffle
+  // only diversifies the runners-up, so the top result is never randomly
+  // dropped in favor of a band-mate with a lower score.
+  const best = band.shift()
   shuffleInPlace(band)
-  const result = [...band, ...tail].slice(0, count)
+  const result = [best, ...band, ...tail].slice(0, count)
 
-  if (count > 0 && Math.random() < EXPLORATION_RATE) {
+  if (count > 1 && Math.random() < EXPLORATION_RATE) {
     const selectedIds = new Set(result.map((plan) => plan.id))
     const tailEligible = tail.filter(
       (plan) => (plan._score || 0) >= MIN_ELIGIBLE_SCORE && !selectedIds.has(plan.id)

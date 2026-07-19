@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getInviteUrl, getMapsUrl, getWhatsAppUrl } from '../lib/constants'
+import { shareContent, shareLocationMessage } from '../lib/share'
 import FeedbackModal from './FeedbackModal'
 import FeedbackStrip from './FeedbackStrip'
 
-export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true, dateFeedback, setDateFeedback, onMapOpen, onReserve }) {
+export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true, dateFeedback, setDateFeedback, onMapOpen, onReserve, onPhone, onShare, onClaim, onClaimViewed }) {
   const [imgFailed, setImgFailed] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const name = lang === 'he' ? loc.name_he || loc.name : loc.name
@@ -15,6 +16,19 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
   const waUrl = getWhatsAppUrl(name, city, lang)
   const inviteUrl = getInviteUrl(name, city, lang)
   const showImg = loc.image_url && !imgFailed
+  const kashrut = getKashrutDisplay(loc, lang)
+  const claimViewSent = useRef(false)
+
+  useEffect(() => {
+    if (claimViewSent.current) return
+    claimViewSent.current = true
+    onClaimViewed?.(loc)
+  }, [loc, onClaimViewed])
+
+  const handleShare = async () => {
+    onShare?.(loc)
+    await shareContent(shareLocationMessage(loc, lang))
+  }
 
   return (
     <div dir={tx.dir} style={{ minHeight: '100vh', background: '#F7F2E8', color: '#241E16', fontFamily: font }}>
@@ -31,7 +45,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
           onClick={onBack}
           style={{
             position: 'absolute',
-            top: 14,
+            top: 'calc(14px + var(--hm-sat, 0px))',
             [lang === 'he' ? 'right' : 'left']: 16,
             background: 'rgba(13,17,23,0.55)',
             border: '1px solid rgba(255,253,247,0.5)',
@@ -56,7 +70,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <h2 style={{ fontFamily: "'Spectral','Frank Ruhl Libre',Georgia,serif", fontSize: 30, fontWeight: 600, margin: 0, lineHeight: 1.1 }}>{name}</h2>
           {showSave ? (
-            <button onClick={onToggleSave} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 26, padding: 4, flexShrink: 0 }}>
+            <button onClick={onToggleSave} aria-label={saved ? 'Remove from saved' : 'Save this place'} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 26, padding: 4, flexShrink: 0 }}>
               {saved ? '♥' : '♡'}
             </button>
           ) : null}
@@ -69,14 +83,14 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
               <span style={{ fontSize: 12, fontWeight: 700, color: '#9A7A28' }}>{tx.partnerBadge}</span>
             </div>
           ) : null}
-          {loc.kashrus ? (
-            /not certified/i.test(loc.kashrus) ? (
+          {kashrut ? (
+            kashrut.status === 'not_certified' || kashrut.status === 'expired' ? (
               <div style={{ marginTop: 8, display: 'inline-block', background: '#F2EBDB', border: '1px solid #E6DCC8', borderRadius: 999, padding: '4px 12px' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#8A7F6C' }}>{lang === 'he' ? 'ללא תעודת כשרות' : 'Not certified'}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#8A7F6C' }}>{kashrut.label}</span>
               </div>
             ) : (
               <div style={{ marginTop: 8, display: 'inline-block', background: '#E9F0E4', border: '1px solid #C7DCBC', borderRadius: 999, padding: '4px 12px' }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#4F7144' }}>✓ {loc.kashrus}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#4F7144' }}>✓ {kashrut.label}</span>
               </div>
             )
           ) : null}
@@ -150,6 +164,20 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
               <span style={{ fontSize: 12, opacity: 0.8 }}>{tx.openMaps}</span>
             </a>
           ) : null}
+          {loc.phone ? (
+            <a
+              href={`tel:${String(loc.phone).replace(/[^+\d]/g, '')}`}
+              onClick={() => onPhone?.(loc)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#FFFFFF',
+                border: '1px solid #EBE2D0', borderRadius: 10, padding: '13px 16px', textDecoration: 'none',
+                color: '#9A7A28', fontSize: 14, fontFamily: font,
+              }}
+            >
+              <span>☎ {lang === 'he' ? 'התקשרו למקום' : 'Call the venue'}</span>
+              <span style={{ fontSize: 12, opacity: 0.8 }}>{loc.phone}</span>
+            </a>
+          ) : null}
           <a
             href={waUrl}
             target="_blank"
@@ -192,6 +220,27 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
             <span>💌 {tx.inviteToDate}</span>
             <span style={{ fontSize: 18 }}>→</span>
           </a>
+          <button
+            type="button"
+            onClick={handleShare}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              background: '#FBF7EE',
+              border: '1px solid #EBE2D0',
+              borderRadius: 10,
+              padding: '13px 16px',
+              color: '#9A7A28',
+              fontSize: 14,
+              fontFamily: font,
+              cursor: 'pointer',
+            }}
+          >
+            <span>↗ {lang === 'he' ? 'שתף מקום' : 'Share place'}</span>
+            <span style={{ fontSize: 18 }}>→</span>
+          </button>
         </div>
 
         <div style={{ marginTop: 20 }}>
@@ -208,7 +257,26 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         <div style={{ marginTop: 24, background: '#FFFFFF', borderRadius: 10, padding: 18, border: '1px solid #EBE2D0' }}>
           <div style={{ fontSize: 11, color: '#9A7A28', letterSpacing: '0.1em', marginBottom: 6, textTransform: 'uppercase' }}>{tx.importantNote}</div>
           <p style={{ fontSize: 13, color: '#8A7F6C', margin: 0, lineHeight: 1.6 }}>{tx.kashrusNote}</p>
+          {kashrut?.meta ? <p style={{ fontSize: 11.5, color: '#A99A85', margin: '8px 0 0', lineHeight: 1.5 }}>{kashrut.meta}</p> : null}
         </div>
+
+        <aside style={{ marginTop: 18, padding: '16px 18px', borderRadius: 14, background: '#FBF7EE', border: '1px solid #E6D8B8' }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: '#241E16', marginBottom: 4 }}>
+            {lang === 'he' ? 'זה העסק שלכם?' : 'Own or manage this venue?'}
+          </div>
+          <p style={{ margin: '0 0 10px', fontSize: 12.5, color: '#7E7361', lineHeight: 1.5 }}>
+            {lang === 'he'
+              ? 'אמתו את הפרטים, עדכנו כשרות והזמנות, וקבלו נתוני ביצועים.'
+              : 'Claim the listing, verify details and kashrut, and receive performance reporting.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => onClaim?.(loc)}
+            style={{ background: 'none', border: 'none', padding: 0, color: '#9A7A28', fontFamily: font, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}
+          >
+            {lang === 'he' ? 'תבעו או עדכנו את הרישום ←' : 'Claim or update this listing →'}
+          </button>
+        </aside>
 
         {setDateFeedback ? (
           <FeedbackStrip lang={lang} font={font} loc={loc} dateFeedback={dateFeedback} setDateFeedback={setDateFeedback} />
@@ -233,6 +301,30 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
       ) : null}
     </div>
   )
+}
+
+function getKashrutDisplay(loc, lang) {
+  const isHe = lang === 'he'
+  const status = loc.kashrut_status || (/not certified/i.test(loc.kashrus || '') ? 'not_certified' : loc.kashrus ? 'verified' : 'unknown')
+  if (status === 'unknown') return null
+  if (status === 'not_certified') {
+    return { status, label: isHe ? 'ללא תעודת כשרות מאומתת' : 'No verified certification', meta: null }
+  }
+  if (status === 'expired') {
+    return { status, label: isHe ? 'אימות הכשרות פג — יש לבדוק מחדש' : 'Kashrut verification expired — recheck required', meta: null }
+  }
+  const authority = loc.kashrut_authority || loc.kashrus
+  if (!authority) return null
+  const checked = loc.kashrut_last_verified_at
+    ? new Date(loc.kashrut_last_verified_at).toLocaleDateString(isHe ? 'he-IL' : 'en-IL', { year: 'numeric', month: 'short', day: 'numeric' })
+    : null
+  const expiry = loc.kashrut_certificate_expiry
+    ? new Date(`${loc.kashrut_certificate_expiry}T00:00:00`).toLocaleDateString(isHe ? 'he-IL' : 'en-IL', { year: 'numeric', month: 'short', day: 'numeric' })
+    : null
+  const parts = []
+  if (checked) parts.push(isHe ? `נבדק לאחרונה: ${checked}` : `Last checked: ${checked}`)
+  if (expiry) parts.push(isHe ? `תוקף תעודה: ${expiry}` : `Certificate expiry: ${expiry}`)
+  return { status, label: authority, meta: parts.join(' · ') || null }
 }
 
 function InfoBox({ label, value }) {

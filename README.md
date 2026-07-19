@@ -99,6 +99,20 @@ When adding a place, update all relevant layers so it appears consistently in Ex
 
 The repo already includes [vercel.json](vercel.json) with SPA rewrites back to `index.html`.
 
+## Monetization foundation deployment
+
+The public partner/claim funnel works in the web build. Before enabling live submissions and partner reporting, apply the accompanying Supabase changes and deploy the notification function:
+
+```bash
+supabase link --project-ref <project-ref>
+supabase db push
+supabase functions deploy notify-partner-inquiry
+```
+
+The migration is `supabase/migration_20260714_monetization_foundation.sql`. It adds structured kashrut verification, attributed partner inquiries, safer anonymous analytics policies, and partner conversion reporting. The Edge Function uses the existing `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` secrets.
+
+After deployment, verify one test lead from `/for-businesses` reaches the `partner_inquiries` table and the configured Telegram chat, then mark the test inquiry handled in Admin.
+
 ## Mobile Apps (iOS + Android)
 
 The same web build is wrapped as native apps with [Capacitor](https://capacitorjs.com/).

@@ -29,11 +29,20 @@ function chipStyle(active) {
   }
 }
 
-export default function FilterBar({ tx, filters, setFilters }) {
+export default function FilterBar({ tx, filters, setFilters, locations = [] }) {
   const { cityFilter, categoryFilter, priceFilter, dateFilter } = filters
   const set = (key, val) => setFilters(prev => ({ ...prev, [key]: val }))
 
-  const cityOptions = CITIES.filter(c => c !== 'All Cities')
+  // Order city chips by real inventory (most places first) so the useful
+  // cities are reachable without scrolling a 50-chip row; fall back to the
+  // static list until locations load.
+  const cityCounts = new Map()
+  for (const loc of locations) {
+    if (loc.city && loc.city !== 'Various') cityCounts.set(loc.city, (cityCounts.get(loc.city) || 0) + 1)
+  }
+  const cityOptions = cityCounts.size > 0
+    ? [...cityCounts.entries()].sort((a, b) => b[1] - a[1]).map(([city]) => city)
+    : CITIES.filter(c => c !== 'All Cities')
   const categoryOptions = CATEGORIES.filter(c => c !== 'All')
 
   const stageChips = [

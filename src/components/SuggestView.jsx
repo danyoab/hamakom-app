@@ -87,7 +87,7 @@ export default function SuggestView({ tx, font, onBack, initialCity = '' }) {
 
   return (
     <div dir={dir} style={{ minHeight:'100vh', background:'#F7F2E8', color:'#241E16', fontFamily:font }}>
-      <div style={{ background:'#FFFFFF', borderBottom:'1px solid #EBE2D0', padding:'16px 20px', display:'flex', alignItems:'center', gap:16 }}>
+      <div style={{ background:'#FFFFFF', borderBottom:'1px solid #EBE2D0', padding:'calc(16px + var(--hm-sat, 0px)) 20px 16px', display:'flex', alignItems:'center', gap:16 }}>
         <button onClick={onBack} style={{ background:'none',border:'none',color:'#C9A84C',cursor:'pointer',fontSize:13,fontFamily:'inherit',padding:0 }}>{tx.back}</button>
         <span style={{ fontSize:15, fontWeight:500 }}>{tx.suggestTitle}</span>
       </div>

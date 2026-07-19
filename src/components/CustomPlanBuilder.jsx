@@ -155,7 +155,7 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
         style={{
           background: 'linear-gradient(165deg,#F7F2E8 0%,#F1EAD9 100%)',
           borderBottom: `1px solid ${BORDER}`,
-          padding: '20px 20px 18px',
+          padding: 'calc(20px + var(--hm-sat, 0px)) 20px 18px',
         }}
       >
         <div style={{ maxWidth: 940, margin: '0 auto' }}>
@@ -250,6 +250,11 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
                 />
 
                 <div style={{ display: 'grid', gap: 10, marginTop: 14, maxHeight: 480, overflowY: 'auto' }}>
+                  {secondStopChoices.length === 0 ? (
+                    <div style={{ color: MUTED, fontSize: 13, padding: '20px 0', textAlign: 'center', lineHeight: 1.6 }}>
+                      {tx.noLocationsFound}
+                    </div>
+                  ) : null}
                   {secondStopChoices.map((location) => (
                     <SelectableLocationCard
                       key={location.id}

@@ -134,6 +134,13 @@ export function violatesFoodPairing(selectedStops, candidate, prevStop) {
   const heavyCount = (selectedStops || []).filter(isHeavyMeal).length + (cand.meal_weight === 'heavy' ? 1 : 0)
   if (heavyCount > 1) return true
   if (prevStop && foodClassOf(prevStop).is_food && cand.is_food && !cand.can_follow_dinner) return true
+  // Meal order must stay natural: a full dinner can't be added AFTER a
+  // dessert stop anywhere in the plan (dessert → walk → dinner reads wrong;
+  // dinner → dessert is the allowed direction).
+  if (
+    cand.meal_weight === 'heavy' &&
+    (selectedStops || []).some((s) => foodClassOf(s).food_type === 'dessert')
+  ) return true
   return false
 }
 

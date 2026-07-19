@@ -1,5 +1,6 @@
 import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
+import { registerSW } from 'virtual:pwa-register'
 import * as Sentry from '@sentry/react'
 import App from './App.jsx'
 
@@ -11,6 +12,8 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   })
 }
 
+registerSW({ immediate: true })
+
 class ErrorBoundary extends Component {
   state = { error: null }
   static getDerivedStateFromError(e) { return { error: e } }
@@ -19,10 +22,10 @@ class ErrorBoundary extends Component {
   }
   render() {
     if (this.state.error) return (
-      <div style={{ background: '#0D1117', color: '#E8DCC8', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Heebo', system-ui, sans-serif", padding: 40 }}>
+      <div style={{ background: '#F7F2E8', color: '#241E16', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Heebo', system-ui, sans-serif", padding: 40 }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 16 }}>המקום</div>
-          <p style={{ color: '#9CA3AF' }}>Something went wrong. Please refresh the page.</p>
+          <p style={{ color: '#6E6450' }}>Something went wrong. Please refresh the page.</p>
         </div>
       </div>
     )

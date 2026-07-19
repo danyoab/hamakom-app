@@ -11,6 +11,10 @@
       "backgroundColor": "#F7F2E8",
       "showSpinner": false,
       "androidScaleType": "CENTER_CROP"
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#F7F2E8"
     }
   }
 }

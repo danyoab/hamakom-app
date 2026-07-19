@@ -46,7 +46,7 @@ We do not use advertising networks, social trackers, or third-party analytics SD
     body: `Under Israeli Privacy Protection Law (5741-1981) and GDPR (where applicable), you have the right to:
 • Access the personal data we hold about you.
 • Correct inaccurate data.
-• Request deletion of your account and all associated data — use the "Delete Account" option in your Profile.
+• Request deletion of your account and all associated data — use the "Delete account & data" option in your Profile, or visit hamakom.app/delete-account.
 • Withdraw analytics consent at any time.
 • Object to processing of your personal data.
 
@@ -63,6 +63,28 @@ To exercise any of these rights, contact us at: privacy@hamakom.app`,
   {
     title: 'Changes to This Policy',
     body: `We may update this privacy policy from time to time. We will notify you of material changes by updating the "Last updated" date below. Continued use of the app after a policy change constitutes acceptance of the new policy.`,
+  },
+  {
+    title: 'App Store Data Safety (Google Play / Apple)',
+    body: `Summary for store listings — last reviewed July 2026:
+
+Data collected (optional unless noted):
+• Email address — account sign-in (optional; app works without an account for browsing).
+• App activity — quiz answers, saved plans/places, anonymous usage events (with consent).
+• Approximate location — only when you tap "Near me" on the map; never collected in the background.
+
+Data NOT collected:
+• Precise background location, contacts, photos, financial info, health data, or government IDs.
+
+Data sharing: We do not sell personal data. Infrastructure processors (Supabase, Vercel) store/host data under contract.
+
+Security: HTTPS, database row-level security, OAuth / magic-link auth.
+
+Deletion: In-app "Delete Account" removes personal data within 30 days.
+
+Children: Not directed at children under 13.
+
+Contact: privacy@hamakom.app`,
   },
   {
     title: 'Contact',
@@ -111,10 +133,32 @@ const SECTIONS_HE = [
     body: `על פי חוק הגנת הפרטיות הישראלי (תשמ"א-1981) ו-GDPR (במקרים רלוונטיים), יש לכם זכות:
 • לגשת לנתונים האישיים שאנחנו מחזיקים עליכם.
 • לתקן נתונים שגויים.
-• לבקש מחיקת החשבון וכל הנתונים הקשורים אליו — השתמשו באפשרות "מחק חשבון" בפרופיל.
+• לבקש מחיקת החשבון וכל הנתונים הקשורים אליו — השתמשו באפשרות "מחיקת חשבון ונתונים" בפרופיל או היכנסו ל-hamakom.app/delete-account.
 • לבטל הסכמה לאנליטיקה בכל עת.
 
 לכל שאלה או בקשה: privacy@hamakom.app`,
+  },
+  {
+    title: 'בטיחות נתונים לחנויות האפליקציות',
+    body: `סיכום לרישום ב-Google Play / App Store — עודכן יולי 2026:
+
+נתונים שנאספים (רובם אופציונליים):
+• אימייל — כניסה לחשבון (אופציונלי; האפליקציה עובדת גם בלי חשבון).
+• פעילות באפליקציה — תשובות שאלון, תוכניות/מקומות שמורים, אירועי שימוש אנונימיים (בהסכמה).
+• מיקום משוער — רק כשלוחצים "מקומות לידי" במפה; לא נאסף ברקע.
+
+לא נאסף:
+• מיקום מדויק ברקע, אנשי קשר, תמונות, פרטי תשלום, נתוני בריאות או מזהים ממשלתיים.
+
+שיתוף: לא מוכרים נתונים אישיים. Supabase ו-Vercel מעבדים נתונים תחת חוזה.
+
+אבטחה: HTTPS, הרשאות מסד נתונים, OAuth / קישור אימייל.
+
+מחיקה: "מחק חשבון" באפליקציה מוחק נתונים אישיים תוך 30 יום.
+
+ילדים: לא מיועד לילדים מתחת לגיל 13.
+
+יצירת קשר: privacy@hamakom.app`,
   },
   {
     title: 'יצירת קשר',
@@ -131,7 +175,7 @@ export default function PrivacyPage({ lang, font, onBack }) {
 
   return (
     <div dir={dir} style={{ minHeight: '100vh', background: APP_BG, color: APP_TEXT, fontFamily: font }}>
-      <div style={{ background: APP_PANEL, borderBottom: `1px solid ${APP_BORDER}`, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 100 }}>
+      <div style={{ background: APP_PANEL, borderBottom: `1px solid ${APP_BORDER}`, paddingTop: 'calc(16px + var(--hm-sat, 0px))', paddingBottom: 16, paddingLeft: 20, paddingRight: 20, display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 100 }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: APP_ACCENT, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}>
           {isHe ? '→ חזרה' : '← Back'}
         </button>

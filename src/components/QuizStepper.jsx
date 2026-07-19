@@ -122,12 +122,12 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
       style={{ minHeight: '100dvh', background: BG, color: TEXT, fontFamily: font, display: 'flex', flexDirection: 'column' }}
     >
       {/* Gold progress bar */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 3, background: '#E7DECB', zIndex: 100 }}>
+      <div style={{ position: 'fixed', top: 'var(--hm-sat, 0px)', left: 0, right: 0, height: 3, background: '#E7DECB', zIndex: 100 }}>
         <div style={{ height: '100%', width: `${pct}%`, background: `linear-gradient(90deg,${GOLD} 0%,#E0BE58 100%)`, transition: 'width 0.3s ease' }} />
       </div>
 
       {/* Nav row */}
-      <div style={{ padding: '22px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ padding: 'calc(22px + var(--hm-sat, 0px)) 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <button
           onClick={handleBack}
           style={{ color: '#5A5142', cursor: 'pointer', fontSize: 17, width: 38, height: 38, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, fontFamily: font, background: PANEL, border: `1px solid ${BORDER}` }}

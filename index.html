@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="HaMakom" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
       content="HaMakom — Date ideas for Jewish singles in Israel. Browse kosher-verified locations by city, date stage, and vibe."
@@ -29,6 +29,7 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://hamakom.app/og-image.png" />
+    <link rel="canonical" href="https://hamakom.app/" />
     <title>HaMakom · המקום</title>
     <script type="text/javascript">
       (function(c,l,a,r,i,t,y){
@@ -44,8 +45,37 @@
         padding: 0;
       }
 
+      /* Safe-area insets that work everywhere:
+         - Real browsers / modern Android WebViews resolve env(safe-area-inset-*).
+         - Capacitor's SystemBars plugin injects --safe-area-inset-* custom
+           properties on <html> when env() passthrough isn't available.
+         max() of both is therefore always the true inset (0 on desktop). */
+      :root {
+        --hm-sat: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+        --hm-sab: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+        --hm-sal: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+        --hm-sar: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+      }
+
+      html, body {
+        width: 100%;
+        /* The app never scrolls sideways; clip any decorative or fixed
+           element that miscalculates against an edge-to-edge viewport. */
+        overflow-x: clip;
+      }
+
       body {
         background: #f7f2e8;
+      }
+
+      /* Some Android WebViews measure 100vh larger than the true visible
+         area in edge-to-edge mode (includes space behind system bars),
+         pushing fixed-position children like the bottom nav below the
+         fold. 100dvh reflects the actual visible viewport; the plain vh
+         line above it is a fallback for engines that don't support dvh. */
+      .hm-app-shell {
+        min-height: 100vh;
+        min-height: 100dvh;
       }
 
       /* ---- Home page motion & micro-interactions ---- */

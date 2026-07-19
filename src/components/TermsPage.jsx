@@ -132,7 +132,7 @@ export default function TermsPage({ lang, font, onBack }) {
 
   return (
     <div dir={dir} style={{ minHeight: '100vh', background: APP_BG, color: APP_TEXT, fontFamily: font }}>
-      <div style={{ background: APP_PANEL, borderBottom: `1px solid ${APP_BORDER}`, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 100 }}>
+      <div style={{ background: APP_PANEL, borderBottom: `1px solid ${APP_BORDER}`, padding: 'calc(16px + var(--hm-sat, 0px)) 20px 16px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 100 }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: APP_ACCENT, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}>
           {isHe ? '→ חזרה' : '← Back'}
         </button>

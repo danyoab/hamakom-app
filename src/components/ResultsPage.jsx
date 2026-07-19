@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { getMapsUrl } from '../lib/constants'
 import { buildPlanIdentity, getPlanFitSummary } from '../lib/quiz'
+import { shareContent, sharePlanMessage } from '../lib/share'
 
 const PlanRouteMap = lazy(() => import('./PlanRouteMap'))
 
@@ -50,6 +51,53 @@ const ROLE_LABELS = {
   extension:  { en: 'Optional extension', he: 'תוספת אופציונלית' },
 }
 
+// ── Itinerary timing (client-side, best-effort) ─────────────────────────────
+// Turns "Best start: 5:30pm" + per-stop durations into approximate clock
+// times per stop, so the plan scans like a real evening: 5:30 → 6:20 → 7:10.
+// Every value is prefixed "≈" in the UI; if the start time can't be parsed
+// we silently fall back to showing durations only.
+const KIND_MINUTES = { food: 60, cafe: 40, dessert: 30, bar: 45, lounges: 45, winery: 45, outdoors: 35, activity: 60, culture: 60, other: 45 }
+
+function parseStartMinutes(plan) {
+  const m = /(\d{1,2}):(\d{2})\s*(am|pm)?/i.exec(plan.start_time_text_en || '')
+  if (!m) return null
+  let h = parseInt(m[1], 10)
+  const ap = (m[3] || '').toLowerCase()
+  if (ap === 'pm' && h < 12) h += 12
+  if (ap === 'am' && h === 12) h = 0
+  return h * 60 + parseInt(m[2], 10)
+}
+
+function stopMinutes(stop) {
+  if (stop.kind && KIND_MINUTES[stop.kind]) return KIND_MINUTES[stop.kind]
+  const t = stop.duration_text_en || ''
+  const hr = /(\d+(?:\.\d+)?)\s*hr/i.exec(t)
+  if (hr) return Math.round(parseFloat(hr[1]) * 60)
+  const range = /(\d+)\s*[–-]\s*(\d+)\s*min/i.exec(t)
+  if (range) return Math.round((Number(range[1]) + Number(range[2])) / 2)
+  const single = /(\d+)\s*min/i.exec(t)
+  if (single) return Number(single[1])
+  return 45
+}
+
+function walkMinutesBetween(a, b) {
+  if (a?.lat == null || a?.lng == null || b?.lat == null || b?.lng == null) return null
+  const rad = Math.PI / 180
+  const dLat = (b.lat - a.lat) * rad
+  const dLng = (b.lng - a.lng) * rad
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2
+  const km = 2 * 6371 * Math.asin(Math.sqrt(h))
+  return Math.max(1, Math.round(km * 12)) // ~12 min per km on foot
+}
+
+function formatClock(mins, isHe) {
+  const h24 = Math.floor(mins / 60) % 24
+  const mm = String(mins % 60).padStart(2, '0')
+  if (isHe) return `${h24}:${mm}`
+  const h12 = h24 % 12 || 12
+  return `${h12}:${mm}${h24 >= 12 ? 'pm' : 'am'}`
+}
+
 export default function ResultsPage({
   lang,
   font,
@@ -84,16 +132,25 @@ export default function ResultsPage({
   const optionalStops = isShortPlan ? plan.stops.slice(2) : []
   const firstStopMaps = useMemo(() => getMapsUrl(plan.stops?.[0]?.maps_query), [plan])
 
+  // Approximate clock time per stop + walking time between stops, so the
+  // itinerary scans as a real evening instead of a list of paragraphs.
+  const itinerary = useMemo(() => {
+    const initial = { time: parseStartMinutes(plan), rows: [] }
+    return primaryStops.reduce((state, stop, i) => {
+      const walk = i > 0 ? walkMinutesBetween(primaryStops[i - 1], stop) : null
+      const arrival = state.time != null ? state.time + (walk || 0) : null
+      const timeLabel = arrival != null ? formatClock(arrival, isHe) : null
+      return {
+        time: arrival != null ? arrival + stopMinutes(stop) : null,
+        rows: [...state.rows, { timeLabel, walk }],
+      }
+    }, initial).rows
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan, isShortPlan, isHe])
+
   const handleShare = async () => {
-    const stopNames = (plan.stops || []).slice(0, 3)
-      .map(s => isHe ? s.name_he : s.name_en).filter(Boolean)
-    const stopsLine = stopNames.join(' → ') || plan.city
-    const message = isHe
-      ? `✨ תוכנית ערב מ-HaMakom:\n\n🌟 ${text.title}\n📍 ${plan.city} · ${text.duration || ''}\n\n${stopsLine}\n\n💛 תכננו את הדייט שלכם: hamakom.app`
-      : `✨ Date night from HaMakom:\n\n🌟 ${text.title}\n📍 ${plan.city} · ${text.duration || ''}\n\n${stopsLine}\n\n💛 Plan yours: hamakom.app`
     try {
-      if (navigator.share) await navigator.share({ title: text.title, text: message })
-      else window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
+      await shareContent(sharePlanMessage(plan, lang))
       onSharePlan?.()
     } catch { /* cancelled */ }
   }
@@ -102,7 +159,7 @@ export default function ResultsPage({
     <div dir={dir} style={{ minHeight: '100vh', background: BG, color: TEXT, fontFamily: font }}>
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <div style={{ background: 'linear-gradient(165deg,#F7F2E8 0%,#F1EAD9 100%)', padding: '28px 22px 22px', borderBottom: `1px solid ${BORDER}` }}>
+      <div style={{ background: 'linear-gradient(165deg,#F7F2E8 0%,#F1EAD9 100%)', padding: 'calc(28px + var(--hm-sat, 0px)) 22px 22px', borderBottom: `1px solid ${BORDER}` }}>
         <div style={{ maxWidth: 540, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', color: ACCENT, textTransform: 'uppercase' }}>
@@ -110,7 +167,9 @@ export default function ResultsPage({
             </div>
             {planIndex === 0 ? (
               <span style={{ fontSize: 11, fontWeight: 700, color: '#4F7144', background: '#E9F0E4', borderRadius: 999, padding: '4px 9px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {isHe ? 'התאמה חזקה' : 'Strong match'}
+                {plan._lowConfidence
+                  ? (isHe ? 'הכי קרוב שמצאנו' : 'Closest match')
+                  : (isHe ? 'ההתאמה המובילה' : 'Top match')}
               </span>
             ) : plan.city ? (
               <span style={{ fontSize: 11, fontWeight: 700, color: ACCENT, background: '#FBF4E1', borderRadius: 999, padding: '4px 9px', whiteSpace: 'nowrap', flexShrink: 0 }}>
@@ -119,19 +178,20 @@ export default function ResultsPage({
             ) : null}
           </div>
 
-          <h1 style={{ fontFamily: SERIF, fontSize: 'clamp(26px, 7vw, 34px)', lineHeight: 1.08, margin: '0 0 12px', fontWeight: 600, letterSpacing: '-0.01em' }}>
+          <h1 className="hm-reveal" style={{ animationDelay: '0.05s', fontFamily: SERIF, fontSize: 'clamp(26px, 7vw, 34px)', lineHeight: 1.08, margin: '0 0 12px', fontWeight: 600, letterSpacing: '-0.01em' }}>
             {text.title}
           </h1>
 
-          {/* Chips row */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-            {text.startTime ? <Chip>{text.startTime}</Chip> : null}
+          {/* Chips row — the at-a-glance facts */}
+          <div className="hm-reveal" style={{ animationDelay: '0.14s', display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+            {text.startTime ? <Chip>🕐 {text.startTime}</Chip> : null}
             {text.duration  ? <Chip>{text.duration}</Chip>  : null}
+            <Chip>{primaryStops.length} {isHe ? 'עצירות' : 'stops'}</Chip>
             {text.budget    ? <Chip>{text.budget}</Chip>    : null}
             {plan.city      ? <Chip>📍 {plan.city}</Chip>  : null}
           </div>
 
-          <p style={{ margin: 0, fontSize: 14, color: SOFT, lineHeight: 1.6, fontStyle: 'italic' }}>
+          <p className="hm-reveal" style={{ animationDelay: '0.2s', margin: 0, fontSize: 14, color: SOFT, lineHeight: 1.6, fontStyle: 'italic' }}>
             {fitSummary}
           </p>
 
@@ -187,34 +247,30 @@ export default function ResultsPage({
 
         {/* ── Route map (only when stops have coords) ──────────── */}
         {primaryStops.filter(s => s.lat && s.lng).length >= 2 ? (
-          <div style={{ marginBottom: 12, borderRadius: 16, overflow: 'hidden', height: 240, border: `1px solid ${BORDER}` }}>
+          <div className="hm-reveal" style={{ animationDelay: '0.26s', marginBottom: 12, borderRadius: 16, overflow: 'hidden', height: 240, border: `1px solid ${BORDER}` }}>
             <Suspense fallback={<div style={{ height: '100%', background: '#EDE7D9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>Loading map…</div>}>
               <PlanRouteMap stops={primaryStops.map(s => ({ id: s.maps_query || s.name_en, name: s.name_en, name_he: s.name_he, lat: s.lat, lng: s.lng, city: plan.city }))} lang={lang} />
             </Suspense>
           </div>
         ) : null}
 
-        {/* ── The night unfolds (the plan itself) ─────── */}
-        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18, marginBottom: 12 }}>
+        {/* ── The night unfolds (the plan itself, stops first) ─────── */}
+        <div className="hm-reveal" style={{ animationDelay: '0.34s', background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18, marginBottom: 12 }}>
           <div style={{ fontSize: 10, letterSpacing: '0.16em', color: MUTED, textTransform: 'uppercase', marginBottom: 14 }}>
             {isHe ? 'איך הערב נבנה' : 'How the night unfolds'}
           </div>
 
-          {text.routeReason ? (
-            <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start', background: '#FBF4E1', border: `1px solid #EBDFC0`, borderRadius: 12, padding: '11px 13px', marginBottom: 16 }}>
-              <span style={{ fontSize: 13, flexShrink: 0, lineHeight: 1.4 }}>✨</span>
-              <div>
-                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', color: ACCENT, textTransform: 'uppercase', marginBottom: 3 }}>
-                  {isHe ? 'למה המסלול הזה עובד' : 'Why this route works'}
-                </div>
-                <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: SOFT }}>{text.routeReason}</p>
-              </div>
-            </div>
-          ) : null}
-
           <div style={{ display: 'grid', gap: 10 }}>
             {primaryStops.map((stop, i) => (
-              <StopCard key={`${plan.id}-${i}`} stop={stop} index={i} lang={lang} total={primaryStops.length} />
+              <StopCard
+                key={`${plan.id}-${i}`}
+                stop={stop}
+                index={i}
+                lang={lang}
+                total={primaryStops.length}
+                timeLabel={itinerary[i]?.timeLabel}
+                walkToNext={itinerary[i + 1]?.walk ?? null}
+              />
             ))}
           </div>
 
@@ -230,20 +286,23 @@ export default function ResultsPage({
               </div>
             </div>
           ) : null}
+
+          {text.routeReason ? (
+            <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start', background: '#FBF4E1', border: `1px solid #EBDFC0`, borderRadius: 12, padding: '11px 13px', marginTop: 16 }}>
+              <span style={{ fontSize: 13, flexShrink: 0, lineHeight: 1.4 }}>✨</span>
+              <div>
+                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', color: ACCENT, textTransform: 'uppercase', marginBottom: 3 }}>
+                  {isHe ? 'למה המסלול הזה עובד' : 'Why this route works'}
+                </div>
+                <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: SOFT }}>{text.routeReason}</p>
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        {/* ── Verification disclaimer ───────────────────────────── */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 13px', background: '#FBF7EE', border: `1px solid ${BORDER}`, borderRadius: 10, marginBottom: 12 }}>
-          <span style={{ fontSize: 13, lineHeight: 1.4, flexShrink: 0 }}>ℹ️</span>
-          <p style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
-            {isHe
-              ? 'אנחנו מוודאים שהמקומות פעילים, אבל שעות הפעילות עשויות להשתנות. בדקו בקישור למפה או התקשרו לפני שיוצאים.'
-              : 'We verify venues are active, but hours can change. Please check the map link or call before going.'}
-          </p>
-        </div>
-
-        {/* ── Narrative ─────────────────────────────────────────── */}
-        {text.narrative ? (
+        {/* ── Narrative — hand-written curated copy only; generated
+               narratives just restate the hero fit summary ─────── */}
+        {text.narrative && plan.source_type !== 'generated-location' ? (
           <div style={{ padding: '14px 16px', background: '#FBF7EE', border: `1px solid ${BORDER}`, borderRadius: 12, marginBottom: 12 }}>
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1.65, color: '#6E6450', fontStyle: 'italic' }}>
               {text.narrative}
@@ -251,8 +310,8 @@ export default function ResultsPage({
           </div>
         ) : null}
 
-        {/* ── Primary CTA (AFTER plan is visible) ──────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 18 }}>
+        {/* ── Primary CTA (right after the plan) ───────────────── */}
+        <div className="hm-reveal" style={{ animationDelay: '0.44s', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
           <button
             onClick={onSavePlan}
             style={{
@@ -290,6 +349,16 @@ export default function ResultsPage({
               {isHe ? 'פתח במפות' : 'Open in Maps'} →
             </a>
           ) : null}
+        </div>
+
+        {/* ── Verification disclaimer (fine print, after the actions) ── */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 13px', background: '#FBF7EE', border: `1px solid ${BORDER}`, borderRadius: 10, marginBottom: 18 }}>
+          <span style={{ fontSize: 13, lineHeight: 1.4, flexShrink: 0 }}>ℹ️</span>
+          <p style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
+            {isHe
+              ? 'אנחנו מוודאים שהמקומות פעילים, אבל שעות הפעילות עשויות להשתנות. בדקו בקישור למפה או התקשרו לפני שיוצאים.'
+              : 'We verify venues are active, but hours can change. Please check the map link or call before going.'}
+          </p>
         </div>
 
         {/* ── Backup options ────────────────────────────────────── */}
@@ -371,7 +440,7 @@ function Chip({ children }) {
   )
 }
 
-function StopCard({ stop, index, lang, total }) {
+function StopCard({ stop, index, lang, total, timeLabel, walkToNext }) {
   const isHe = lang === 'he'
   const title       = isHe ? stop.name_he        : stop.name_en
   const instruction = isHe ? stop.instruction_he  : stop.instruction_en
@@ -383,7 +452,7 @@ function StopCard({ stop, index, lang, total }) {
   const isExtension = stop.role === 'extension'
 
   return (
-    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+    <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
       {/* Number + connector */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
         <div style={{
@@ -398,16 +467,20 @@ function StopCard({ stop, index, lang, total }) {
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, minWidth: 0, paddingBottom: isLast ? 0 : 14 }}>
-        {/* Role + time row */}
-        {(roleLabel || duration) ? (
+      <div style={{ flex: 1, minWidth: 0, paddingBottom: isLast ? 0 : 6 }}>
+        {/* Role + time row: clock time anchors the scan; duration is the fallback */}
+        {(roleLabel || timeLabel || duration) ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 3 }}>
             {roleLabel ? (
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: isExtension ? MUTED : ACCENT }}>
                 {roleLabel}
               </span>
             ) : <span />}
-            {duration ? (
+            {timeLabel ? (
+              <span style={{ fontSize: 12, fontWeight: 700, color: ACCENT, background: '#FBF4E1', border: '1px solid #EBDFC0', borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap' }}>
+                ≈{timeLabel}
+              </span>
+            ) : duration ? (
               <span style={{ fontSize: 11, color: MUTED, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span aria-hidden style={{ opacity: 0.7 }}>◷</span>{duration}
               </span>
@@ -415,7 +488,12 @@ function StopCard({ stop, index, lang, total }) {
           </div>
         ) : null}
 
-        <div style={{ fontFamily: SERIF, fontSize: 17.5, fontWeight: 600, marginBottom: 4, color: TEXT }}>{title}</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+          <span style={{ fontFamily: SERIF, fontSize: 17.5, fontWeight: 600, color: TEXT }}>{title}</span>
+          {timeLabel && duration ? (
+            <span style={{ fontSize: 11, color: MUTED, whiteSpace: 'nowrap', flexShrink: 0 }}>◷ {duration}</span>
+          ) : null}
+        </div>
         <div style={{ fontSize: 13.5, lineHeight: 1.55, color: '#6E6450', marginBottom: orderTip ? 6 : 0 }}>{instruction}</div>
         {orderTip ? (
           <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, background: '#FAF6EC', borderRadius: 10, padding: '9px 12px', marginTop: 6, display: 'flex', gap: 7 }}>
@@ -427,6 +505,16 @@ function StopCard({ stop, index, lang, total }) {
           <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8, fontSize: 12, color: ACCENT, textDecoration: 'none' }}>
             {isHe ? 'פתח במפות ←' : '→ Open in Maps'}
           </a>
+        ) : null}
+
+        {/* Walking connector to the next stop */}
+        {!isLast && walkToNext != null ? (
+          <div style={{ marginTop: 10, marginBottom: 4, fontSize: 11.5, color: '#A99A85', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span aria-hidden>🚶</span>
+            {isHe ? `~${walkToNext} דק׳ הליכה לתחנה הבאה` : `~${walkToNext} min walk to the next stop`}
+          </div>
+        ) : !isLast ? (
+          <div style={{ height: 8 }} />
         ) : null}
       </div>
     </div>

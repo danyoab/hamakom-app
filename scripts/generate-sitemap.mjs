@@ -27,7 +27,10 @@ if (url && key) {
 
 const staticUrls = [
   { loc: `${SITE}/`, changefreq: 'weekly', priority: '1.0' },
-  { loc: `${SITE}/#explore`, changefreq: 'daily', priority: '0.9' },
+  { loc: `${SITE}/privacy`, changefreq: 'monthly', priority: '0.5' },
+  { loc: `${SITE}/terms`, changefreq: 'monthly', priority: '0.5' },
+  { loc: `${SITE}/delete-account`, changefreq: 'yearly', priority: '0.3' },
+  { loc: `${SITE}/for-businesses`, changefreq: 'monthly', priority: '0.8' },
 ]
 
 const locationUrls = locations.map((l) => ({

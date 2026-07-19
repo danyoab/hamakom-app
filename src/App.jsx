@@ -1,15 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { t } from './lib/translations'
 import { useLocations } from './hooks/useLocations'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useSyncSaves } from './hooks/useSyncSaves'
+import { useViewportBottomGap } from './hooks/useViewportBottomGap'
 import { supabase } from './lib/supabase'
 import { getAuthRedirectUrl } from './lib/authRedirect'
 import { isNativeApp } from './lib/native'
 import { initNativeAuth, signInWithGoogleNative } from './lib/nativeAuth'
+import { initNativeShell, setNativeBackHandler } from './lib/nativeShell'
+import { parseAppRoute } from './lib/routes'
+import { shareContent, sharePlanMessage } from './lib/share'
 import { DATE_PLANS } from './data/datePlans'
 import { QUIZ_CITIES } from './lib/constants'
 import { isAdminUser } from './lib/appConfig'
+import { locationCanonical, siteOrigin } from './lib/seo'
 import {
   createRecommendationImpression,
   grantAnalyticsConsent,
@@ -22,6 +27,7 @@ import {
 import { getRecommendedLocations } from './lib/locationRecommendations'
 import { getSmartMatchedPlans, recordPlanImpression } from './lib/planRecommendations'
 import { isRealVenueRow, isOperational, sameCity, foodClassOf } from './lib/planGates'
+import { resolveCuratedPlans, curatedPlanSafe } from './lib/curatedResolver'
 import {
   clearAnswersFromSession,
   clearPendingSaveFromSession,
@@ -42,6 +48,9 @@ import ResultsPage from './components/ResultsPage'
 import PlanPreviewPage from './components/PlanPreviewPage'
 import CustomPlanBuilder from './components/CustomPlanBuilder'
 import PrivacyPage from './components/PrivacyPage'
+import DeleteAccountPage from './components/DeleteAccountPage'
+import OfflineBanner from './components/OfflineBanner'
+import InstallPrompt from './components/InstallPrompt'
 import TermsPage from './components/TermsPage'
 import BusinessesPage from './components/BusinessesPage'
 import FeedbackModal from './components/FeedbackModal'
@@ -151,12 +160,14 @@ export default function App() {
   const [browseSearch, setBrowseSearch] = useState('')
   const [browseFilters, setBrowseFilters] = useState(INITIAL_FILTERS)
   const [saveGateItem, setSaveGateItem] = useState(null)
+  const [previewPlan, setPreviewPlan] = useState(null)
   const [exploreExpanded, setExploreExpanded] = useState(false)
   const [currentRecommendationId, setCurrentRecommendationId] = useState(null)
   const [showConsentBanner, setShowConsentBanner] = useState(() => !hasAnalyticsConsent())
   const [analyticsEnabled, setAnalyticsEnabled] = useState(() => hasAnalyticsConsent())
   const [feedbackNudgePlanId, setFeedbackNudgePlanId] = useState(null)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [businessLeadContext, setBusinessLeadContext] = useState({ source: 'direct_url', location: null })
 
   const tx = t[lang]
   const font = "'Hanken Grotesk','Heebo',system-ui,-apple-system,sans-serif"
@@ -189,12 +200,17 @@ export default function App() {
   // near-identical plans). Generated plans are built per-focus, so each carries
   // real focus_tags for the tab labels. Empty => the single-spot/honest
   // fallback screen takes over.
+  // Curated plans with stops linked to real DB venues where a confident match
+  // exists — lets verified curated plans pass the same hard gates as generated
+  // plans, and flags plans whose venues have since closed.
+  const resolvedDatePlans = useMemo(() => resolveCuratedPlans(datePlans, locations), [datePlans, locations])
+
   const matchedPlans = useMemo(() => {
     if (!quizAnswers) return []
     const opts = { feedbackByItem: dateFeedback, savedPlaceIds, clickedLocationCounts }
     const FOCI = ['outdoors', 'food-drink', 'atmosphere', 'activity']
     const perVibe = FOCI.flatMap((focus) =>
-      getSmartMatchedPlans(datePlans, locations, { ...quizAnswers, focus }, 4, opts),
+      getSmartMatchedPlans(resolvedDatePlans, locations, { ...quizAnswers, focus }, 4, opts),
     )
     if (!perVibe.length) return []
     perVibe.sort((a, b) => (b._score || 0) - (a._score || 0))
@@ -212,7 +228,7 @@ export default function App() {
       out.push(plan)
     }
     return out
-  }, [clickedLocationCounts, dateFeedback, datePlans, locations, quizAnswers, savedPlaceIds])
+  }, [clickedLocationCounts, dateFeedback, resolvedDatePlans, locations, quizAnswers, savedPlaceIds])
 
   useEffect(() => {
     if (!quizAnswers || !matchedPlans.length) return
@@ -221,7 +237,14 @@ export default function App() {
 
   const currentPlan = matchedPlans[resultIndex] || null
   const alternatePlan = matchedPlans.find((_, index) => index !== resultIndex) || null
-  const tonightPlan = useMemo(() => getTonightPlan(datePlans), [datePlans])
+  // Tonight's Pick / Surprise Me pool: exclude any curated plan with a stop
+  // that resolved to a venue we KNOW is closed. Falls back to the full list
+  // if verification empties the pool (e.g. locations still loading).
+  const tonightPool = useMemo(() => {
+    const safe = resolvedDatePlans.filter(curatedPlanSafe)
+    return safe.length ? safe : resolvedDatePlans
+  }, [resolvedDatePlans])
+  const tonightPlan = useMemo(() => getTonightPlan(tonightPool), [tonightPool])
   const savedPlans = useMemo(() => datePlans.filter((plan) => savedPlanIds.includes(plan.id)), [datePlans, savedPlanIds])
   const savedPlaces = useMemo(() => locations.filter((location) => savedPlaceIds.includes(location.id)), [locations, savedPlaceIds])
   const savedCount = savedPlans.length + savedPlaces.length
@@ -276,7 +299,7 @@ export default function App() {
     if (city && city !== 'flexible') {
       for (const f of FOCI) {
         if (f === quizAnswers.focus) continue
-        const p = getSmartMatchedPlans(datePlans, locations, { ...quizAnswers, focus: f }, 1, opts)[0]
+        const p = getSmartMatchedPlans(resolvedDatePlans, locations, { ...quizAnswers, focus: f }, 1, opts)[0]
         if (p && sameCity(p.city, city)) vibes.push(f)
       }
     }
@@ -284,11 +307,11 @@ export default function App() {
     for (const c of availablePlanCities) {
       if (!c || c === 'flexible' || (city && sameCity(c, city))) continue
       if (cities.length >= 3) break
-      const p = getSmartMatchedPlans(datePlans, locations, { ...quizAnswers, city: c }, 1, opts)[0]
+      const p = getSmartMatchedPlans(resolvedDatePlans, locations, { ...quizAnswers, city: c }, 1, opts)[0]
       if (p && sameCity(p.city, c)) cities.push(c)
     }
     return { vibes, cities }
-  }, [availablePlanCities, clickedLocationCounts, datePlans, dateFeedback, locations, matchedPlans.length, quizAnswers, savedPlaceIds])
+  }, [availablePlanCities, clickedLocationCounts, resolvedDatePlans, dateFeedback, locations, matchedPlans.length, quizAnswers, savedPlaceIds])
 
   const curatedExploreSections = useMemo(
     () => [
@@ -399,10 +422,14 @@ export default function App() {
       .filter((location) => location.is_partner && !seenPartnerImpressions.current.has(location.id))
       .map((location) => location.id)
     if (freshIds.length === 0) return
-    freshIds.forEach((id) => seenPartnerImpressions.current.add(id))
-    void trackEvent('partner_impression', {
-      userId: authUser?.id,
-      properties: { location_ids: freshIds, source: 'explore' },
+    freshIds.forEach((id) => {
+      seenPartnerImpressions.current.add(id)
+      void trackEvent('partner_impression', {
+        userId: authUser?.id,
+        itemType: 'place',
+        itemId: id,
+        properties: { source: 'explore' },
+      })
     })
   }, [authUser?.id, filteredLocations, tab])
 
@@ -479,17 +506,25 @@ export default function App() {
     const base = 'HaMakom · המקום'
     let title = base
     let desc = 'Date ideas for Jewish singles in Israel.'
+    let canonical = `${siteOrigin()}/`
 
     if (overlay === 'detail' && selectedLocation) {
       title = `${selectedLocation.name} · HaMakom`
       desc = selectedLocation.description || desc
+      canonical = locationCanonical(selectedLocation)
     } else if ((overlay === 'quiz-results' || overlay === 'results') && currentPlan) {
       title = `${currentPlan.title_en} · HaMakom`
       desc = currentPlan.narrative_en?.slice(0, 140) || desc
     } else if (overlay === 'privacy') {
       title = 'Privacy Policy · HaMakom'
+      canonical = `${siteOrigin()}/privacy`
     } else if (overlay === 'terms') {
       title = 'Terms of Service · HaMakom'
+      canonical = `${siteOrigin()}/terms`
+    } else if (overlay === 'businesses') {
+      title = 'Partner with HaMakom · Reach Religious Daters'
+      desc = 'List your venue on HaMakom and reach religious couples actively deciding where to go on a date.'
+      canonical = `${siteOrigin()}/for-businesses`
     }
 
     document.title = title
@@ -500,7 +535,15 @@ export default function App() {
     const ogDesc = document.querySelector('meta[property="og:description"]')
     if (ogDesc) ogDesc.setAttribute('content', desc)
     const ogUrl = document.querySelector('meta[property="og:url"]')
-    if (ogUrl) ogUrl.setAttribute('content', window.location.href)
+    if (ogUrl) ogUrl.setAttribute('content', canonical)
+
+    let canonicalLink = document.querySelector('link[rel="canonical"]')
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link')
+      canonicalLink.rel = 'canonical'
+      document.head.appendChild(canonicalLink)
+    }
+    canonicalLink.href = canonical
 
     // JSON-LD structured data for location detail pages
     let ldScript = document.getElementById('ld-json')
@@ -521,61 +564,125 @@ export default function App() {
           addressLocality: selectedLocation.city,
           addressCountry: 'IL',
         },
-        url: window.location.href,
+        url: canonical,
+        ...(selectedLocation.image_url ? { image: selectedLocation.image_url } : {}),
       })
     } else if (ldScript) {
       ldScript.remove()
     }
   }, [overlay, selectedLocation, currentPlan])
 
-  // ── Shared deep links ───────────────────────────────────────────────────
-  // A shared /location/<slug> URL must open the place directly (no login, no
-  // dead-end on the homepage). We resolve it once locations have loaded, and
-  // keep browser back/forward in sync via popstate. Only public, approved
-  // location data is exposed — no private user data is reachable by URL.
-  const deepLinkHandled = useRef(false)
-  useEffect(() => {
-    if (deepLinkHandled.current || loading || !locations.length) return
-    deepLinkHandled.current = true
-    const match = window.location.pathname.match(/^\/location\/([^/]+)\/?$/)
-    if (!match) return
-    const key = decodeURIComponent(match[1])
-    const loc = locations.find((l) => l.slug === key || String(l.id) === key)
-    if (!loc) {
-      // Unknown/stale slug: clean the URL so the user lands on a usable home.
-      window.history.replaceState({}, '', '/')
+  const openRoute = useCallback((route) => {
+    if (!route) return
+    if (route.type === 'location') {
+      const loc = locations.find((l) => l.slug === route.key || String(l.id) === route.key)
+      if (!loc) {
+        window.history.replaceState({}, '', '/')
+        return
+      }
+      setDetailReturnOverlay(null)
+      setSelectedLocation(loc)
+      setOverlay('detail')
+      void trackEvent('location_detail_viewed', {
+        userId: authUser?.id,
+        itemType: 'place',
+        itemId: loc.id,
+        properties: { source: 'deep-link' },
+      })
       return
     }
-    setDetailReturnOverlay(null)
-    setSelectedLocation(loc)
-    setOverlay('detail')
-    void trackEvent('location_detail_viewed', {
-      userId: authUser?.id,
-      itemType: 'place',
-      itemId: loc.id,
-      properties: { source: 'deep-link' },
+    if (route.type === 'privacy') {
+      setOverlay('privacy')
+      return
+    }
+    if (route.type === 'terms') {
+      setOverlay('terms')
+      return
+    }
+    if (route.type === 'delete-account') {
+      setOverlay('delete-account')
+      return
+    }
+    if (route.type === 'businesses') {
+      setBusinessLeadContext({ source: 'direct_url', location: null })
+      setOverlay('businesses')
+    }
+  }, [authUser?.id, locations])
+
+  const handleAppBack = useCallback(() => {
+    if (overlay === 'detail') {
+      setOverlay(detailReturnOverlay)
+      setSelectedLocation(null)
+      setDetailReturnOverlay(null)
+      window.history.pushState({}, '', '/')
+      return true
+    }
+    if (overlay === 'save-gate' && saveGateItem) {
+      clearPendingSaveFromSession()
+      setOverlay(saveGateItem.returnOverlay ?? null)
+      setSaveGateItem(null)
+      return true
+    }
+    if (overlay === 'suggest') {
+      setSuggestPrefillCity('')
+      setOverlay(null)
+      return true
+    }
+    if (overlay === 'businesses' || overlay === 'privacy' || overlay === 'terms' || overlay === 'delete-account') {
+      window.history.pushState({}, '', '/')
+      setOverlay(null)
+      return true
+    }
+    if (overlay) {
+      setOverlay(null)
+      return true
+    }
+    if (tab !== 'home') {
+      setTab('home')
+      setOverlay(null)
+      setSelectedLocation(null)
+      setDetailReturnOverlay(null)
+      return true
+    }
+    return false
+  }, [overlay, detailReturnOverlay, saveGateItem, tab])
+
+  useEffect(() => {
+    setNativeBackHandler(handleAppBack)
+  }, [handleAppBack])
+
+  useEffect(() => {
+    const disposeNativeShell = initNativeShell({
+      onRoute: (path) => openRoute(parseAppRoute(path)),
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, locations])
+    return disposeNativeShell
+  }, [openRoute])
+
+  // ── Shared deep links ───────────────────────────────────────────────────
+  // /location/<slug>, /privacy, and /terms open directly (no login required).
+  const deepLinkHandled = useRef(false)
+  useEffect(() => {
+    if (deepLinkHandled.current || loading) return
+    const route = parseAppRoute(window.location.pathname)
+    if (!route) return
+    if (route.type === 'location' && !locations.length) return
+    deepLinkHandled.current = true
+    openRoute(route)
+  }, [loading, locations, openRoute])
 
   useEffect(() => {
     const onPop = () => {
-      const match = window.location.pathname.match(/^\/location\/([^/]+)\/?$/)
-      if (match) {
-        const key = decodeURIComponent(match[1])
-        const loc = locations.find((l) => l.slug === key || String(l.id) === key)
-        if (loc) {
-          setSelectedLocation(loc)
-          setOverlay('detail')
-          return
-        }
+      const route = parseAppRoute(window.location.pathname)
+      if (route) {
+        openRoute(route)
+        return
       }
-      setOverlay((cur) => (cur === 'detail' ? null : cur))
+      setOverlay((cur) => (cur === 'detail' || cur === 'privacy' || cur === 'terms' || cur === 'delete-account' || cur === 'businesses' ? null : cur))
       setSelectedLocation(null)
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
-  }, [locations])
+  }, [openRoute])
 
   // ── Beta funnel analytics ───────────────────────────────────────────────
   // Which result screen is showing. Drives the funnel events without firing on
@@ -833,12 +940,34 @@ export default function App() {
   }
 
   const openPlanPreview = () => {
+    setPreviewPlan(null)
     setOverlay('plan-preview')
   }
 
   const openCustomPlanBuilder = () => {
     setOverlay('build-plan')
   }
+
+  const trackBusinessCtaViewed = useCallback((source, location = null) => {
+    void trackEvent('business_cta_viewed', {
+      userId: authUser?.id,
+      itemType: location ? 'place' : null,
+      itemId: location?.id ?? null,
+      properties: { source },
+    })
+  }, [authUser?.id])
+
+  const openBusinesses = useCallback((source = 'direct_url', location = null) => {
+    void trackEvent(location ? 'listing_claim_started' : 'business_cta_clicked', {
+      userId: authUser?.id,
+      itemType: location ? 'place' : null,
+      itemId: location?.id ?? null,
+      properties: { source },
+    })
+    setBusinessLeadContext({ source, location })
+    window.history.pushState({}, '', '/for-businesses')
+    setOverlay('businesses')
+  }, [authUser?.id])
 
   if (overlay === 'quiz') {
     return <QuizStepper lang={lang} font={font} cityOptions={availablePlanCities} onComplete={handleQuizComplete} onBack={() => setOverlay(null)} />
@@ -867,6 +996,20 @@ export default function App() {
           itemType: 'place',
           itemId: loc.id,
         })}
+        onPhone={(loc) => void trackEvent('partner_phone_clicked', {
+          userId: authUser?.id,
+          itemType: 'place',
+          itemId: loc.id,
+          properties: { is_partner: Boolean(loc.is_partner) },
+        })}
+        onShare={(loc) => void trackEvent('venue_shared', {
+          userId: authUser?.id,
+          itemType: 'place',
+          itemId: loc.id,
+          properties: { is_partner: Boolean(loc.is_partner) },
+        })}
+        onClaim={(loc) => openBusinesses('venue_detail_claim', loc)}
+        onClaimViewed={(loc) => trackBusinessCtaViewed('venue_detail_claim', loc)}
         onBack={() => {
           setOverlay(detailReturnOverlay)
           setSelectedLocation(null)
@@ -882,7 +1025,7 @@ export default function App() {
   }
 
   if (overlay === 'privacy') {
-    return <PrivacyPage lang={lang} font={font} onBack={() => setOverlay(null)} />
+    return <PrivacyPage lang={lang} font={font} onBack={() => { window.history.pushState({}, '', '/'); setOverlay(null) }} />
   }
 
   if (overlay === 'businesses') {
@@ -890,14 +1033,25 @@ export default function App() {
       <BusinessesPage
         tx={tx}
         font={font}
-        onBack={() => setOverlay(null)}
-        onSubmitted={() => void trackEvent('partner_inquiry_submitted', { userId: authUser?.id })}
+        source={businessLeadContext.source}
+        initialVenue={businessLeadContext.location}
+        onBack={() => { window.history.pushState({}, '', '/'); setOverlay(null) }}
+        onEvent={(eventName, properties = {}) => void trackEvent(eventName, {
+          userId: authUser?.id,
+          itemType: businessLeadContext.location ? 'place' : null,
+          itemId: businessLeadContext.location?.id ?? null,
+          properties: { source: businessLeadContext.source, ...properties },
+        })}
       />
     )
   }
 
   if (overlay === 'terms') {
-    return <TermsPage lang={lang} font={font} onBack={() => setOverlay(null)} />
+    return <TermsPage lang={lang} font={font} onBack={() => { window.history.pushState({}, '', '/'); setOverlay(null) }} />
+  }
+
+  if (overlay === 'delete-account') {
+    return <DeleteAccountPage lang={lang} font={font} onBack={() => { window.history.pushState({}, '', '/'); setOverlay(null) }} />
   }
 
   if (overlay === 'admin') {
@@ -918,14 +1072,14 @@ export default function App() {
     )
   }
 
-  if (overlay === 'plan-preview' && tonightPlan) {
+  if (overlay === 'plan-preview' && (previewPlan || tonightPlan)) {
     return (
       <PlanPreviewPage
         lang={lang}
         font={font}
-        plan={tonightPlan}
+        plan={previewPlan || tonightPlan}
         title={tx.tonightsPick}
-        onBack={() => setOverlay(null)}
+        onBack={() => { setPreviewPlan(null); setOverlay(null) }}
         onPlanMyOwnDate={openQuiz}
       />
     )
@@ -1190,10 +1344,12 @@ export default function App() {
   }
 
   return (
-    <div dir={tx.dir} style={{ minHeight: '100vh', background: APP_BG, color: APP_TEXT, fontFamily: font }}>
+    <div className="hm-app-shell" dir={tx.dir} style={{ background: APP_BG, color: APP_TEXT, fontFamily: font }}>
+      <OfflineBanner lang={lang} />
+      <InstallPrompt lang={lang} />
       <div
+        className="hm-app-shell"
         style={{
-          minHeight: '100vh',
           paddingBottom: NAV_HEIGHT + 20,
           display: 'flex',
           flexDirection: 'column',
@@ -1233,15 +1389,18 @@ export default function App() {
               error={locError}
               onStartQuiz={openQuiz}
               onSurpriseMe={() => {
-                const cityKeys = [...new Set(datePlans.map((p) => p.city).filter(Boolean))]
+                const cityKeys = [...new Set(tonightPool.map((p) => p.city).filter(Boolean))]
                 const randomCity = cityKeys[Math.floor(Math.random() * cityKeys.length)] || 'flexible'
-                const pool = datePlans.filter((p) => p.city === randomCity)
-                const pick = pool[Math.floor(Math.random() * pool.length)] || datePlans[0]
+                const pool = tonightPool.filter((p) => p.city === randomCity)
+                const pick = pool[Math.floor(Math.random() * pool.length)] || tonightPool[0]
                 if (!pick) return
                 void trackEvent('surprise_me_clicked', { userId: authUser?.id, properties: { city: randomCity } })
+                setPreviewPlan(pick)
                 setOverlay('plan-preview')
               }}
               onOpenTonightPlan={openPlanPreview}
+              onOpenBusinesses={() => openBusinesses('homepage_footer')}
+              onBusinessCtaViewed={() => trackBusinessCtaViewed('homepage_footer')}
             />
           ) : null}
 
@@ -1263,6 +1422,8 @@ export default function App() {
               browseFilters={browseFilters}
               setBrowseFilters={setBrowseFilters}
               onOpenDetail={openDetail}
+              onOpenBusinesses={() => openBusinesses('browse_banner')}
+              onBusinessCtaViewed={() => trackBusinessCtaViewed('browse_banner')}
               savedPlaceIds={savedPlaceIds}
               onToggleSavePlace={handleToggleSavePlace}
               bottomOffset={NAV_HEIGHT + 16}
@@ -1307,12 +1468,10 @@ export default function App() {
                 void trackEvent('report_issue_clicked', { userId: authUser?.id })
                 setShowFeedbackModal(true)
               }}
-              onOpenPrivacy={() => setOverlay('privacy')}
-              onOpenTerms={() => setOverlay('terms')}
-              onOpenBusinesses={() => {
-                void trackEvent('for_businesses_opened', { userId: authUser?.id })
-                setOverlay('businesses')
-              }}
+              onOpenPrivacy={() => { window.history.pushState({}, '', '/privacy'); setOverlay('privacy') }}
+              onOpenTerms={() => { window.history.pushState({}, '', '/terms'); setOverlay('terms') }}
+              onOpenDeleteAccount={() => { window.history.pushState({}, '', '/delete-account'); setOverlay('delete-account') }}
+              onOpenBusinesses={() => openBusinesses('profile')}
               analyticsEnabled={analyticsEnabled}
               onDeleteAccount={async () => {
                 const confirmed = window.confirm(
@@ -1365,7 +1524,7 @@ export default function App() {
             setShowConsentBanner(false)
           }}
           onDecline={() => setShowConsentBanner(false)}
-          onOpenPrivacy={() => setOverlay('privacy')}
+          onOpenPrivacy={() => { window.history.pushState({}, '', '/privacy'); setOverlay('privacy') }}
         />
       ) : showFeedbackModal ? (
         <FeedbackModal lang={lang} font={font} onClose={() => setShowFeedbackModal(false)} />
@@ -1390,9 +1549,15 @@ function AppHeader({ lang, onToggleLang }) {
   return (
     <div
       style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 500,
         background: APP_BG,
         borderBottom: `1px solid ${APP_BORDER}`,
-        padding: '12px 16px',
+        paddingTop: 'calc(12px + var(--hm-sat, 0px))',
+        paddingBottom: 12,
+        paddingLeft: 'calc(16px + var(--hm-sal, 0px))',
+        paddingRight: 'calc(16px + var(--hm-sar, 0px))',
       }}
     >
       <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -1439,8 +1604,16 @@ function HomePage({
   onStartQuiz,
   onSurpriseMe,
   onOpenTonightPlan,
+  onOpenBusinesses,
+  onBusinessCtaViewed,
 }) {
   const isHe = lang === 'he'
+  const businessViewed = useRef(false)
+  useEffect(() => {
+    if (businessViewed.current) return
+    businessViewed.current = true
+    onBusinessCtaViewed?.()
+  }, [onBusinessCtaViewed])
   return (
     <div style={{ position: 'relative' }}>
       {/* Ambient gold glow behind the hero — adds depth without clutter */}
@@ -1451,8 +1624,8 @@ function HomePage({
           position: 'absolute',
           top: -150,
           left: '50%',
-          marginLeft: -230,
-          width: 460,
+          transform: 'translateX(-50%)',
+          width: 'min(460px, 100vw)',
           height: 460,
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(201,168,76,0.20), rgba(201,168,76,0) 68%)',
@@ -1461,23 +1634,23 @@ function HomePage({
         }}
       />
 
-      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gap: 24 }}>
+      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gap: 18 }}>
 
         {/* Hero — open section, no panel box */}
-        <section style={{ padding: '8px 0 4px' }}>
-          <div className="hm-reveal" style={{ animationDelay: '0.02s', fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: APP_ACCENT, textTransform: 'uppercase', marginBottom: 14 }}>
+        <section style={{ padding: '4px 0 0' }}>
+          <div className="hm-reveal" style={{ animationDelay: '0.02s', fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: APP_ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>
             {tx.planHeroEyebrow}
           </div>
-          <h1 className="hm-reveal" style={{ animationDelay: '0.09s', fontFamily: SERIF, margin: '0 0 14px', fontSize: 'clamp(30px, 8vw, 40px)', lineHeight: 1.08, fontWeight: 600, letterSpacing: '-0.01em' }}>
+          <h1 className="hm-reveal" style={{ animationDelay: '0.09s', fontFamily: SERIF, margin: '0 0 10px', fontSize: 'clamp(30px, 8vw, 40px)', lineHeight: 1.08, fontWeight: 600, letterSpacing: '-0.01em' }}>
             {tx.planHeroTitle}
           </h1>
-          <p className="hm-reveal" style={{ animationDelay: '0.17s', margin: '0 0 22px', color: APP_SOFT, fontSize: 15.5, lineHeight: 1.6, maxWidth: '32ch' }}>{tx.planHeroText}</p>
+          <p className="hm-reveal" style={{ animationDelay: '0.17s', margin: '0 0 16px', color: APP_SOFT, fontSize: 15.5, lineHeight: 1.6, maxWidth: '32ch' }}>{tx.planHeroText}</p>
 
           {/* Trust line — single subtle row, no chip boxes */}
-          <div className="hm-reveal" style={{ animationDelay: '0.23s', fontSize: 13, color: '#9A8F7C', marginBottom: 24 }}>
+          <div className="hm-reveal" style={{ animationDelay: '0.23s', fontSize: 13, color: '#9A8F7C', marginBottom: 16 }}>
             {isHe
-              ? 'חידון של 60 שניות · מסלולים מובחרים · מודע לכשרות'
-              : '60-second quiz · Curated routes · Kosher-aware'}
+              ? 'חידון של 60 שניות · מסלולים מובחרים · פרטי כשרות כשאומתו'
+              : '60-second quiz · Curated routes · Kashrut details when verified'}
           </div>
 
           <div className="hm-reveal" style={{ animationDelay: '0.29s' }}>
@@ -1485,7 +1658,7 @@ function HomePage({
               {tx.planHeroAction} <span className="hm-arrow" style={{ color: '#E0BE58' }}>{isHe ? '←' : '→'}</span>
             </button>
           </div>
-          <div className="hm-reveal" style={{ animationDelay: '0.35s', textAlign: 'center', margin: '15px 0 4px' }}>
+          <div className="hm-reveal" style={{ animationDelay: '0.35s', textAlign: 'center', margin: '10px 0 2px' }}>
             <span style={{ fontSize: 13.5, color: '#9A8F7C' }}>
               {isHe ? 'בערך דקה · 3 הקשות מהירות' : 'Takes about a minute · 3 quick taps'}
             </span>
@@ -1499,15 +1672,43 @@ function HomePage({
 
         {/* Tonight's Pick — standalone card, no outer panel wrapper */}
         <section className="hm-reveal" style={{ animationDelay: '0.48s' }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
+          <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 8 }}>
             {tx.tonightsPick}
           </div>
           <TonightPlanCard lang={lang} tx={tx} plan={tonightPlan} onOpenPlan={onOpenTonightPlan} onStartQuiz={onStartQuiz} />
         </section>
 
+        {/* Why HaMakom — the concrete benefits, right where new users decide */}
+        <section className="hm-reveal" style={{ animationDelay: '0.5s' }}>
+          <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 8 }}>
+            {isHe ? 'למה המקום' : 'Why HaMakom'}
+          </div>
+          <div style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 22, padding: '6px 16px' }}>
+            {[
+              ['🕍', isHe ? 'כשרות בשקיפות' : 'Transparent kashrut details', isHe ? 'רשות הכשרות ותאריך הבדיקה מוצגים כשאומתו — בלי ניחושים.' : 'Authority and verification date are shown when confirmed — never guessed.'],
+              ['🗺️', isHe ? 'מסלולים אמיתיים' : 'Real routes, not lists', isHe ? '2–3 עצירות במרחק הליכה, עם סדר וקצב שנבנו בקפידה.' : '2–3 stops within walking distance, sequenced with a start time and pace.'],
+              ['✓', isHe ? 'מקומות מאומתים' : 'Verified venues', isHe ? 'אנחנו בודקים שכל מקום בתוכנית פעיל לפני שהוא מוצג.' : 'Every place in a plan is checked to be open and operating.'],
+            ].map(([icon, title, text], i) => (
+              <div key={title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 0', borderTop: i === 0 ? 'none' : `1px solid ${APP_BORDER}` }}>
+                <span aria-hidden style={{ fontSize: 17, lineHeight: 1.3, flexShrink: 0 }}>{icon}</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: APP_TEXT, marginBottom: 2 }}>{title}</div>
+                  <div style={{ fontSize: 13, color: APP_SOFT, lineHeight: 1.5 }}>{text}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Connection feedback only — discovery lives in the Browse tab */}
+        <div style={{ textAlign: 'center', padding: '2px 0 4px' }}>
+          <button type="button" onClick={onOpenBusinesses} style={{ background: 'none', border: 'none', color: '#8A7F6C', fontFamily: 'inherit', fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+            {isHe ? 'לבעלי מקומות: שותפות עם המקום ←' : 'For venues: Partner with HaMakom →'}
+          </button>
+        </div>
+
         {error ? (
-          <div style={{ background: '#1A1010', border: '1px solid #5A2020', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#F87171' }}>
+          <div style={{ background: '#FBEDEA', border: '1px solid #E3BBAE', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#9C3F2C' }}>
             {isHe ? 'לא ניתן להתחבר לשרת, מוצגים נתוני גיבוי.' : 'Could not reach the server, showing cached data.'}
           </div>
         ) : null}
@@ -1535,6 +1736,8 @@ function ExplorePage({
   browseFilters,
   setBrowseFilters,
   onOpenDetail,
+  onOpenBusinesses,
+  onBusinessCtaViewed,
   savedPlaceIds,
   onToggleSavePlace,
   bottomOffset,
@@ -1628,6 +1831,7 @@ function ExplorePage({
 
             <FilterBar
               tx={tx}
+              locations={locations}
               filters={browseFilters}
               setFilters={(updater) => {
                 setExploreExpanded(true)
@@ -1643,7 +1847,7 @@ function ExplorePage({
                   <section key={section.id} style={{ display: 'grid', gap: 8 }}>
                     <div>
                       <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>{section.title}</div>
-                      <div style={{ fontSize: 13, color: '#8E97A8', lineHeight: 1.5 }}>{section.text}</div>
+                      <div style={{ fontSize: 13, color: APP_SOFT, lineHeight: 1.5 }}>{section.text}</div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
                       {section.items.map((location) => (
@@ -1682,10 +1886,63 @@ function ExplorePage({
                 ))}
               </div>
             )}
+
+            <BusinessCta
+              lang={lang}
+              source="browse_banner"
+              onView={onBusinessCtaViewed}
+              onOpen={onOpenBusinesses}
+            />
           </div>
         </section>
       )}
     </div>
+  )
+}
+
+function BusinessCta({ lang, source, onView, onOpen }) {
+  const viewed = useRef(false)
+  useEffect(() => {
+    if (viewed.current) return
+    viewed.current = true
+    onView?.(source)
+  }, [onView, source])
+
+  const isHe = lang === 'he'
+  return (
+    <aside
+      style={{
+        marginTop: 4,
+        background: 'linear-gradient(135deg, #241E16, #403523)',
+        color: '#F7F2E8',
+        borderRadius: 18,
+        padding: '18px 20px',
+        border: '1px solid #5B4C31',
+        boxShadow: '0 14px 32px -24px rgba(36,30,22,0.9)',
+      }}
+    >
+      <div style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#E0BE58', marginBottom: 7 }}>
+        {isHe ? 'לבעלי מקומות' : 'For venue owners'}
+      </div>
+      <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, lineHeight: 1.2, marginBottom: 7 }}>
+        {isHe ? 'יש לכם מקום שמתאים לדייטים?' : 'Own a date-friendly venue?'}
+      </div>
+      <p style={{ margin: '0 0 14px', color: '#D7CDBB', fontSize: 13.5, lineHeight: 1.55 }}>
+        {isHe
+          ? 'הציגו את העסק מול זוגות דתיים שבוחרים עכשיו לאן לצאת, וקבלו נתוני ביצועים אמיתיים.'
+          : 'Reach religious couples actively deciding where to go, with clear reporting on views, directions, and reservations.'}
+      </p>
+      <button
+        type="button"
+        onClick={onOpen}
+        style={{
+          border: 'none', borderRadius: 9, padding: '10px 14px', background: '#C9A84C', color: '#241E16',
+          fontFamily: 'inherit', fontSize: 13, fontWeight: 800, cursor: 'pointer',
+        }}
+      >
+        {isHe ? 'הצטרפו כפיילוט מייסד ←' : 'Join the founding pilot →'}
+      </button>
+    </aside>
   )
 }
 
@@ -1705,27 +1962,27 @@ function TonightPlanCard({ lang, plan, onOpenPlan }) {
       style={{
         display: 'block', width: '100%', textAlign: isHe ? 'right' : 'left',
         background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 22,
-        padding: 18, cursor: 'pointer', fontFamily: 'inherit',
+        padding: 16, cursor: 'pointer', fontFamily: 'inherit',
         boxShadow: '0 10px 30px -20px rgba(40,30,12,0.5)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 11 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
         <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', color: APP_ACCENT, textTransform: 'uppercase' }}>
           {plan.city ? `${isHe ? 'בחירת הערב' : "Tonight's pick"} · ${plan.city}` : (isHe ? 'בחירת הערב' : "Tonight's pick")}
         </span>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#4F7144', background: '#E9F0E4', borderRadius: 999, padding: '4px 9px', whiteSpace: 'nowrap' }}>
-          {isHe ? 'התאמה חזקה' : 'Strong match'}
+          {isHe ? 'נבחר בקפידה' : 'Hand-picked'}
         </span>
       </div>
 
-      <div style={{ fontFamily: SERIF, fontSize: 23, fontWeight: 600, lineHeight: 1.12, marginBottom: 6, color: APP_TEXT }}>
+      <div style={{ fontFamily: SERIF, fontSize: 23, fontWeight: 600, lineHeight: 1.12, marginBottom: 4, color: APP_TEXT }}>
         {isHe ? plan.title_he : plan.title_en}
       </div>
-      <div style={{ color: APP_SOFT, fontSize: 13.5, lineHeight: 1.5, marginBottom: 14 }}>
+      <div style={{ color: APP_SOFT, fontSize: 13.5, lineHeight: 1.5, marginBottom: 10 }}>
         {isHe ? plan.narrative_he : plan.narrative_en}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', borderTop: '1px solid #F0E9DA', paddingTop: 13 }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', borderTop: '1px solid #F0E9DA', paddingTop: 10 }}>
         {meta.map((m, i) => (
           <span key={m} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 12.5, color: '#7E7361', fontWeight: 600 }}>{m}</span>
@@ -1965,12 +2222,9 @@ function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder
   const [draftRating, setDraftRating] = useState(feedback?.rating || 0)
   const [draftAgain, setDraftAgain] = useState(feedback?.again ?? null)
   const isHe = lang === 'he'
-  const shareText = isHe
-    ? `התוכנית ששמרתי: ${plan.title_he}\n${plan.start_time_text_he}\n${plan.share_summary_he}\nhamakom.app`
-    : `Saved plan: ${plan.title_en}\n${plan.start_time_text_en}\n${plan.share_summary_en}\nhamakom.app`
-
-  const handleShare = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer')
+  const handleShare = async () => {
+    const payload = sharePlanMessage(plan, lang)
+    await shareContent(payload)
   }
 
   return (
@@ -2079,6 +2333,7 @@ function ProfilePage({
   onOpenAdmin,
   onOpenPrivacy,
   onOpenTerms,
+  onOpenDeleteAccount,
   onOpenBusinesses,
   analyticsEnabled,
   onToggleAnalytics,
@@ -2286,6 +2541,13 @@ function ProfilePage({
               compact
               borderTop
             />
+            <ProfileMenuRow
+              title={isHe ? 'מחיקת חשבון ונתונים' : 'Delete account & data'}
+              onClick={onOpenDeleteAccount}
+              isHe={isHe}
+              compact
+              borderTop
+            />
           </div>
         </section>
 
@@ -2489,6 +2751,7 @@ function BottomNav({ tx, tab, savedCount, onSelect }) {
     { key: 'saved', icon: 'saved', label: tx.saved, badge: savedCount > 0 ? savedCount : null },
     { key: 'profile', icon: 'profile', label: tx.profile },
   ]
+  const viewportGap = useViewportBottomGap()
 
   return (
     <nav
@@ -2496,7 +2759,9 @@ function BottomNav({ tx, tab, savedCount, onSelect }) {
         position: 'fixed',
         left: 14,
         right: 14,
-        bottom: 'max(12px, env(safe-area-inset-bottom, 0px))',
+        maxWidth: 640,
+        marginInline: 'auto',
+        bottom: `calc(max(12px, var(--hm-sab, 0px)) + ${viewportGap}px)`,
         height: NAV_HEIGHT,
         background: APP_PANEL,
         border: `1px solid ${APP_BORDER}`,
@@ -2664,24 +2929,24 @@ function ConsentBanner({ lang, font, onAccept, onDecline, onOpenPrivacy }) {
       dir={isHe ? 'rtl' : 'ltr'}
       style={{
         position: 'fixed',
-        bottom: 90,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: 'calc(100% - 32px)',
+        bottom: `calc(${NAV_HEIGHT + 8}px + max(12px, var(--hm-sab, 0px)))`,
+        left: 16,
+        right: 16,
         maxWidth: 480,
+        marginInline: 'auto',
         background: '#FFFFFF',
         border: '1px solid #EBE2D0',
         borderRadius: 16,
         padding: '14px 16px',
         zIndex: 9000,
         fontFamily: font,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        boxShadow: '0 8px 32px rgba(40,30,12,0.25)',
         display: 'flex',
         flexDirection: 'column',
         gap: 10,
       }}
     >
-      <p style={{ margin: 0, fontSize: 13, color: '#C8BDA8', lineHeight: 1.55 }}>
+      <p style={{ margin: 0, fontSize: 13, color: APP_SOFT, lineHeight: 1.55 }}>
         {isHe
           ? 'אנחנו משתמשים בנתוני שימוש אנונימיים לשיפור ההמלצות.'
           : 'We use anonymous usage data to improve recommendations.'}
@@ -2720,16 +2985,16 @@ function FeedbackNudge({ lang, font, plan, onRespond, onDismiss }) {
     <div
       dir={isHe ? 'rtl' : 'ltr'}
       style={{
-        position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)',
-        width: 'calc(100% - 32px)', maxWidth: 480,
+        position: 'fixed', left: 16, right: 16, maxWidth: 480, marginInline: 'auto',
+        bottom: `calc(${NAV_HEIGHT + 8}px + max(12px, var(--hm-sab, 0px)))`,
         background: '#FFFFFF', border: '1px solid #EBE2D0', borderRadius: 16,
         padding: '16px', zIndex: 8500, fontFamily: font,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        boxShadow: '0 8px 32px rgba(40,30,12,0.25)',
       }}
     >
       {step === 'ask' ? (
         <>
-          <p style={{ margin: '0 0 12px', fontSize: 14, color: '#C8BDA8', lineHeight: 1.5 }}>
+          <p style={{ margin: '0 0 12px', fontSize: 14, color: APP_SOFT, lineHeight: 1.5 }}>
             {isHe ? `הלכתם ל"${planTitle}"?` : `Did you go on "${planTitle}"? 🌟`}
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -2744,7 +3009,7 @@ function FeedbackNudge({ lang, font, plan, onRespond, onDismiss }) {
         </>
       ) : (
         <>
-          <p style={{ margin: '0 0 12px', fontSize: 14, color: '#C8BDA8' }}>
+          <p style={{ margin: '0 0 12px', fontSize: 14, color: APP_SOFT }}>
             {isHe ? 'כמה כיפי היה?' : 'How was it?'}
           </p>
           <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>

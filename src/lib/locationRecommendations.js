@@ -1,4 +1,5 @@
 import { CITY_COORDS } from './constants.js'
+import { sameCity } from './planGates.js'
 
 function normalizeCategory(category = '') {
   if (category.includes('Park')) return 'outdoors'
@@ -123,28 +124,41 @@ const HARD_FILTERS = [
   // Closure / status gate (DATE_PLANNING_RULES H2, H3). Only OPERATIONAL venues
   // may appear. Temporarily-closed and unknown/null status are excluded too —
   // the audit proved temporary closures were leaking into live plans.
-  function rejectClosed(loc) {
+  // ctx.allowUnknown (degraded mode, see applyHardFilters) tolerates null
+  // status; explicitly closed venues are rejected in both modes.
+  function rejectClosed(loc, ctx) {
     if (loc.business_status === 'CLOSED_PERMANENTLY') return 'closed_permanently'
     if (loc.business_status === 'CLOSED_TEMPORARILY') return 'closed_temporarily'
-    if (loc.business_status == null) return 'status_unknown'
+    if (loc.business_status == null) return ctx?.allowUnknown ? null : 'status_unknown'
     if (loc.business_status !== 'OPERATIONAL') return 'not_operational'
     return null
   },
 ]
 
+// Below this many surviving rows, the dataset is clearly unenriched (DB
+// unreachable → bundled seed, where business_status is null everywhere) —
+// rerun tolerating unknown status so surfaces don't go blank.
+const RELAXED_KEEP_FLOOR = 12
+
 export function applyHardFilters(locations, ctx = {}) {
-  const reasons = []
-  const kept = []
-  for (const loc of locations || []) {
-    let rejection = null
-    for (const filter of HARD_FILTERS) {
-      const why = filter(loc, ctx)
-      if (why) { rejection = why; break }
+  const run = (runCtx) => {
+    const reasons = []
+    const kept = []
+    for (const loc of locations || []) {
+      let rejection = null
+      for (const filter of HARD_FILTERS) {
+        const why = filter(loc, runCtx)
+        if (why) { rejection = why; break }
+      }
+      if (rejection) reasons.push({ id: loc.id, name: loc.name, reason: rejection })
+      else kept.push(loc)
     }
-    if (rejection) reasons.push({ id: loc.id, name: loc.name, reason: rejection })
-    else kept.push(loc)
+    return { kept, rejected: reasons }
   }
-  return { kept, rejected: reasons }
+
+  const strict = run(ctx)
+  if (strict.kept.length >= RELAXED_KEEP_FLOOR || ctx.allowUnknown) return strict
+  return run({ ...ctx, allowUnknown: true })
 }
 
 // ── Layer 2/3: curated vibe fit ───────────────────────────────────────────────
@@ -269,7 +283,7 @@ export function scoreLocation(location, answers, behavior = {}) {
   const behaviorProfile = behavior.profile || buildPreferenceProfile(behavior)
 
   if (answers.city && answers.city !== 'flexible') {
-    if (location.city === answers.city) {
+    if (sameCity(location.city, answers.city)) {
       score += 8
     } else {
       // Cross-city is a real penalty now, not just neutral. Without this,

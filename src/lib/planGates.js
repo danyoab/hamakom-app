@@ -7,6 +7,17 @@
 // and unknown), city normalization, real-venue / no-placeholder check.
 // Distance, no-two-dinners, opening-hours, kosher and budget gates are scaffolded
 // for Priority 2/3 and documented in DATE_PLANNING_RULES.md.
+//
+// Degraded mode: the strict gates assume an ENRICHED dataset (business_status +
+// coordinates populated from the DB). When the DB is unreachable or sparse the
+// app runs on the bundled seed, which has none of that enrichment — strictness
+// would then blank every recommendation surface. plannableLocations therefore
+// falls back to relaxed gates (unknown status tolerated, city-centroid coords
+// accepted) only when the strict pool is essentially empty. Explicitly closed
+// venues are excluded in BOTH modes — the original leak this file exists to
+// prevent.
+
+import { CITY_COORDS } from './constants.js'
 
 // ── City normalization (H4 / T6) ─────────────────────────────────────────────
 // Spelling variants collapse to one canonical city so matching can't leak across
@@ -48,8 +59,9 @@ export function sameCity(a, b) {
 // last_enriched_at is recent. `freshnessDays = null` disables the freshness check
 // (used today, since the dataset is enriched within the window and no date input
 // exists yet). Set e.g. 35 once a monthly cron is in place.
-export function isOperational(loc, { now = Date.now(), freshnessDays = null } = {}) {
+export function isOperational(loc, { now = Date.now(), freshnessDays = null, allowUnknown = false } = {}) {
   if (!loc) return false
+  if (loc.business_status == null) return allowUnknown
   if (loc.business_status !== 'OPERATIONAL') return false
   if (freshnessDays != null) {
     const ts = loc.last_enriched_at ? Date.parse(loc.last_enriched_at) : NaN
@@ -60,9 +72,13 @@ export function isOperational(loc, { now = Date.now(), freshnessDays = null } = 
 }
 
 // ── Real-venue / no-placeholder gate (H1 / H5 — T5, T14) ─────────────────────
-// A plannable venue row must have a real id and coordinates.
-export function isRealVenueRow(loc) {
-  return Boolean(loc && (loc.id != null) && loc.lat != null && loc.lng != null)
+// A plannable venue row must have a real id and coordinates. In relaxed mode a
+// row without its own coordinates is accepted when its city resolves to a known
+// centroid (the same fallback the plan map already renders with).
+export function isRealVenueRow(loc, { allowCityFallback = false } = {}) {
+  if (!loc || loc.id == null) return false
+  if (loc.lat != null && loc.lng != null) return true
+  return allowCityFallback && CITY_COORDS[canonicalCity(loc.city)] != null
 }
 
 // A rendered plan stop must resolve to a real DB venue: it carries a source
@@ -146,7 +162,16 @@ export function violatesFoodPairing(selectedStops, candidate, prevStop) {
 
 // ── Plannable pool (single entry point used by the generator) ────────────────
 // Applies the venue-level hard gates (operational + real venue) before any
-// scoring or composition happens.
+// scoring or composition happens. If the strict pool is essentially empty the
+// whole dataset is unenriched (DB unreachable → bundled seed): fall back to
+// relaxed gates rather than blank every surface. Explicitly closed venues are
+// still excluded in relaxed mode.
+export const RELAXED_POOL_FLOOR = 12
+
 export function plannableLocations(locations, opts = {}) {
-  return (locations || []).filter((l) => isRealVenueRow(l) && isOperational(l, opts))
+  const strict = (locations || []).filter((l) => isRealVenueRow(l) && isOperational(l, opts))
+  if (strict.length >= RELAXED_POOL_FLOOR) return strict
+  return (locations || []).filter(
+    (l) => isRealVenueRow(l, { allowCityFallback: true }) && isOperational(l, { ...opts, allowUnknown: true })
+  )
 }

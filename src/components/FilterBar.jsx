@@ -8,7 +8,7 @@ const MUTED  = '#8A7F6C'
 const DEFAULTS = {
   cityFilter: 'All Cities',
   categoryFilter: 'All',
-  occasionFilter: 'all',
+  occasionFilter: 'All',
   priceFilter: 0,
   dateFilter: 'all',
 }

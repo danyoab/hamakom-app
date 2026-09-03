@@ -69,7 +69,11 @@ export function resolveCuratedPlan(plan, locations) {
       _locationId: match.id,
       lat: stop.lat ?? match.lat,
       lng: stop.lng ?? match.lng,
-      _resolvedOperational: isRealVenueRow(match) && isOperational(match),
+      // Unknown status is NOT evidence of closure — only an explicit closed /
+      // non-operational status marks a curated stop unsafe (curatedPlanSafe's
+      // documented contract: "resolved-but-closed is not tolerated").
+      _resolvedOperational:
+        isRealVenueRow(match, { allowCityFallback: true }) && isOperational(match, { allowUnknown: true }),
     }
   })
   return changed ? { ...plan, stops } : plan

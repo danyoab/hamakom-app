@@ -1297,7 +1297,7 @@ export default function App() {
           onBuildYourOwnPlan={openCustomPlanBuilder}
           cityLocationCount={
             quizAnswers?.city && quizAnswers.city !== 'flexible'
-              ? locations.filter((l) => l.city === quizAnswers.city).length
+              ? locations.filter((l) => sameCity(l.city, quizAnswers.city)).length
               : null
           }
           onSuggestPlace={() => {

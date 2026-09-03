@@ -3,7 +3,9 @@ import { isNativeApp } from '../lib/native'
 
 export default function InstallPrompt({ lang }) {
   const [prompt, setPrompt] = useState(null)
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem('hm-install-dismissed') === '1')
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem('hm-install-dismissed') === '1' } catch { return true }
+  })
   const isHe = lang === 'he'
 
   useEffect(() => {

@@ -3,6 +3,7 @@ import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { CATEGORY_EMOJI, CITY_COORDS, getCategoryColor } from '../lib/constants'
+import { canonicalCity } from '../lib/planGates'
 import { locationPath } from '../lib/seo'
 import { getUserPosition } from '../lib/geolocation'
 
@@ -94,9 +95,11 @@ export default function MapView({
 
   const cityGroups = {}
   for (const location of locations) {
-    if (!CITY_COORDS[location.city]) continue
-    if (!cityGroups[location.city]) cityGroups[location.city] = []
-    cityGroups[location.city].push(location)
+    // Canonicalize so spelling variants ("Petah Tikva") still pin to the map
+    const city = canonicalCity(location.city)
+    if (!CITY_COORDS[city]) continue
+    if (!cityGroups[city]) cityGroups[city] = []
+    cityGroups[city].push(location)
   }
 
   const panelLocations = selectedCity ? cityGroups[selectedCity] || [] : []

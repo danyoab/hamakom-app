@@ -266,11 +266,16 @@ export default function App() {
   const savedPlans = useMemo(() => datePlans.filter((plan) => savedPlanIds.includes(plan.id)), [datePlans, savedPlanIds])
   const savedPlaces = useMemo(() => locations.filter((location) => savedPlaceIds.includes(location.id)), [locations, savedPlaceIds])
   const savedCount = savedPlans.length + savedPlaces.length
+  // Quiz cities = the curated list plus any curated-plan city that also has
+  // enough real venues to build a plan. A city backed only by placeholder
+  // plans (e.g. Givat Shmuel) would dead-end, so it stays off the quiz.
   const availablePlanCities = useMemo(() => {
     const planCities = new Set(datePlans.map((plan) => plan.city).filter(Boolean))
-    const merged = [...QUIZ_CITIES, ...[...planCities].filter((c) => !QUIZ_CITIES.includes(c))]
-    return merged
-  }, [datePlans])
+    const extra = [...planCities].filter(
+      (c) => !QUIZ_CITIES.includes(c) && locations.filter((l) => sameCity(l.city, c)).length >= 2
+    )
+    return [...QUIZ_CITIES, ...extra]
+  }, [datePlans, locations])
   const backupLocations = useMemo(() => {
     if (!quizAnswers) return []
     return getRecommendedLocations(locations, quizAnswers, {

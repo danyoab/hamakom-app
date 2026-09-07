@@ -281,7 +281,7 @@ export default function ResultsPage({
               <StopCard
                 key={`${plan.id}-${i}`}
                 stop={stop}
-                venue={stop._locationId != null ? locationsById.get(stop._locationId) : null}
+                venue={locationsById.get(stop._locationId ?? stop.source_location_id ?? stop.location_id) || null}
                 onOpenVenue={onOpenBackupLocation}
                 index={i}
                 lang={lang}

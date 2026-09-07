@@ -39,8 +39,8 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
       id: 'city',
       en: 'Which city?',
       he: 'איזו עיר?',
-      suben: 'Pick local if distance matters.',
-      subhe: 'בחרו מקומי אם מרחק חשוב.',
+      suben: 'Where will you be?',
+      subhe: 'איפה תהיו?',
       type: 'city',
       options: [
         ...cityOptions.map(city => ({

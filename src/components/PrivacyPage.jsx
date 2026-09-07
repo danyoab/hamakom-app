@@ -34,8 +34,11 @@ We do not sell, rent, or share your personal data with third parties for marketi
 • Supabase (supabase.com) — database and authentication. Data is stored on servers in the EU. Supabase is GDPR-compliant.
 • Vercel (vercel.com) — hosting and content delivery. CDN nodes are globally distributed.
 • Browser localStorage — non-sensitive preferences (language, saved items) are stored locally on your device and are not transmitted to our servers unless you sign in.
+• Microsoft Clarity (clarity.microsoft.com) — anonymous session analytics (taps, scrolls, screens) that help us find confusing parts of the app. Clarity is loaded only after you accept analytics, and never records what you type in forms.
+• Sentry (sentry.io) — crash and error reports, so we can fix bugs. Reports contain technical details about the error, not your personal data.
+• Device location (native app only) — if you allow it, your approximate location is used once to suggest a city in the quiz. It is not stored or sent to our servers.
 
-We do not use advertising networks, social trackers, or third-party analytics SDKs.`,
+We do not use advertising networks or social trackers, and we never sell data.`,
   },
   {
     title: 'Analytics',
@@ -122,7 +125,11 @@ const SECTIONS_HE = [
 • Vercel — אחסון ואספקת תוכן. צמתי CDN מופצים גלובלית.
 • localStorage בדפדפן — העדפות לא-רגישות (שפה, פריטים שמורים) מאוחסנות מקומית במכשיר שלכם.
 
-אנחנו לא משתמשים ברשתות פרסום, עוקבים חברתיים, או SDK ניתוח צד שלישי.`,
+• Microsoft Clarity — ניתוח שימוש אנונימי (הקשות, גלילה, מסכים) שעוזר לנו לזהות חלקים מבלבלים באפליקציה. Clarity נטען רק אחרי שאישרתם אנליטיקה, ולעולם לא מקליט מה שאתם מקלידים בטפסים.
+• Sentry — דיווחי קריסות ושגיאות כדי שנוכל לתקן באגים. הדיווחים מכילים פרטים טכניים על השגיאה, לא מידע אישי.
+• מיקום המכשיר (באפליקציה בלבד) — אם תאשרו, המיקום המשוער שלכם משמש פעם אחת להצעת עיר בשאלון. הוא לא נשמר ולא נשלח לשרתים שלנו.
+
+אנחנו לא משתמשים ברשתות פרסום או בעוקבים חברתיים, ולעולם לא מוכרים מידע.`,
   },
   {
     title: 'אנליטיקה',

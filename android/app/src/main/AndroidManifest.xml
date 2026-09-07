@@ -26,6 +26,18 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="app.hamakom" />
             </intent-filter>
+
+            <!-- Android App Links: shared https://hamakom.app/plan?… and
+                 /location/… links open inside the installed app. autoVerify
+                 needs the release-cert SHA-256 published at
+                 https://hamakom.app/.well-known/assetlinks.json -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="hamakom.app" />
+                <data android:scheme="https" android:host="www.hamakom.app" />
+            </intent-filter>
         </activity>
 
         <provider

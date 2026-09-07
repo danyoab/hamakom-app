@@ -10,16 +10,18 @@ export function setNativeBackHandler(fn) {
   backHandler = fn
 }
 
+// Keeps the query string: shared plan links (/plan?c=…&seed=…) carry the
+// answers that rebuild the plan.
 function parseAppPath(url) {
   if (!url) return null
   try {
     const parsed = new URL(url)
-    return parsed.pathname
+    return `${parsed.pathname}${parsed.search}`
   } catch {
     const schemeIndex = url.indexOf('://')
     if (schemeIndex === -1) return null
     const pathStart = url.indexOf('/', schemeIndex + 3)
-    return pathStart === -1 ? '/' : url.slice(pathStart).split('?')[0].split('#')[0]
+    return pathStart === -1 ? '/' : url.slice(pathStart).split('#')[0]
   }
 }
 

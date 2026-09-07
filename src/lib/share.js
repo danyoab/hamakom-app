@@ -1,11 +1,38 @@
 import { siteOrigin } from './seo'
 import { planShareQuery } from './routes'
 import { cityName } from './translations'
+import { isNativeApp } from './native'
 
-/** Share text + optional URL via Web Share API, falling back to WhatsApp. */
+/**
+ * Share text + optional URL. Inside the Capacitor shell the Android/iOS share
+ * sheet is used (the WebView has no navigator.share and window.open would
+ * trap the user in an in-app page); on the web, Web Share API with a
+ * WhatsApp fallback. Returns false only when the user cancelled.
+ */
 export async function shareContent({ title, text, url }) {
   const absoluteUrl = url?.startsWith('http') ? url : url ? `${siteOrigin()}${url}` : null
   const message = absoluteUrl ? `${text}\n${absoluteUrl}` : text
+
+  if (isNativeApp()) {
+    try {
+      const { Share } = await import('@capacitor/share')
+      await Share.share({
+        title: title || 'HaMakom',
+        text: message,
+        ...(absoluteUrl ? { url: absoluteUrl } : {}),
+        dialogTitle: title || 'HaMakom',
+      })
+      return true
+    } catch (err) {
+      if (/cancel/i.test(String(err?.message || err))) return false
+      try {
+        const { Browser } = await import('@capacitor/browser')
+        await Browser.open({ url: `https://wa.me/?text=${encodeURIComponent(message)}` })
+        return true
+      } catch { /* fall through to web path */ }
+    }
+  }
+
   try {
     if (navigator.share) {
       await navigator.share({

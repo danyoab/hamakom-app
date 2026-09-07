@@ -20,12 +20,13 @@ export const QUIZ_CITIES = [
   'Tzur Hadassah',
   'Haifa',
   'Herzliya',
-  "Ra'anana",
   'Netanya',
   'Petach Tikva',
-  'Givat Shmuel',
   'Zichron Yaakov',
   'Caesarea',
+  // Givat Shmuel (0 venues) and Ra'anana (1 venue) are omitted until they have
+  // enough real rows to build a plan — the engine refuses cross-city fallback
+  // (H4), so offering them only produces a dead-end for a first-time user.
 ]
 
 export const CITIES = [
@@ -81,6 +82,21 @@ export const CITIES = [
   'Ein Carmel',
   'Moshav Hamad',
   'Beer Yaakov',
+  // Real places with venue rows that were unreachable from the city filter
+  'Mevaseret',
+  'Gush Etzion',
+  'Ramat Beit Shemesh',
+  'Latrun',
+  'Mitzpe Yericho',
+  'Kfar Daniel',
+  'Moshav Uriyah',
+  'Beit Nekofa',
+  'Beit Zayit',
+  'Kfar Yona',
+  'Rosh Hanikra',
+  'Hula Valley',
+  'Beit Guvrin',
+  'Masada',
 ]
 
 export const OCCASION_KEYS = [

@@ -19,7 +19,10 @@
     "cap:assets": "capacitor-assets generate --iconBackgroundColor #F7F2E8 --splashBackgroundColor #F7F2E8",
     "android": "npm run build && cap sync android && cap open android",
     "android:run": "npm run build && cap sync android && cap run android",
-    "ios": "npm run build && cap sync ios && cap open ios"
+    "ios": "npm run build && cap sync ios && cap open ios",
+    "db:health": "node --env-file=.env scripts/db-health.mjs",
+    "db:sync-missing": "node --env-file=.env scripts/sync-missing-locations.mjs",
+    "db:sync-missing:dry": "node --env-file=.env scripts/sync-missing-locations.mjs --dry-run"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.0",

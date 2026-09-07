@@ -229,14 +229,14 @@ export function getMapsUrl(query) {
 export function getWhatsAppUrl(name, city, lang) {
   const msg =
     lang === 'he'
-      ? `הייתי ב${name} ב${city} — מומלץ מאוד לדייט! 🌟 מצאתי דרך HaMakom`
+      ? `הייתי ב${name} ב${city} — מומלץ מאוד לדייט! 🌟 מצאתי דרך HaMakom · hamakom.app`
       : `Check out ${name} in ${city} — great for a date! 🌟 Found it on HaMakom · hamakom.app`
   return `https://wa.me/?text=${encodeURIComponent(msg)}`
 }
 
 export function getInviteUrl(name, city, lang) {
   const msg = lang === 'he'
-    ? `יאללה, נסיין את ${name} ב${city}? 😊`
+    ? `יאללה, ננסה את ${name} ב${city}? 😊`
     : `Want to try ${name} in ${city} for a date? 😊`
   return `https://wa.me/?text=${encodeURIComponent(msg)}`
 }

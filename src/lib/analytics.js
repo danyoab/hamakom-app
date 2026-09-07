@@ -3,23 +3,64 @@ import { supabase } from './supabase'
 const SESSION_KEY = 'hamakom-analytics-session-id'
 const CONSENT_KEY = 'hamakom-analytics-consent'
 
+const CLARITY_PROJECT_ID = 'x926oggvn5'
+
+function readConsent() {
+  try { return window.localStorage.getItem(CONSENT_KEY) } catch { return null }
+}
+
 export function hasAnalyticsConsent() {
   if (typeof window === 'undefined') return false
-  return window.localStorage.getItem(CONSENT_KEY) === 'true'
+  return readConsent() === 'true'
+}
+
+// True once the user has answered either way — the banner must not come
+// back on every launch after "Decline".
+export function hasConsentDecision() {
+  if (typeof window === 'undefined') return true
+  const value = readConsent()
+  return value === 'true' || value === 'false'
+}
+
+// Microsoft Clarity session replay only loads AFTER consent (it used to be
+// injected unconditionally from index.html, before the banner was answered).
+export function loadClarity() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+  if (window.clarity || document.getElementById('hm-clarity')) return
+  window.clarity = window.clarity || function () { (window.clarity.q = window.clarity.q || []).push(arguments) }
+  const script = document.createElement('script')
+  script.id = 'hm-clarity'
+  script.async = true
+  script.src = `https://www.clarity.ms/tag/${CLARITY_PROJECT_ID}`
+  document.head.appendChild(script)
 }
 
 export function grantAnalyticsConsent() {
   if (typeof window !== 'undefined') {
-    window.localStorage.setItem(CONSENT_KEY, 'true')
+    try { window.localStorage.setItem(CONSENT_KEY, 'true') } catch { /* storage blocked */ }
+    loadClarity()
+  }
+}
+
+export function denyAnalyticsConsent() {
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.setItem(CONSENT_KEY, 'false')
+      window.localStorage.removeItem(SESSION_KEY)
+    } catch { /* storage blocked */ }
   }
 }
 
 export function revokeAnalyticsConsent() {
   if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(CONSENT_KEY)
-    window.localStorage.removeItem(SESSION_KEY)
+    try {
+      window.localStorage.setItem(CONSENT_KEY, 'false')
+      window.localStorage.removeItem(SESSION_KEY)
+    } catch { /* storage blocked */ }
   }
 }
+
+if (hasAnalyticsConsent()) loadClarity()
 
 function getSessionId() {
   if (typeof window === 'undefined') return 'server'

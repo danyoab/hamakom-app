@@ -70,6 +70,7 @@ export default function FeedbackModal({ lang, font, locationName, locationId, on
           borderRadius: '24px 24px 0 0',
           padding: '14px 22px calc(40px + var(--hm-sab, 0px))',
           boxSizing: 'border-box', color: '#241E16',
+          maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto',
         }}
       >
         <div style={{ width: 36, height: 4, background: '#EBE2D0', borderRadius: 999, margin: '0 auto 18px' }} />

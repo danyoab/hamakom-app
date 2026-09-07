@@ -151,7 +151,7 @@ export default function BusinessesPage({ tx, font, onBack, source = 'direct_url'
           </div>
           <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>
             {initialVenue
-              ? (isHe ? `תבעו את הרישום של ${initialVenue.name_he || initialVenue.name}` : `Claim the ${initialVenue.name} listing`)
+              ? (isHe ? `עדכנו את הרישום של ${initialVenue.name_he || initialVenue.name}` : `Claim the ${initialVenue.name} listing`)
               : (isHe ? '60 ימים ללא עלות לעשרת המקומות הראשונים' : '60 days free for the first ten venues')}
           </div>
           <p style={{ color: '#D7CDBB', fontSize: 13, lineHeight: 1.55, margin: '0 0 12px' }}>

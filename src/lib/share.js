@@ -1,4 +1,6 @@
 import { siteOrigin } from './seo'
+import { planShareQuery } from './routes'
+import { cityName } from './translations'
 
 /** Share text + optional URL via Web Share API, falling back to WhatsApp. */
 export async function shareContent({ title, text, url }) {
@@ -20,16 +22,22 @@ export async function shareContent({ title, text, url }) {
   return true
 }
 
-export function sharePlanMessage(plan, lang) {
+export function sharePlanMessage(plan, lang, answers = null) {
   const isHe = lang === 'he'
   const stopNames = (plan.stops || []).slice(0, 3)
     .map((s) => (isHe ? s.name_he : s.name_en)).filter(Boolean)
-  const stopsLine = stopNames.join(' → ') || plan.city
+  const city = cityName(plan.city, lang)
+  const stopsLine = stopNames.join(isHe ? ' ← ' : ' → ') || city
   const title = isHe ? plan.title_he : plan.title_en
+  const duration = isHe ? plan.duration_text_he : plan.duration_text_en
+  const where = [city, duration].filter(Boolean).join(' · ')
   const text = isHe
-    ? `✨ תוכנית ערב מ-HaMakom:\n\n🌟 ${title}\n📍 ${plan.city} · ${plan.duration_text_he || ''}\n\n${stopsLine}\n\n💛 תכננו את הדייט שלכם`
-    : `✨ Date night from HaMakom:\n\n🌟 ${title}\n📍 ${plan.city} · ${plan.duration_text_en || ''}\n\n${stopsLine}\n\n💛 Plan yours`
-  return { title, text, url: '/' }
+    ? `✨ תוכנית ערב מ-HaMakom:\n\n🌟 ${title}\n📍 ${where}\n\n${stopsLine}\n\n💛 תכננו את שלכם ב-hamakom.app`
+    : `✨ Date night from HaMakom:\n\n🌟 ${title}\n📍 ${where}\n\n${stopsLine}\n\n💛 Plan yours at hamakom.app`
+  // Link straight to THIS plan when we have the answers that built it —
+  // a recipient who lands on the homepage instead never sees the plan.
+  const query = planShareQuery(answers)
+  return { title, text, url: query ? `/plan?${query}` : '/' }
 }
 
 export function shareLocationMessage(loc, lang) {

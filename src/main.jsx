@@ -25,7 +25,14 @@ class ErrorBoundary extends Component {
       <div style={{ background: '#F7F2E8', color: '#241E16', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Heebo', system-ui, sans-serif", padding: 40 }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 16 }}>המקום</div>
-          <p style={{ color: '#6E6450' }}>Something went wrong. Please refresh the page.</p>
+          <p style={{ color: '#6E6450', margin: '0 0 6px' }}>Something went wrong.</p>
+          <p style={{ color: '#6E6450', margin: '0 0 20px' }} dir="rtl">משהו השתבש.</p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ background: '#241E16', color: '#F4ECD8', border: 'none', borderRadius: 12, padding: '13px 28px', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Try again · נסו שוב
+          </button>
         </div>
       </div>
     )

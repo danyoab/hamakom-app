@@ -2,6 +2,7 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import { getMapsUrl } from '../lib/constants'
 import { buildPlanIdentity, getPlanFitSummary } from '../lib/quiz'
 import { shareContent, sharePlanMessage } from '../lib/share'
+import { cityName } from '../lib/translations'
 
 const PlanRouteMap = lazy(() => import('./PlanRouteMap'))
 
@@ -22,7 +23,7 @@ const VIBE_LABELS = {
   'outdoors':   { en: 'Outdoorsy',   he: 'בחוץ',       suben: 'Move & view',   subhe: 'תנועה ונוף' },
   'food-drink': { en: 'Food & talk', he: 'אוכל ושיחה', suben: 'Sit & savor',   subhe: 'לשבת ולטעום' },
   'atmosphere': { en: 'Intimate',    he: 'אווירה',     suben: 'Mood & place',  subhe: 'אווירה ומקום' },
-  'activity':   { en: 'Playful',     he: 'שובב',       suben: 'Do something',  subhe: 'פעילות' },
+  'activity':   { en: 'Playful',     he: 'פעילות',     suben: 'Do something',  subhe: 'לעשות משהו יחד' },
 }
 
 function vibeLabel(plan, lang) {
@@ -106,6 +107,7 @@ export default function ResultsPage({
   planIndex = 0,
   onSelectPlan,
   backupLocations = [],
+  locations = [],
   answers,
   saved,
   reminderSet,
@@ -131,6 +133,20 @@ export default function ResultsPage({
   const primaryStops  = isShortPlan ? plan.stops.slice(0, 2) : plan.stops
   const optionalStops = isShortPlan ? plan.stops.slice(2) : []
   const firstStopMaps = useMemo(() => getMapsUrl(plan.stops?.[0]?.maps_query), [plan])
+  const locationsById = useMemo(() => new Map((locations || []).map((l) => [l.id, l])), [locations])
+  // Google Calendar template: the user picks the date/time, we fill the rest
+  const calendarUrl = useMemo(() => {
+    const first = plan.stops?.[0]
+    const stopLines = (plan.stops || []).map((s, i) => `${i + 1}. ${isHe ? s.name_he || s.name_en : s.name_en}`).join('\n')
+    const details = `${stopLines}\n\n${isHe ? 'תוכנית מ-HaMakom' : 'Plan by HaMakom'} · hamakom.app`
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: `${isHe ? 'דייט' : 'Date'}: ${text.title || ''}`.trim(),
+      details,
+      location: first?.maps_query || first?.name_en || cityName(plan.city, lang) || '',
+    })
+    return `https://calendar.google.com/calendar/render?${params.toString()}`
+  }, [plan, isHe, lang, text.title])
 
   // Approximate clock time per stop + walking time between stops, so the
   // itinerary scans as a real evening instead of a list of paragraphs.
@@ -150,7 +166,7 @@ export default function ResultsPage({
 
   const handleShare = async () => {
     try {
-      await shareContent(sharePlanMessage(plan, lang))
+      await shareContent(sharePlanMessage(plan, lang, answers))
       onSharePlan?.()
     } catch { /* cancelled */ }
   }
@@ -173,7 +189,7 @@ export default function ResultsPage({
               </span>
             ) : plan.city ? (
               <span style={{ fontSize: 11, fontWeight: 700, color: ACCENT, background: '#FBF4E1', borderRadius: 999, padding: '4px 9px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {isHe ? `גם ב${plan.city}` : `Also in ${plan.city}`}
+                {isHe ? `גם ב${cityName(plan.city, lang)}` : `Also in ${plan.city}`}
               </span>
             ) : null}
           </div>
@@ -186,9 +202,9 @@ export default function ResultsPage({
           <div className="hm-reveal" style={{ animationDelay: '0.14s', display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
             {text.startTime ? <Chip>🕐 {text.startTime}</Chip> : null}
             {text.duration  ? <Chip>{text.duration}</Chip>  : null}
-            <Chip>{primaryStops.length} {isHe ? 'עצירות' : 'stops'}</Chip>
+            <Chip>{primaryStops.length} {isHe ? 'תחנות' : 'stops'}</Chip>
             {text.budget    ? <Chip>{text.budget}</Chip>    : null}
-            {plan.city      ? <Chip>📍 {plan.city}</Chip>  : null}
+            {plan.city      ? <Chip>📍 {cityName(plan.city, lang)}</Chip>  : null}
           </div>
 
           <p className="hm-reveal" style={{ animationDelay: '0.2s', margin: 0, fontSize: 14, color: SOFT, lineHeight: 1.6, fontStyle: 'italic' }}>
@@ -196,9 +212,9 @@ export default function ResultsPage({
           </p>
 
           {plan._cityMismatch && plan.city ? (
-            <div style={{ marginTop: 10, padding: '8px 12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, fontSize: 12, color: '#F59E0B' }}>
+            <div style={{ marginTop: 10, padding: '8px 12px', background: '#FBF4DF', border: '1px solid #E6D7A8', borderRadius: 8, fontSize: 13, color: '#7A5E12' }}>
               {isHe
-                ? `שימו לב — התוכנית הזו ב${plan.city}, לא ב${answers.city || ''}.`
+                ? `שימו לב — התוכנית הזו ב${cityName(plan.city, lang)}, לא ב${cityName(answers.city, lang) || ''}.`
                 : `Heads up — this plan is in ${plan.city}, not ${answers.city || 'your selected city'}.`}
             </div>
           ) : null}
@@ -212,8 +228,8 @@ export default function ResultsPage({
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#A99A78', textTransform: 'uppercase', marginBottom: 9 }}>
               {plan.city
-                ? (isHe ? `${plans.length} תוכניות ב${plan.city}` : `${plans.length} plans in ${plan.city}`)
-                : (isHe ? 'וייבים נוספים' : 'Other vibes to try')}
+                ? (isHe ? `${plans.length} תוכניות ב${cityName(plan.city, lang)}` : `${plans.length} plans in ${plan.city}`)
+                : (isHe ? 'סגנונות נוספים' : 'Other styles')}
             </div>
             <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
               {plans.map((p, i) => {
@@ -265,6 +281,8 @@ export default function ResultsPage({
               <StopCard
                 key={`${plan.id}-${i}`}
                 stop={stop}
+                venue={stop._locationId != null ? locationsById.get(stop._locationId) : null}
+                onOpenVenue={onOpenBackupLocation}
                 index={i}
                 lang={lang}
                 total={primaryStops.length}
@@ -324,19 +342,24 @@ export default function ResultsPage({
               transition: 'all 0.2s',
             }}
           >
-            {saved ? (isHe ? '✓ תוכנית שמורה' : '✓ Plan saved') : isHe ? 'שמור את התוכנית' : 'Save this plan'}
+            {saved ? (isHe ? '✓ תוכנית שמורה' : '✓ Plan saved') : isHe ? 'שמרו את התוכנית' : 'Save this plan'}
           </button>
 
           <button onClick={handleShare} style={secondaryBtn(font)}>
-            {isHe ? 'שתף' : 'Share'}
+            {isHe ? '💬 שיתוף' : '💬 Share'}
           </button>
 
-          <button
-            onClick={onSetReminder}
-            style={reminderSet ? { ...secondaryBtn(font), color: '#4F7144', borderColor: '#C7DCBC', background: '#E9F0E4' } : secondaryBtn(font)}
+          {/* "Reminder" used to only store a timestamp — no notification ever
+              fired. A calendar entry is something the user can actually rely on. */}
+          <a
+            href={calendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => onSetReminder?.()}
+            style={{ ...secondaryBtn(font), display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', ...(reminderSet ? { color: '#4F7144', borderColor: '#C7DCBC', background: '#E9F0E4' } : {}) }}
           >
-            {reminderSet ? (isHe ? '✓ תזכורת' : '✓ Reminder') : isHe ? 'תזכורת' : 'Reminder'}
-          </button>
+            {reminderSet ? (isHe ? '✓ ביומן' : '✓ In calendar') : isHe ? '📅 הוסיפו ליומן' : '📅 Add to calendar'}
+          </a>
 
           {firstStopMaps ? (
             <a
@@ -346,7 +369,7 @@ export default function ResultsPage({
               onClick={() => onOpenPlanMaps?.()}
               style={{ ...secondaryBtn(font), gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
             >
-              {isHe ? 'פתח במפות' : 'Open in Maps'} →
+              {isHe ? '← ניווט לתחנה הראשונה' : 'Navigate to the first stop →'}
             </a>
           ) : null}
         </div>
@@ -374,7 +397,7 @@ export default function ResultsPage({
             >
               {showBackups
                 ? (isHe ? 'הסתר חלופות' : 'Hide alternatives')
-                : (isHe ? 'רוצים וייב אחר? ראו 3 חלופות' : 'Want a different vibe? See 3 alternatives')}
+                : (isHe ? 'מקומות גיבוי בסביבה (אם תחנה מלאה או סגורה)' : 'Backup spots nearby (if a stop is full or closed)')}
             </button>
 
             {showBackups ? (
@@ -415,7 +438,7 @@ export default function ResultsPage({
         {/* ── Bottom links ─────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, paddingTop: 8 }}>
           <button onClick={onRetakeQuiz} style={linkBtn(font)}>
-            {isHe ? 'ענו שוב על השאלות' : 'Retake the quiz'}
+            {isHe ? 'שנו את התשובות' : 'Change answers'}
           </button>
           <button onClick={onBrowseAll} style={linkBtn(font)}>
             {isHe ? 'דפדפו בכל המקומות' : 'Browse all places'}
@@ -440,8 +463,20 @@ function Chip({ children }) {
   )
 }
 
-function StopCard({ stop, index, lang, total, timeLabel, walkToNext }) {
+function venueKashrutLine(venue, isHe) {
+  if (!venue) return null
+  const isFood = /caf|restaurant|winer|hotel|lounge/i.test(venue.category || '')
+  if (venue.kashrus && !/not certified/i.test(venue.kashrus)) {
+    return { tone: '#4F7144', text: `✓ ${venue.kashrus}` }
+  }
+  if (venue.kashrus) return { tone: '#8A6A3B', text: isHe ? 'ללא תעודת כשרות' : 'Not certified' }
+  if (isFood) return { tone: '#A99A85', text: isHe ? 'כשרות טרם אומתה' : 'Kashrut not verified yet' }
+  return null
+}
+
+function StopCard({ stop, venue, onOpenVenue, index, lang, total, timeLabel, walkToNext }) {
   const isHe = lang === 'he'
+  const kashrutLine = venueKashrutLine(venue, isHe)
   const title       = isHe ? stop.name_he        : stop.name_en
   const instruction = isHe ? stop.instruction_he  : stop.instruction_en
   const orderTip    = isHe ? stop.order_tip_he    : stop.order_tip_en
@@ -494,7 +529,19 @@ function StopCard({ stop, index, lang, total, timeLabel, walkToNext }) {
             <span style={{ fontSize: 11, color: MUTED, whiteSpace: 'nowrap', flexShrink: 0 }}>◷ {duration}</span>
           ) : null}
         </div>
+        {kashrutLine ? (
+          <div style={{ fontSize: 12, fontWeight: 600, color: kashrutLine.tone, marginBottom: 5 }}>{kashrutLine.text}</div>
+        ) : null}
         <div style={{ fontSize: 13.5, lineHeight: 1.55, color: '#6E6450', marginBottom: orderTip ? 6 : 0 }}>{instruction}</div>
+        {venue && onOpenVenue ? (
+          <button
+            type="button"
+            onClick={() => onOpenVenue(venue)}
+            style={{ background: 'none', border: 'none', padding: '6px 0', marginTop: 2, color: ACCENT, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            {isHe ? 'פרטי המקום ←' : 'View this place →'}
+          </button>
+        ) : null}
         {orderTip ? (
           <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, background: '#FAF6EC', borderRadius: 10, padding: '9px 12px', marginTop: 6, display: 'flex', gap: 7 }}>
             <span aria-hidden style={{ flexShrink: 0 }}>💡</span>
@@ -502,8 +549,8 @@ function StopCard({ stop, index, lang, total, timeLabel, walkToNext }) {
           </div>
         ) : null}
         {mapsUrl ? (
-          <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8, fontSize: 12, color: ACCENT, textDecoration: 'none' }}>
-            {isHe ? 'פתח במפות ←' : '→ Open in Maps'}
+          <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8, padding: '6px 0', fontSize: 13, color: ACCENT, textDecoration: 'none' }}>
+            {isHe ? '← פתחו במפות' : 'Open in Maps →'}
           </a>
         ) : null}
 
@@ -532,10 +579,10 @@ function CompactStop({ stop, lang }) {
       <div style={{ width: 6, height: 6, borderRadius: '50%', background: BORDER, marginTop: 7, flexShrink: 0 }} />
       <div>
         <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>{title}</span>
-        {instruction ? <span style={{ fontSize: 13, color: MUTED, marginLeft: 6 }}>{instruction}</span> : null}
+        {instruction ? <span style={{ fontSize: 13, color: MUTED, marginInlineStart: 6 }}>{instruction}</span> : null}
         {mapsUrl ? (
-          <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: 4, fontSize: 12, color: ACCENT, textDecoration: 'none' }}>
-            {isHe ? 'פתח במפות' : '→ Maps'}
+          <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: 4, padding: '4px 0', fontSize: 13, color: ACCENT, textDecoration: 'none' }}>
+            {isHe ? '← מפות' : 'Maps →'}
           </a>
         ) : null}
       </div>

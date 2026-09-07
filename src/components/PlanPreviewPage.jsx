@@ -1,4 +1,5 @@
 import { getMapsUrl } from '../lib/constants'
+import { cityName } from '../lib/translations'
 
 // Role → short, human label (kept in sync with ResultsPage).
 const ROLE_LABELS = {
@@ -25,7 +26,7 @@ export default function PlanPreviewPage({ lang, font, plan, title, onBack, onPla
           <div style={{ fontSize: 12, letterSpacing: '0.16em', color: '#9A7A28', textTransform: 'uppercase', marginBottom: 8 }}>{title}</div>
           <h1 style={{ fontSize: 28, lineHeight: 1.1, margin: '0 0 8px' }}>{isHe ? plan.title_he : plan.title_en}</h1>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-            <Pill>{plan.city}</Pill>
+            <Pill>{cityName(plan.city, lang)}</Pill>
             <Pill>{isHe ? plan.start_time_text_he : plan.start_time_text_en}</Pill>
             <Pill>{isHe ? plan.duration_text_he : plan.duration_text_en}</Pill>
           </div>
@@ -41,7 +42,7 @@ export default function PlanPreviewPage({ lang, font, plan, title, onBack, onPla
           </div>
 
           <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#8A7F6C', textTransform: 'uppercase', marginBottom: 10 }}>
-            {isHe ? 'איך הערב בנוי' : 'How This Plan Flows'}
+            {isHe ? 'איך הערב נבנה' : 'How the night unfolds'}
           </div>
 
           {routeReason ? (
@@ -78,7 +79,7 @@ export default function PlanPreviewPage({ lang, font, plan, title, onBack, onPla
               fontFamily: 'inherit',
             }}
           >
-            {isHe ? 'תנו לי תוכנית אישית אחרת' : 'Get My Own Personalized Plan'}
+            {isHe ? 'תכננו לי תוכנית משלי' : 'Plan my own date'}
           </button>
         </div>
       </div>

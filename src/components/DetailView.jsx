@@ -274,7 +274,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
             onClick={() => onClaim?.(loc)}
             style={{ background: 'none', border: 'none', padding: 0, color: '#9A7A28', fontFamily: font, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}
           >
-            {lang === 'he' ? 'תבעו או עדכנו את הרישום ←' : 'Claim or update this listing →'}
+            {lang === 'he' ? 'עדכנו את הרישום ←' : 'Claim or update this listing →'}
           </button>
         </aside>
 
@@ -306,7 +306,11 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
 function getKashrutDisplay(loc, lang) {
   const isHe = lang === 'he'
   const status = loc.kashrut_status || (/not certified/i.test(loc.kashrus || '') ? 'not_certified' : loc.kashrus ? 'verified' : 'unknown')
-  if (status === 'unknown') return null
+  if (status === 'unknown') {
+    // Food venues must never be silently ambiguous for an observant audience
+    if (!/caf|restaurant|winer|hotel|lounge/i.test(loc.category || '')) return null
+    return { status: 'not_certified', label: isHe ? 'כשרות טרם אומתה — בדקו לפני שיוצאים' : 'Kashrut not verified yet — check before you go', meta: null }
+  }
   if (status === 'not_certified') {
     return { status, label: isHe ? 'ללא תעודת כשרות מאומתת' : 'No verified certification', meta: null }
   }

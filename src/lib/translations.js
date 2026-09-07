@@ -241,7 +241,7 @@ export const t = {
     quizCtaSub: 'A few quick questions · one executable answer',
     quiz: 'Quiz',
     quizTitle: 'Date in 60 Seconds',
-    quizSubtitle: 'Answer 5 questions → get a complete 3-stop evening plan',
+    quizSubtitle: 'Answer 3 questions → get a complete 3-stop evening plan',
     quizBack: '← Back',
     shareError: 'Could not share right now. Try again.',
     featuredLabel: 'Featured',
@@ -283,7 +283,7 @@ export const t = {
     bizEmailUs: 'Or email us: ',
     noLocationsFound: 'No locations matched. Try a different city or search term.',
     dateStageFilters: { all: 'Any Date', '1': '1st Date', '2': '2nd Date', '3': '3rd Date+' },
-    homepageValueProp: 'Answer 5 questions → get a real 3-stop date plan with maps and timing.',
+    homepageValueProp: 'Answer 3 questions → get a real 3-stop date plan with maps and timing.',
     homepageTrustLine: '300+ verified locations · trusted by shadchaniot',
     planConfidenceLow: 'Best match available for your area',
   },
@@ -303,7 +303,7 @@ export const t = {
     saved: 'שמורים',
     savedSubtitle: (n) => n === 1 ? `פריט שמור אחד מחכה לכם` : `${n} פריטים שמורים מחכים לכם`,
     savedEmptyTitle: 'אין שמורים עדיין',
-    savedPlansEmptyText: 'שמרו תוכנית אחרי הבוחן והיא תחכה לכם כאן.',
+    savedPlansEmptyText: 'שמרו תוכנית אחרי השאלון והיא תחכה לכם כאן.',
     savedPlacesEmptyText: 'שמרו מקום בזמן העיון והוא יופיע כאן גם.',
     savedPlansSectionTitle: 'תוכניות שמורות',
     savedPlacesSectionTitle: 'מקומות שמורים',
@@ -353,7 +353,7 @@ export const t = {
     profileStatsLanguage: 'שפה',
     profileActionsTitle: 'פעולות מהירות',
     profileActionsText: 'חזרה מהירה לחלקים שתשתמשו בהם הכי הרבה.',
-    profileActionQuiz: 'התחילו את הבוחן הקצר',
+    profileActionQuiz: 'התחילו את השאלון הקצר',
     profileActionSuggest: 'הציעו מקום חדש',
     profileActionLanguage: 'החליפו שפה',
     profileActionAdmin: 'פתחו Admin',
@@ -537,7 +537,7 @@ export const t = {
     partnerBadge: '✦ שותף',
     reserveButton: 'הזמינו שולחן',
     forBusinesses: 'שותפות עם המקום',
-    forBusinessesSub: 'הוסיפו או תבעו את רישום העסק',
+    forBusinessesSub: 'הוסיפו או עדכנו את רישום העסק',
     bizHeroEyebrow: 'תוכנית השותפים',
     bizHeroTitle: 'העסק שלכם מול רווקים שמחפשים לאן לצאת',
     bizHeroText: 'המקום מתכנן דייטים אמיתיים לרווקים דתיים בכל הארץ. שותפים מוצגים עם תג זהב, מקבלים עדיפות בעיון, ורואים מספרים אמיתיים: כמה גולשים ראו את העסק ופתחו ניווט.',
@@ -547,7 +547,7 @@ export const t = {
     bizBenefit2Text: 'תג ברור והוגן על הכרטיס והעמוד — תמיד מסומן, אף פעם לא פרסום סמוי.',
     bizBenefit3Title: 'מספרים אמיתיים',
     bizBenefit3Text: 'דוח פשוט: כמה גולשים צפו בעמוד שלכם ופתחו ניווט אליכם.',
-    bizIntegrityNote: 'כלל אחד שלא נשבור: המלצות הבוחן לעולם לא נמכרות. שותפים מקבלים חשיפה ותגים — לא תוצאות מוטות.',
+    bizIntegrityNote: 'כלל אחד שלא נשבור: המלצות השאלון לעולם לא נמכרות. שותפים מקבלים חשיפה ותגים — לא תוצאות מוטות.',
     bizFormTitle: 'ספרו לנו על העסק',
     bizName: 'שם העסק',
     bizNamePH: 'למשל: קפה רימון',
@@ -574,4 +574,10 @@ export const t = {
     homepageTrustLine: '300+ מקומות מאומתים · מומלץ על ידי שדכניות',
     planConfidenceLow: 'ההתאמה הטובה ביותר הזמינה לאזור שלכם',
   },
+}
+
+/** Localized display name for a city key (falls back to the raw key). */
+export function cityName(city, lang) {
+  if (!city) return city
+  return t[lang]?.cities?.[city] || city
 }

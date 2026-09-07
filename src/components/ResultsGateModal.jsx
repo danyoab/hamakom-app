@@ -127,6 +127,9 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
           padding: '14px 22px calc(34px + var(--hm-sab, 0px))',
           boxSizing: 'border-box',
           color: '#241E16',
+          // Keep the Send button reachable when the Android keyboard is up
+          maxHeight: 'calc(100dvh - 24px)',
+          overflowY: 'auto',
         }}
       >
         <div style={{ width: 36, height: 4, background: '#EBE2D0', borderRadius: 999, margin: '0 auto 18px' }} />
@@ -238,7 +241,7 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
                     fontFamily: 'inherit',
                   }}
                 >
-                  {loading ? (isHe ? 'שולחים...' : 'Sending...') : isHe ? 'שלחו לי קישור' : 'Send Me A Link'}
+                  {loading ? (isHe ? 'שולחים...' : 'Sending...') : isHe ? 'שלחו לי קישור' : 'Email me a link'}
                 </button>
 
                 {error ? <div style={{ fontSize: 12, color: '#F87171', textAlign: 'center' }}>{error}</div> : null}

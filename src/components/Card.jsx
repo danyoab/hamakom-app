@@ -146,6 +146,11 @@ export default function Card({ loc, lang, tx, saved, onToggleSave, onClick, show
               ✓ {loc.kashrus}
             </div>
           )
+        ) : /caf|restaurant|winer|hotel|lounge/i.test(loc.category || '') ? (
+          // Silence reads as "fine" to an observant user — say so honestly instead
+          <div style={{ fontSize: 11, fontWeight: 500, color: '#A99A85', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {isHe ? 'כשרות טרם אומתה' : 'Kashrut not verified yet'}
+          </div>
         ) : null}
       </div>
     </a>

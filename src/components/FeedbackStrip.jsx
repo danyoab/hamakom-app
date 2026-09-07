@@ -2,8 +2,8 @@ import { useMemo } from 'react'
 
 // 8 chips matching the spec. Compact, low-friction, no required interaction.
 const CHIPS = [
-  { key: 'good',            en: '👍 good rec',          he: '👍 המלצה טובה' },
-  { key: 'bad',             en: '👎 bad rec',           he: '👎 לא התאים' },
+  { key: 'good',            en: '👍 Good pick',         he: '👍 המלצה טובה' },
+  { key: 'bad',             en: '👎 Not for us',        he: '👎 לא התאים' },
   { key: 'perfect-vibe',    en: 'perfect vibe',         he: 'וייב מושלם' },
   { key: 'would-go-again',  en: 'would go again',       he: 'אחזור' },
   { key: 'too-loud',        en: 'too loud',             he: 'רועש מדי' },

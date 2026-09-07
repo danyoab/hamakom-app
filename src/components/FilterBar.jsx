@@ -15,13 +15,15 @@ const DEFAULTS = {
 
 function chipStyle(active) {
   return {
-    background: active ? ACCENT : PANEL,
+    // Ink on cream for the active chip: gold-on-cream was ~2:1 contrast
+    background: active ? '#241E16' : PANEL,
     color: active ? '#F7F2E8' : MUTED,
-    border: `1px solid ${active ? ACCENT : BORDER}`,
+    border: `1px solid ${active ? '#241E16' : BORDER}`,
     borderRadius: 999,
-    padding: '7px 13px',
+    padding: '9px 14px',
+    minHeight: 38,
     cursor: 'pointer',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: active ? 700 : 500,
     fontFamily: 'inherit',
     whiteSpace: 'nowrap',

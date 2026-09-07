@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { t } from './lib/translations'
+import { t, cityName } from './lib/translations'
 import { useLocations } from './hooks/useLocations'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useSyncSaves } from './hooks/useSyncSaves'
@@ -18,6 +18,8 @@ import { locationCanonical, siteOrigin } from './lib/seo'
 import {
   createRecommendationImpression,
   grantAnalyticsConsent,
+  denyAnalyticsConsent,
+  hasConsentDecision,
   hasAnalyticsConsent,
   revokeAnalyticsConsent,
   saveUserFeedback,
@@ -26,7 +28,7 @@ import {
 } from './lib/analytics'
 import { getRecommendedLocations } from './lib/locationRecommendations'
 import { getSmartMatchedPlans, recordPlanImpression } from './lib/planRecommendations'
-import { isRealVenueRow, isOperational, sameCity, foodClassOf } from './lib/planGates'
+import { isRealVenueRow, isOperational, isRealPlan, sameCity, foodClassOf } from './lib/planGates'
 import { resolveCuratedPlans, curatedPlanSafe } from './lib/curatedResolver'
 import {
   clearAnswersFromSession,
@@ -136,10 +138,19 @@ function singleSpotKind(loc) {
 }
 
 export default function App() {
-  const [lang, setLang] = useState('en')
+  // Remember the language; first visit follows the device (Hebrew speakers
+  // should never have to re-toggle on every launch).
+  const [lang, setLang] = useState(() => {
+    try {
+      const saved = localStorage.getItem('hamakom-lang')
+      if (saved === 'he' || saved === 'en') return saved
+    } catch { /* storage blocked */ }
+    return typeof navigator !== 'undefined' && (navigator.language || '').toLowerCase().startsWith('he') ? 'he' : 'en'
+  })
   useEffect(() => {
     document.documentElement.lang = lang
     document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr'
+    try { localStorage.setItem('hamakom-lang', lang) } catch { /* storage blocked */ }
   }, [lang])
   const [tab, setTab] = useState('home')
   const [overlay, setOverlay] = useState(null)
@@ -155,7 +166,9 @@ export default function App() {
   const [planReminderIds, setPlanReminderIds] = useLocalStorage('hamakom-plan-reminders', [])
   const [reminderTimestamps, setReminderTimestamps] = useLocalStorage('hamakom-reminder-timestamps', {})
   const [dateFeedback, setDateFeedback] = useLocalStorage('hamakom-date-feedback', {})
-  const [datePlans, setDatePlans] = useLocalStorage('hamakom-date-plans', DATE_PLANS)
+  // Versioned key: the old key only ever merged additions, so plans removed
+  // from DATE_PLANS kept surfacing on existing installs.
+  const [datePlans, setDatePlans] = useLocalStorage('hamakom-date-plans-v2', DATE_PLANS)
   const [exploreMode, setExploreMode] = useState('list')
   const [browseSearch, setBrowseSearch] = useState('')
   const [browseFilters, setBrowseFilters] = useState(INITIAL_FILTERS)
@@ -163,7 +176,7 @@ export default function App() {
   const [previewPlan, setPreviewPlan] = useState(null)
   const [exploreExpanded, setExploreExpanded] = useState(false)
   const [currentRecommendationId, setCurrentRecommendationId] = useState(null)
-  const [showConsentBanner, setShowConsentBanner] = useState(() => !hasAnalyticsConsent())
+  const [showConsentBanner, setShowConsentBanner] = useState(() => !hasConsentDecision())
   const [analyticsEnabled, setAnalyticsEnabled] = useState(() => hasAnalyticsConsent())
   const [feedbackNudgePlanId, setFeedbackNudgePlanId] = useState(null)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
@@ -240,8 +253,13 @@ export default function App() {
   // Tonight's Pick / Surprise Me pool: exclude any curated plan with a stop
   // that resolved to a venue we KNOW is closed. Falls back to the full list
   // if verification empties the pool (e.g. locations still loading).
+  // Prefer plans whose every stop resolved to a real venue — the home screen
+  // is the first thing a new user taps, and a "Hand-picked" badge over a
+  // placeholder stop ("Boutique Dessert Spot") reads as fake.
   const tonightPool = useMemo(() => {
     const safe = resolvedDatePlans.filter(curatedPlanSafe)
+    const real = safe.filter(isRealPlan)
+    if (real.length) return real
     return safe.length ? safe : resolvedDatePlans
   }, [resolvedDatePlans])
   const tonightPlan = useMemo(() => getTonightPlan(tonightPool), [tonightPool])
@@ -433,6 +451,18 @@ export default function App() {
     })
   }, [authUser?.id, filteredLocations, tab])
 
+  // Guests too: a WebView reload or refresh must not lose the plan they just
+  // built. Answers are already saved to sessionStorage on quiz completion.
+  useEffect(() => {
+    const pendingAnswers = loadAnswersFromSession()
+    if (pendingAnswers && !loadPendingSaveFromSession()?.id) {
+      setQuizAnswers(pendingAnswers)
+      setResultIndex(0)
+      setOverlay('quiz-results')
+      clearAnswersFromSession()
+    }
+  }, [])
+
   useEffect(() => {
     if (!supabase) return undefined
 
@@ -607,6 +637,17 @@ export default function App() {
       setBusinessLeadContext({ source: 'direct_url', location: null })
       setOverlay('businesses')
     }
+    // Shared plan link: rebuild the exact plan from the answers in the URL
+    if (route.type === 'plan') {
+      const seeded = { ...route.answers, _seed: route.answers._seed || Date.now() }
+      setQuizAnswers(seeded)
+      setResultIndex(0)
+      setOverlay('quiz-results')
+      void trackEvent('shared_plan_opened', {
+        userId: authUser?.id,
+        properties: { city: seeded.city, focus: seeded.focus || null },
+      })
+    }
   }, [authUser?.id, locations])
 
   const handleAppBack = useCallback(() => {
@@ -663,7 +704,7 @@ export default function App() {
   const deepLinkHandled = useRef(false)
   useEffect(() => {
     if (deepLinkHandled.current || loading) return
-    const route = parseAppRoute(window.location.pathname)
+    const route = parseAppRoute(window.location.pathname, window.location.search)
     if (!route) return
     if (route.type === 'location' && !locations.length) return
     deepLinkHandled.current = true
@@ -672,7 +713,7 @@ export default function App() {
 
   useEffect(() => {
     const onPop = () => {
-      const route = parseAppRoute(window.location.pathname)
+      const route = parseAppRoute(window.location.pathname, window.location.search)
       if (route) {
         openRoute(route)
         return
@@ -1240,6 +1281,7 @@ export default function App() {
           alternatePlan={alternatePlan}
           backupLocations={backupLocations}
           answers={quizAnswers || {}}
+          locations={locations}
           saved={savedPlanIds.includes(currentPlan.id)}
           reminderSet={planReminderIds.includes(currentPlan.id)}
           onBrowseAll={() => {
@@ -1399,6 +1441,11 @@ export default function App() {
                 setOverlay('plan-preview')
               }}
               onOpenTonightPlan={openPlanPreview}
+              lastPlan={quizAnswers && currentPlan ? currentPlan : null}
+              onResumePlan={() => {
+                setOverlay('quiz-results')
+                void trackEvent('plan_resumed', { userId: authUser?.id, itemType: 'plan', itemId: currentPlan?.id })
+              }}
               onOpenBusinesses={() => openBusinesses('homepage_footer')}
               onBusinessCtaViewed={() => trackBusinessCtaViewed('homepage_footer')}
             />
@@ -1523,7 +1570,7 @@ export default function App() {
             setAnalyticsEnabled(true)
             setShowConsentBanner(false)
           }}
-          onDecline={() => setShowConsentBanner(false)}
+          onDecline={() => { denyAnalyticsConsent(); setShowConsentBanner(false) }}
           onOpenPrivacy={() => { window.history.pushState({}, '', '/privacy'); setOverlay('privacy') }}
         />
       ) : showFeedbackModal ? (
@@ -1588,7 +1635,7 @@ function AppHeader({ lang, onToggleLang }) {
             flexShrink: 0,
           }}
         >
-          {lang === 'en' ? 'עבר' : 'EN'}
+          {lang === 'en' ? 'עברית' : 'EN'}
         </button>
       </div>
     </div>
@@ -1604,6 +1651,8 @@ function HomePage({
   onStartQuiz,
   onSurpriseMe,
   onOpenTonightPlan,
+  lastPlan = null,
+  onResumePlan,
   onOpenBusinesses,
   onBusinessCtaViewed,
 }) {
@@ -1660,7 +1709,7 @@ function HomePage({
           </div>
           <div className="hm-reveal" style={{ animationDelay: '0.35s', textAlign: 'center', margin: '10px 0 2px' }}>
             <span style={{ fontSize: 13.5, color: '#9A8F7C' }}>
-              {isHe ? 'בערך דקה · 3 הקשות מהירות' : 'Takes about a minute · 3 quick taps'}
+              {isHe ? 'בערך דקה · 3 לחיצות' : 'Takes about a minute · 3 taps'}
             </span>
           </div>
           <div className="hm-reveal" style={{ animationDelay: '0.4s', textAlign: 'center' }}>
@@ -1669,6 +1718,31 @@ function HomePage({
             </button>
           </div>
         </section>
+
+        {/* The plan they just built — tapping a nav tab used to lose it for good */}
+        {lastPlan && onResumePlan ? (
+          <section>
+            <button
+              type="button"
+              onClick={onResumePlan}
+              className="hm-lift"
+              style={{ width: '100%', textAlign: isHe ? 'right' : 'left', background: '#FBF4E1', border: '1px solid #E6D7A8', borderRadius: 18, padding: '14px 16px', cursor: 'pointer', fontFamily: 'inherit', color: APP_TEXT, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+            >
+              <span>
+                <span style={{ display: 'block', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em', color: '#9A7A28', textTransform: 'uppercase', marginBottom: 3 }}>
+                  {isHe ? 'התוכנית שלכם' : 'Your plan'}
+                </span>
+                <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>
+                  {isHe ? lastPlan.title_he || lastPlan.title_en : lastPlan.title_en}
+                </span>
+                {lastPlan.city ? (
+                  <span style={{ display: 'block', fontSize: 12.5, color: APP_SOFT, marginTop: 2 }}>📍 {cityName(lastPlan.city, lang)}</span>
+                ) : null}
+              </span>
+              <span aria-hidden style={{ fontSize: 18, color: '#9A7A28' }}>{isHe ? '←' : '→'}</span>
+            </button>
+          </section>
+        ) : null}
 
         {/* Tonight's Pick — standalone card, no outer panel wrapper */}
         <section className="hm-reveal" style={{ animationDelay: '0.48s' }}>
@@ -1940,7 +2014,7 @@ function BusinessCta({ lang, source, onView, onOpen }) {
           fontFamily: 'inherit', fontSize: 13, fontWeight: 800, cursor: 'pointer',
         }}
       >
-        {isHe ? 'הצטרפו כפיילוט מייסד ←' : 'Join the founding pilot →'}
+        {isHe ? 'רשמו את המקום שלכם ←' : 'List your venue →'}
       </button>
     </aside>
   )
@@ -1968,7 +2042,7 @@ function TonightPlanCard({ lang, plan, onOpenPlan }) {
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
         <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', color: APP_ACCENT, textTransform: 'uppercase' }}>
-          {plan.city ? `${isHe ? 'בחירת הערב' : "Tonight's pick"} · ${plan.city}` : (isHe ? 'בחירת הערב' : "Tonight's pick")}
+          {plan.city ? `${isHe ? 'בחירת הערב' : "Tonight's pick"} · ${cityName(plan.city, lang)}` : (isHe ? 'בחירת הערב' : "Tonight's pick")}
         </span>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#4F7144', background: '#E9F0E4', borderRadius: 999, padding: '4px 9px', whiteSpace: 'nowrap' }}>
           {isHe ? 'נבחר בקפידה' : 'Hand-picked'}
@@ -2234,12 +2308,12 @@ function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder
         <MiniPill>{isHe ? plan.start_time_text_he : plan.start_time_text_en}</MiniPill>
         <MiniPill>{isHe ? plan.duration_text_he : plan.duration_text_en}</MiniPill>
         <MiniPill>{isHe ? plan.budget_text_he : plan.budget_text_en}</MiniPill>
-        {reminderSet ? <MiniPill>{isHe ? 'תזכורת נשמרה' : 'Reminder set'}</MiniPill> : null}
+        {reminderSet ? <MiniPill>{isHe ? 'מתכננים לצאת' : 'Planning this'}</MiniPill> : null}
       </div>
       <div style={{ color: '#6E6450', fontSize: 15, lineHeight: 1.55, marginBottom: 12 }}>{isHe ? plan.narrative_he : plan.narrative_en}</div>
       <div style={{ display: 'grid', gap: 8 }}>
         <button onClick={onToggleReminder} style={secondaryButtonStyle}>
-          {reminderSet ? (isHe ? 'הסירו תזכורת' : 'Remove Reminder') : isHe ? 'קבעו תזכורת' : 'Set Reminder'}
+          {reminderSet ? (isHe ? 'לא יוצאים בסוף' : 'Not going') : isHe ? 'מתכננים לצאת' : 'Planning to go'}
         </button>
         <button onClick={handleShare} style={secondaryButtonStyle}>
           {tx.shareSavedPlan}
@@ -2293,7 +2367,7 @@ function FeedbackComposer({ lang, rating, again, onSetWent, onSetRating, onSetAg
       <div style={{ fontSize: 13, color: '#241E16', fontWeight: 600 }}>{isHe ? 'עזרו לנו לדייק את ההמלצה הבאה' : 'Help us sharpen the next recommendation'}</div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button onClick={() => onSetWent(true)} style={compactButtonStyle}>{isHe ? 'כן, הלכנו' : 'Yes, we went'}</button>
-        <button onClick={() => onSetWent(false)} style={compactButtonStyle}>{isHe ? 'לא בסוף' : 'Not in the end'}</button>
+        <button onClick={() => onSetWent(false)} style={compactButtonStyle}>{isHe ? 'לא יצאנו' : "Didn't go"}</button>
       </div>
       <div>
         <div style={{ fontSize: 12, color: '#8A7F6C', marginBottom: 6 }}>{isHe ? 'איך היה?' : 'How was it?'}</div>
@@ -3010,7 +3084,7 @@ function FeedbackNudge({ lang, font, plan, onRespond, onDismiss }) {
       ) : (
         <>
           <p style={{ margin: '0 0 12px', fontSize: 14, color: APP_SOFT }}>
-            {isHe ? 'כמה כיפי היה?' : 'How was it?'}
+            {isHe ? 'איך היה?' : 'How was it?'}
           </p>
           <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
             {[1, 2, 3, 4, 5].map((star) => (

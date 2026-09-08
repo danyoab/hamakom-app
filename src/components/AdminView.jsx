@@ -1554,7 +1554,7 @@ export default function AdminView({
 
         {adminTab === 'sql' ? (
           <div style={{ background: '#0A0E1A', border: '1px solid #2A2F3E', borderRadius: 10, padding: 20 }}>
-            <div style={{ fontSize: 11, letterSpacing: '0.15em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 12 }}>Paste into Supabase SQL Editor</div>
+            <div style={{ fontSize: 11, letterSpacing: '0.15em', color: '#6B7280', textTransform: 'uppercase', marginBottom: 12 }}>Read-only database checks · Supabase SQL Editor</div>
             <pre style={{ fontSize: 11, color: '#9CA3AF', margin: 0, overflow: 'auto', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{SQL}</pre>
           </div>
         ) : null}
@@ -1936,117 +1936,18 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-const SQL = `-- Core tables the app already expects:
-create table if not exists analytics_events (
-  id bigserial primary key,
-  user_id uuid references auth.users(id) on delete set null,
-  session_id text not null,
-  event_name text not null,
-  item_type text,
-  item_id text,
-  properties jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
-);
+const SQL = `-- Read-only checks for the current release.
+-- Schema changes belong in the versioned supabase/migration_*.sql files.
+-- Do not paste historical setup policies over the release migrations.
+select count(*) as published_places from public.public_location_catalog;
 
-create index if not exists analytics_events_event_name_idx on analytics_events(event_name);
-create index if not exists analytics_events_user_id_idx on analytics_events(user_id);
-create index if not exists analytics_events_created_at_idx on analytics_events(created_at desc);
+select tablename, policyname, cmd, roles
+from pg_policies
+where schemaname = 'public'
+  and tablename in ('locations', 'analytics_events',
+    'recommendation_impressions', 'recommendation_outcomes')
+order by tablename, policyname;
 
-create table if not exists user_feedback (
-  id bigserial primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  item_type text not null check (item_type in ('plan', 'place')),
-  item_id text not null,
-  went boolean,
-  rating int check (rating between 1 and 5),
-  would_do_again boolean,
-  notes text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (user_id, item_type, item_id)
-);
-
-create index if not exists user_feedback_user_id_idx on user_feedback(user_id);
-create index if not exists user_feedback_item_idx on user_feedback(item_type, item_id);
-
-create table if not exists recommendation_impressions (
-  id bigserial primary key,
-  user_id uuid references auth.users(id) on delete set null,
-  session_id text not null,
-  quiz_answers jsonb not null default '{}'::jsonb,
-  primary_plan_id text not null,
-  backup_location_ids jsonb not null default '[]'::jsonb,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists recommendation_impressions_user_id_idx on recommendation_impressions(user_id);
-create index if not exists recommendation_impressions_created_at_idx on recommendation_impressions(created_at desc);
-
-create table if not exists recommendation_outcomes (
-  id bigserial primary key,
-  recommendation_impression_id bigint not null references recommendation_impressions(id) on delete cascade,
-  saved boolean not null default false,
-  shared boolean not null default false,
-  maps_opened boolean not null default false,
-  reminder_set boolean not null default false,
-  went boolean,
-  rating int check (rating between 1 and 5),
-  would_do_again boolean,
-  updated_at timestamptz not null default now(),
-  unique (recommendation_impression_id)
-);
-
-create index if not exists recommendation_outcomes_impression_idx on recommendation_outcomes(recommendation_impression_id);
-
-create or replace function set_updated_at()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language plpgsql;
-
-drop trigger if exists user_feedback_set_updated_at on user_feedback;
-create trigger user_feedback_set_updated_at
-before update on user_feedback
-for each row execute procedure set_updated_at();
-
-drop trigger if exists recommendation_outcomes_set_updated_at on recommendation_outcomes;
-create trigger recommendation_outcomes_set_updated_at
-before update on recommendation_outcomes
-for each row execute procedure set_updated_at();
-
-alter table analytics_events enable row level security;
-alter table user_feedback enable row level security;
-alter table recommendation_impressions enable row level security;
-alter table recommendation_outcomes enable row level security;
-
-drop policy if exists "analytics insert" on analytics_events;
-create policy "analytics insert" on analytics_events
-for insert with check (true);
-
-drop policy if exists "analytics read own" on analytics_events;
-create policy "analytics read own" on analytics_events
-for select using (auth.uid() = user_id or user_id is null);
-
-drop policy if exists "feedback own rows" on user_feedback;
-create policy "feedback own rows" on user_feedback
-for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-drop policy if exists "impressions insert" on recommendation_impressions;
-create policy "impressions insert" on recommendation_impressions
-for insert with check (true);
-
-drop policy if exists "impressions read own" on recommendation_impressions;
-create policy "impressions read own" on recommendation_impressions
-for select using (auth.uid() = user_id or user_id is null);
-
-drop policy if exists "outcomes insert update" on recommendation_outcomes;
-create policy "outcomes insert update" on recommendation_outcomes
-for all using (true) with check (true);
-
--- Optional next tables for preference learning:
--- user_preference_profile
--- user_location_affinity
--- location_ratings_rollups
+select to_regprocedure('public.record_recommendation_outcome(uuid,text,jsonb)')
+  as outcome_rpc;
 `

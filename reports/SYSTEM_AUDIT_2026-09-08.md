@@ -2,7 +2,7 @@
 
 ## Release status
 
-The paused Supabase project was restored. The live public catalog, account saves, account deletion, analytics isolation and notification authentication have been checked. The web release is prepared for GitHub deployment; final deployment results are recorded below when available. This report describes a web release, not an Android/iOS store release or a guarantee that every possible bug has been eliminated.
+The paused Supabase project was restored. The live public catalog, account saves, account deletion, analytics isolation and notification authentication have been checked. The web release is pushed to GitHub and deployed at https://www.hamakom.app/. Final deployment results are recorded below. This report describes a web release, not an Android/iOS store release or a guarantee that every possible bug has been eliminated.
 
 ## What changed
 
@@ -59,4 +59,14 @@ Neither a dietary tag nor dairy-free food means an allergy-safe kitchen. Combini
 
 ## Deployment
 
-Pending final GitHub push and hosted smoke check.
+Published application commit: f5e4c15d9b549bf0192ab35b8bb3ca20d0123c6d (main), following release commit 2d93584.
+
+- GitHub CI: https://github.com/danyoab/hamakom-app/actions/runs/34264176258 — success.
+- Production deployment: https://github.com/danyoab/hamakom-app/actions/runs/34264176684 — success.
+- Public home, shared-plan, Greg venue and privacy routes all returned HTTP 200 with the final index-BOqDHXlt.js build.
+- The live two-choice Beit Shemesh quiz returned three alternatives, actual numbered map pins and full-route navigation. The Hebrew shared itinerary resolved Keramikli and Rimon in the correct order.
+- Existing PWA visitors received the new worker and current application on refresh. A pre-update cached page logged a legacy catalog error; the refreshed application loaded the public catalog successfully.
+- All 54 live API verification checks passed; temporary test accounts were cleaned up. No user-facing test notifications were sent.
+- The admin SQL panel now offers read-only checks instead of obsolete permissive setup policies.
+
+The web app is ready to share for date discovery and planning within the data limits above. Menu coverage and current venue/kashrut confirmation remain explicit limitations, not promised facts.

@@ -3,6 +3,8 @@ import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getInviteUrl, getMa
 import { shareContent, shareLocationMessage } from '../lib/share'
 import FeedbackModal from './FeedbackModal'
 import FeedbackStrip from './FeedbackStrip'
+import VenueFoodDetails from './VenueFoodDetails.jsx'
+import { hasVerifiedKashrut, safeExternalUrl } from '../lib/venuePreferences.js'
 
 export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true, dateFeedback, setDateFeedback, onMapOpen, onReserve, onPhone, onShare, onClaim, onClaimViewed }) {
   const [imgFailed, setImgFailed] = useState(false)
@@ -76,6 +78,16 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
           ) : null}
         </div>
         <div style={{ fontSize: 15, color: '#9A7A28', marginTop: 4, fontStyle: 'italic' }}>{city}</div>
+        <p style={{ fontSize: 12, lineHeight: 1.5, color: '#6E6450' }}>{['CLOSED_TEMPORARILY', 'CLOSED_PERMANENTLY'].includes(loc.business_status)
+          ? (lang === 'he' ? 'המקום מדווח כסגור. בחרו מקום אחר.' : 'This venue is reported closed. Choose another place.')
+          : (lang === 'he' ? 'בדקו שעות פתיחה, זמינות וכשרות עם המקום לפני ההגעה.' : 'Confirm opening hours, availability and kashrut with the venue before going.')}</p>
+        {loc.formatted_address && <div style={{ fontSize: 13, marginTop: 6 }}>{loc.formatted_address}</div>}
+        <VenueFoodDetails loc={loc} lang={lang} />
+        {loc.opening_hours?.weekday_text?.length > 0 && <details style={{ marginTop: 14, fontSize: 13, lineHeight: 1.7 }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{lang === 'he' ? 'שעות פתיחה שפורסמו' : 'Published opening hours'}</summary>
+          {loc.opening_hours.weekday_text.map((line, i) => <div key={i}>{line}</div>)}
+          <div style={{ color: '#6E6450', fontSize: 12 }}>{lang === 'he' ? 'בחגים ובשבת ייתכנו שינויים. יש לאשר עם המקום.' : 'Holiday and Shabbat hours can vary. Confirm with the venue.'}</div>
+        </details>}
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {loc.is_partner ? (
@@ -84,7 +96,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
             </div>
           ) : null}
           {kashrut ? (
-            kashrut.status === 'not_certified' || kashrut.status === 'expired' ? (
+            kashrut.status !== 'verified' ? (
               <div style={{ marginTop: 8, display: 'inline-block', background: '#F2EBDB', border: '1px solid #E6DCC8', borderRadius: 999, padding: '4px 12px' }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: '#8A7F6C' }}>{kashrut.label}</span>
               </div>
@@ -115,9 +127,9 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         </div>
 
         <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
-          {loc.is_partner && loc.reservation_url ? (
+          {safeExternalUrl(loc.reservation_url) ? (
             <a
-              href={loc.reservation_url}
+              href={safeExternalUrl(loc.reservation_url)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => onReserve?.(loc)}
@@ -305,8 +317,10 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
 
 function getKashrutDisplay(loc, lang) {
   const isHe = lang === 'he'
-  const status = loc.kashrut_status || (/not certified/i.test(loc.kashrus || '') ? 'not_certified' : loc.kashrus ? 'verified' : 'unknown')
-  if (status === 'unknown') return null
+  let status = loc.kashrut_status || (/not certified/i.test(loc.kashrus || '') ? 'not_certified' : 'unknown')
+  if (loc.kashrut_certificate_expiry && Date.parse(`${loc.kashrut_certificate_expiry}T23:59:59+03:00`) < Date.now()) status = 'expired'
+  if (status === 'verified' && !hasVerifiedKashrut(loc)) status = 'unknown'
+  if (status === 'unknown') return loc.kashrus ? { status: 'unknown', label: `${loc.kashrus} · ${isHe ? 'לא מאומת' : 'unverified'}`, meta: null } : null
   if (status === 'not_certified') {
     return { status, label: isHe ? 'ללא תעודת כשרות מאומתת' : 'No verified certification', meta: null }
   }

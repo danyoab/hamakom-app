@@ -4,6 +4,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { loadBuildCatalog } from './build-catalog.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DIST = join(ROOT, 'dist')
@@ -18,24 +19,7 @@ function escapeHtml(value = '') {
 }
 
 async function loadApprovedLocations() {
-  const url = (process.env.VITE_SUPABASE_URL || '').trim()
-  const key = (process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim()
-
-  if (url && key) {
-    const fields = 'id,slug,name,name_he,city,city_he,description,description_he,category,image_url,kashrus'
-    const res = await fetch(`${url}/rest/v1/locations?select=${fields}&status=eq.approved&order=id`, {
-      headers: { apikey: key, Authorization: `Bearer ${key}` },
-    })
-    if (!res.ok) throw new Error(`Supabase fetch failed: ${res.status}`)
-    const locations = await res.json()
-    console.log(`Prerender: fetched ${locations.length} approved locations from Supabase`)
-    return locations
-  }
-
-  const { SEED_LOCATIONS } = await import(`file://${join(ROOT, 'src/data/locations.js').replace(/\\/g, '/')}`)
-  const locations = SEED_LOCATIONS.filter((l) => l.status === 'approved')
-  console.log(`Prerender: using ${locations.length} seed locations`)
-  return locations
+  return loadBuildCatalog()
 }
 
 function locationCanonical(loc) {
@@ -56,7 +40,7 @@ function buildJsonLd(loc, canonical) {
     },
     url: canonical,
     ...(loc.image_url ? { image: loc.image_url } : {}),
-  })
+  }).replace(/</g, '\\u003c')
 }
 
 function buildLocationHtml(template, loc) {
@@ -154,6 +138,7 @@ const locations = await loadApprovedLocations()
 let written = 0
 for (const loc of locations) {
   const slug = String(loc.slug || loc.id)
+  if (!/^[\p{L}\p{N}_-]+$/u.test(slug)) throw new Error(`Unsafe location slug for id ${loc.id}`)
   const dir = join(DIST, 'location', slug)
   mkdirSync(dir, { recursive: true })
   writeFileSync(join(dir, 'index.html'), buildLocationHtml(template, loc))

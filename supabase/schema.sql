@@ -385,7 +385,8 @@ create policy "admin_update_reports"
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 -- Telegram notification on new report (via pg_net → notify-report Edge Function).
--- Requires WEBHOOK_SECRET to match the value stored in the function's env.
+-- Store the matching WEBHOOK_SECRET in Vault as hamakom_report_webhook_secret.
+-- Never embed credentials in SQL source.
 create extension if not exists pg_net with schema extensions;
 
 create or replace function public.notify_problem_report()
@@ -396,8 +397,10 @@ set search_path = public, net
 as $$
 declare
   fn_url text := 'https://kyenbpkgxnjrknebbiyr.supabase.co/functions/v1/notify-report';
-  webhook_secret text := 'hmk_8f3e2a9c4b1d7e6f0a2c5b8d3e7f1a4c9b6d2e5f8a1c4b7d';
+  webhook_secret text;
 begin
+  select decrypted_secret into webhook_secret from vault.decrypted_secrets where name='hamakom_report_webhook_secret';
+  if webhook_secret is null then return NEW; end if;
   perform net.http_post(
     url := fn_url,
     body := jsonb_build_object(

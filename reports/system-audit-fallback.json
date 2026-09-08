@@ -1,0 +1,852 @@
+{
+  "checkedAt": "2026-09-08T18:18:33.569Z",
+  "source": "bundled-fallback",
+  "inventory": {
+    "total": 318,
+    "discoverable": 277,
+    "excluded": 41,
+    "foodVenues": 190,
+    "cities": 83,
+    "coordinateCoverage": 276,
+    "operational": 269,
+    "menus": 6,
+    "dietary": 6
+  },
+  "scenarios": 3735,
+  "plansChecked": 3036,
+  "emptyScenarios": 1629,
+  "invalidPlans": [],
+  "duplicateIds": [],
+  "cities": [
+    {
+      "city": "Akko",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 36,
+      "empty": 18
+    },
+    {
+      "city": "Ariel Sharon Park",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Ashdod",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 36,
+      "empty": 27
+    },
+    {
+      "city": "Avnat",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Bat Yam",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Beer Sheva",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Beer Yaakov",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Beit Guvrin",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Beit Shemesh",
+      "venues": 13,
+      "routeReady": 12,
+      "menus": 3,
+      "dietary": 3,
+      "scenarios": 45,
+      "returned": 96,
+      "empty": 9
+    },
+    {
+      "city": "Beit Zayit",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Binyamina",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Caesarea",
+      "venues": 4,
+      "routeReady": 4,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 78,
+      "empty": 0
+    },
+    {
+      "city": "Chavatzelet HaSharon",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Chibat Tzion",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Dead Sea",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Eilat",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 45,
+      "empty": 9
+    },
+    {
+      "city": "Ein Carmel",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Ein Gedi",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 45,
+      "empty": 18
+    },
+    {
+      "city": "Ein HaNatziv",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Ein Hemed Forest",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Ein Tzurim",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Ein Zivan",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Elyakhin",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Eshtaol",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 45,
+      "empty": 9
+    },
+    {
+      "city": "Ganei Tal",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 36,
+      "empty": 27
+    },
+    {
+      "city": "Ganei Tikva",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Givat Ze'ev",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Gush Etzion",
+      "venues": 3,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 63,
+      "empty": 18
+    },
+    {
+      "city": "Hagor",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Haifa",
+      "venues": 5,
+      "routeReady": 5,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 81,
+      "empty": 0
+    },
+    {
+      "city": "Herzliya",
+      "venues": 3,
+      "routeReady": 3,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 57,
+      "empty": 9
+    },
+    {
+      "city": "Hod HaSharon",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Holon",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 45,
+      "empty": 9
+    },
+    {
+      "city": "Hula Valley",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Jerusalem",
+      "venues": 78,
+      "routeReady": 75,
+      "menus": 2,
+      "dietary": 2,
+      "scenarios": 45,
+      "returned": 135,
+      "empty": 0
+    },
+    {
+      "city": "Kfar Daniel",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Kfar HaRo'eh",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Kfar Yona",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Kibbutz Tzuba",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 45,
+      "empty": 9
+    },
+    {
+      "city": "Latrun",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Magshimim",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Masada",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Mata",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Meshek Levi",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Mevaseret",
+      "venues": 3,
+      "routeReady": 3,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 42,
+      "empty": 27
+    },
+    {
+      "city": "Mitzpe Netofa",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Mitzpe Ramon",
+      "venues": 3,
+      "routeReady": 3,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 75,
+      "empty": 0
+    },
+    {
+      "city": "Mitzpe Yericho",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Modi'in",
+      "venues": 11,
+      "routeReady": 11,
+      "menus": 1,
+      "dietary": 1,
+      "scenarios": 45,
+      "returned": 117,
+      "empty": 0
+    },
+    {
+      "city": "Moshav Beniyah",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Moshav Brachiah",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Moshav Chemed",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Moshav HaZore'im",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Moshav Matzliach",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Moshav Mazor",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Moshav Shuva",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Moshav Uriyah",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Nes Harim",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Netanya",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 45,
+      "empty": 9
+    },
+    {
+      "city": "Netiv HaLamed-Heh",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Or Yehuda",
+      "venues": 6,
+      "routeReady": 6,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 81,
+      "empty": 18
+    },
+    {
+      "city": "Ora",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Petach Tikva",
+      "venues": 19,
+      "routeReady": 19,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 90,
+      "empty": 9
+    },
+    {
+      "city": "Ra'anana",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Ramat Gan",
+      "venues": 4,
+      "routeReady": 4,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 72,
+      "empty": 9
+    },
+    {
+      "city": "Rehovot",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 45,
+      "empty": 18
+    },
+    {
+      "city": "Rishon LeZion",
+      "venues": 9,
+      "routeReady": 9,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 81,
+      "empty": 18
+    },
+    {
+      "city": "Rosh Hanikra",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Savyon",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Sde Moshe",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Sha'arei Tikva",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Shfayim",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Tel Aviv",
+      "venues": 29,
+      "routeReady": 28,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 126,
+      "empty": 0
+    },
+    {
+      "city": "Tiberias",
+      "venues": 3,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 81,
+      "empty": 0
+    },
+    {
+      "city": "Tkuma",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Tzofit",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Tzora",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 54,
+      "empty": 18
+    },
+    {
+      "city": "Tzur Hadassah",
+      "venues": 2,
+      "routeReady": 2,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 36,
+      "empty": 18
+    },
+    {
+      "city": "Tzur Yigal",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Yad HaShmona",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Yiron",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Zekharia",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 27,
+      "empty": 18
+    },
+    {
+      "city": "Zichron Yaakov",
+      "venues": 5,
+      "routeReady": 4,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 87,
+      "empty": 9
+    }
+  ]
+}

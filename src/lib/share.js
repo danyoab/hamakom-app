@@ -1,4 +1,5 @@
 import { siteOrigin } from './seo'
+import { sharedPlanPath } from './sharedPlans.js'
 
 /** Share text + optional URL via Web Share API, falling back to WhatsApp. */
 export async function shareContent({ title, text, url }) {
@@ -8,7 +9,7 @@ export async function shareContent({ title, text, url }) {
     if (navigator.share) {
       await navigator.share({
         title: title || 'HaMakom',
-        text: message,
+        text,
         ...(absoluteUrl ? { url: absoluteUrl } : {}),
       })
       return true
@@ -29,7 +30,7 @@ export function sharePlanMessage(plan, lang) {
   const text = isHe
     ? `✨ תוכנית ערב מ-HaMakom:\n\n🌟 ${title}\n📍 ${plan.city} · ${plan.duration_text_he || ''}\n\n${stopsLine}\n\n💛 תכננו את הדייט שלכם`
     : `✨ Date night from HaMakom:\n\n🌟 ${title}\n📍 ${plan.city} · ${plan.duration_text_en || ''}\n\n${stopsLine}\n\n💛 Plan yours`
-  return { title, text, url: '/' }
+  return { title, text, url: sharedPlanPath(plan, lang) }
 }
 
 export function shareLocationMessage(loc, lang) {

@@ -15,15 +15,6 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/location\//],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-api',
-              networkTimeoutSeconds: 8,
-              expiration: { maxEntries: 32, maxAgeSeconds: 300 },
-            },
-          },
-          {
             urlPattern: /^https:\/\/.*\.tile\.openstreetmap\.org\/.*/i,
             handler: 'CacheFirst',
             options: {
@@ -43,6 +34,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          if (id.replaceAll('\\', '/').endsWith('/src/data/locations.js')) return 'catalog'
           if (id.includes('leaflet') || id.includes('react-leaflet')) return 'leaflet'
           if (id.includes('@supabase')) return 'supabase'
           if (id.includes('@sentry')) return 'sentry'

@@ -18,6 +18,14 @@ jobs:
 
       - run: npm ci
 
+      - run: npm run lint
+
+      - run: npm test
+
+      - run: npm run audit:system
+
+      - run: npm audit --omit=dev
+
       - run: npm run build
 
       - name: Deploy to Vercel

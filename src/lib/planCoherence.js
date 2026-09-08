@@ -6,7 +6,7 @@
 // are derived from category + occasion + price when they aren't. This is
 // deliberate because curator coverage is <30 of total rows today.
 
-import { CITY_COORDS } from './constants.js'
+import { hasVenueCoordinates, sameCity } from './planGates.js'
 
 // ─── Geographic helpers ────────────────────────────────────────────────────
 
@@ -22,9 +22,7 @@ export function haversineKm(lat1, lng1, lat2, lng2) {
 
 export function coordsOf(loc) {
   if (!loc) return null
-  if (loc.lat && loc.lng) return [loc.lat, loc.lng]
-  const c = CITY_COORDS[loc.city]
-  return c || null
+  return hasVenueCoordinates(loc) ? [loc.lat, loc.lng] : null
 }
 
 export function distanceKm(a, b) {
@@ -53,7 +51,7 @@ export function sameLocale(a, b) {
     if (km === null) return true
     return km <= 6
   }
-  if (a.city !== b.city) return false
+  if (!sameCity(a.city, b.city)) return false
   if (km === null) return true
   return km <= 6
 }

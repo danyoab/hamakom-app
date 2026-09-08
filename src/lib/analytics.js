@@ -3,21 +3,28 @@ import { supabase } from './supabase'
 const SESSION_KEY = 'hamakom-analytics-session-id'
 const CONSENT_KEY = 'hamakom-analytics-consent'
 
+export function hasAnalyticsDecision() {
+  if (typeof window === 'undefined') return false
+  try { return ['true', 'false'].includes(window.localStorage.getItem(CONSENT_KEY)) } catch { return false }
+}
+
 export function hasAnalyticsConsent() {
   if (typeof window === 'undefined') return false
-  return window.localStorage.getItem(CONSENT_KEY) === 'true'
+  try { return window.localStorage.getItem(CONSENT_KEY) === 'true' } catch { return false }
 }
 
 export function grantAnalyticsConsent() {
   if (typeof window !== 'undefined') {
-    window.localStorage.setItem(CONSENT_KEY, 'true')
+    try { window.localStorage.setItem(CONSENT_KEY, 'true') } catch { /* Disabled storage means no persistent consent. */ }
   }
 }
 
 export function revokeAnalyticsConsent() {
   if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(CONSENT_KEY)
-    window.localStorage.removeItem(SESSION_KEY)
+    try {
+      window.localStorage.setItem(CONSENT_KEY, 'false')
+      window.localStorage.removeItem(SESSION_KEY)
+    } catch { /* Storage unavailable. */ }
   }
 }
 
@@ -71,6 +78,7 @@ export async function createRecommendationImpression({
   if (!supabase || !primaryPlanId || !hasAnalyticsConsent()) return null
 
   const payload = {
+    client_id: crypto.randomUUID(),
     session_id: getSessionId(),
     user_id: getUserId(userId),
     quiz_answers: quizAnswers,
@@ -78,30 +86,30 @@ export async function createRecommendationImpression({
     backup_location_ids: backupLocationIds,
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('recommendation_impressions')
     .insert(payload)
-    .select('id')
-    .single()
 
   if (error) {
     console.warn('recommendation impression:', error.message)
     return null
   }
 
-  return data?.id || null
+  return payload.client_id
 }
 
 export async function upsertRecommendationOutcome(recommendationImpressionId, patch = {}) {
-  if (!supabase || !recommendationImpressionId || !Object.keys(patch).length) return null
+  if (!supabase || !hasAnalyticsConsent() || !recommendationImpressionId || !Object.keys(patch).length) return null
 
   const payload = {
     recommendation_impression_id: recommendationImpressionId,
     ...patch,
   }
 
-  const { error } = await supabase.from('recommendation_outcomes').upsert(payload, {
-    onConflict: 'recommendation_impression_id',
+  const { error } = await supabase.rpc('record_recommendation_outcome', {
+    p_impression_id: recommendationImpressionId,
+    p_session_id: getSessionId(),
+    p_patch: patch,
   })
 
   if (error) {

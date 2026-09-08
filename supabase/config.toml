@@ -1,0 +1,10 @@
+# These webhooks authenticate their own shared-secret headers. Telegram cannot
+# supply a Supabase JWT. Account deletion still verifies the signed-in user.
+[functions.telegram-webhook]
+verify_jwt = false
+
+[functions.notify-report]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = true

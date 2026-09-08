@@ -1,6 +1,13 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { CATEGORY_EMOJI, getCategoryColor, getMapsUrl } from '../lib/constants'
-import { getDistanceKm, formatWalkTime } from '../lib/distance'
+import { getDistanceKm } from '../lib/distance'
+import { catalogSearch, isDiscoverable } from '../lib/venueCatalog.js'
+import { travelMinutes, validatePlanLocations } from '../lib/planValidation.js'
+import { matchesVenuePreferences } from '../lib/venuePreferences.js'
+import VenuePreferences from './VenuePreferences.jsx'
+import VenueFoodDetails from './VenueFoodDetails.jsx'
+import { restoreSharedPlan } from '../lib/sharedPlans.js'
+import { shareContent, sharePlanMessage } from '../lib/share.js'
 
 const PlanRouteMap = lazy(() => import('./PlanRouteMap'))
 
@@ -58,11 +65,10 @@ function getCompatibilityScore(firstStop, candidate) {
   return score
 }
 
-function buildCollection(locations, firstStop, selectedCity, scope) {
+function buildCollection(locations, firstStop, selectedCity, scope, preferences) {
   const pool = locations.filter((location) => {
     if (location.id === firstStop.id) return false
-    if (scope === 'nearby') return location.city === selectedCity
-    return true
+    return validatePlanLocations([firstStop, location], { ...preferences, city: selectedCity || firstStop.city, travelMode: scope === 'nearby' ? 'walking' : 'driving' }).valid
   })
 
   return pool
@@ -83,9 +89,10 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
   const [builderMode, setBuilderMode] = useState('nearby')
   const [secondSearch, setSecondSearch] = useState('')
   const [secondStop, setSecondStop] = useState(null)
+  const [preferences, setPreferences] = useState({})
 
   const availableCities = useMemo(
-    () => [...new Set(locations.map((location) => location.city).filter(Boolean))].sort((left, right) => left.localeCompare(right)),
+    () => [...new Set(locations.filter(isDiscoverable).map((location) => location.city).filter(Boolean))].sort((left, right) => left.localeCompare(right)),
     [locations]
   )
 
@@ -93,26 +100,26 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
     const query = firstSearch.trim().toLowerCase()
 
     return locations.filter((location) => {
+      if (!isDiscoverable(location) || !matchesVenuePreferences(location, preferences)) return false
       if (selectedCity && location.city !== selectedCity) return false
       if (!query) return true
 
-      const { name, city, description } = getLocalizedLocation(location, lang)
-      return [name, city, description].some((value) => value?.toLowerCase().includes(query))
+      return catalogSearch(location, query)
     })
-  }, [firstSearch, lang, locations, selectedCity])
+  }, [firstSearch, locations, selectedCity, preferences])
 
   const secondStopChoices = useMemo(() => {
     if (!firstStop) return []
 
     const query = secondSearch.trim().toLowerCase()
-    const source = buildCollection(locations, firstStop, selectedCity || firstStop.city, builderMode)
+    const source = buildCollection(locations, firstStop, selectedCity || firstStop.city, builderMode, preferences)
 
     return source.filter((location) => {
       if (!query) return true
       const { name, city, description } = getLocalizedLocation(location, lang)
       return [name, city, description].some((value) => value?.toLowerCase().includes(query))
     })
-  }, [builderMode, firstStop, lang, locations, secondSearch, selectedCity])
+  }, [builderMode, firstStop, lang, locations, secondSearch, selectedCity, preferences])
 
   const summaryText = useMemo(() => {
     if (!firstStop) return ''
@@ -121,32 +128,19 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
     const second = secondStop ? getLocalizedLocation(secondStop, lang) : null
 
     if (isHe) {
-      if (!second) return `מתחילים ב${first.name} ב${first.city}, ואז בוחרים מה ממשיך נכון לאותו אזור או שוברים את המסלול עם מקום אחר.`
+      if (!second) return `נפגשים ב${first.name} ב${first.city}. אפשר לשתף כבר עכשיו כדייט במקום אחד.`
       return `מתחילים ב${first.name} ב${first.city} ואז ממשיכים ל${second.name} ב${second.city}. זה נותן ערב מסודר עם התחלה ברורה והמשך שמתאים לווייב.`
     }
 
-    if (!second) return `Start at ${first.name} in ${first.city}, then choose what should happen next nearby or anywhere else.`
+    if (!second) return `Meet at ${first.name} in ${first.city}. You can share this as a one-place date now.`
     return `Start at ${first.name} in ${first.city}, then continue to ${second.name} in ${second.city}. It gives you a clear opening and a second stop that fits the vibe.`
   }, [firstStop, isHe, lang, secondStop])
 
   const handleShare = async () => {
-    if (!firstStop || !secondStop) return
+    if (!firstStop) return
 
-    const first = getLocalizedLocation(firstStop, lang)
-    const second = getLocalizedLocation(secondStop, lang)
-    const message = isHe
-      ? `בנינו דייט: מתחילים ב${first.name} ב${first.city}, ואז ממשיכים ל${second.name} ב${second.city}. ${summaryText}\nhamakom.app`
-      : `We built our date: start at ${first.name} in ${first.city}, then continue to ${second.name} in ${second.city}. ${summaryText}\nhamakom.app`
-
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: tx.buildYourOwnPlan, text: message })
-      } else {
-        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
-      }
-    } catch {
-      // ignore user-cancelled share
-    }
+    const plan = restoreSharedPlan({ ids: [firstStop, secondStop].filter(Boolean).map(l => String(l.id)), mode: builderMode === 'nearby' ? 'walking' : 'driving' }, locations)
+    if (plan) await shareContent(sharePlanMessage(plan, lang))
   }
 
   return (
@@ -176,20 +170,24 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
           <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepArea}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             <button
-              onClick={() => setSelectedCity('')}
+              onClick={() => { setSelectedCity(''); setFirstStop(null); setSecondStop(null) }}
               style={!selectedCity ? selectedChipStyle : chipStyle}
             >
               {tx.buildPlanFlexibleCity}
             </button>
             {availableCities.map((city) => (
-              <button key={city} onClick={() => setSelectedCity(city)} style={selectedCity === city ? selectedChipStyle : chipStyle}>
+              <button key={city} onClick={() => { setSelectedCity(city); setFirstStop(null); setSecondStop(null) }} style={selectedCity === city ? selectedChipStyle : chipStyle}>
                 {city}
               </button>
             ))}
           </div>
         </section>
 
-        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+        <details style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
+          <summary style={{ cursor: 'pointer', marginBottom: 12 }}>{isHe ? 'אוכל, כשרות ותקציב' : 'Food, kashrut & budget'}</summary>
+          <VenuePreferences lang={lang} value={preferences} onChange={next => { setPreferences(next); setFirstStop(null); setSecondStop(null) }} />
+        </details>
+        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))' }}>
           <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
             <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepOne}</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{tx.buildPlanFirstStop}</div>
@@ -234,11 +232,11 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
             ) : (
               <>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                  <button onClick={() => setBuilderMode('nearby')} style={builderMode === 'nearby' ? selectedChipStyle : chipStyle}>
-                    {tx.buildPlanNearby}
+                  <button onClick={() => { setBuilderMode('nearby'); setSecondStop(null) }} style={builderMode === 'nearby' ? selectedChipStyle : chipStyle}>
+                    {isHe ? 'מרחק הליכה' : 'Walking distance'}
                   </button>
-                  <button onClick={() => setBuilderMode('anywhere')} style={builderMode === 'anywhere' ? selectedChipStyle : chipStyle}>
-                    {tx.buildPlanAnywhere}
+                  <button onClick={() => { setBuilderMode('anywhere'); setSecondStop(null) }} style={builderMode === 'anywhere' ? selectedChipStyle : chipStyle}>
+                    {isHe ? 'נסיעה קצרה' : 'Short drive'}
                   </button>
                 </div>
 
@@ -252,7 +250,7 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
                 <div style={{ display: 'grid', gap: 10, marginTop: 14, maxHeight: 480, overflowY: 'auto' }}>
                   {secondStopChoices.length === 0 ? (
                     <div style={{ color: MUTED, fontSize: 13, padding: '20px 0', textAlign: 'center', lineHeight: 1.6 }}>
-                      {tx.noLocationsFound}
+                      {isHe ? 'אין כרגע תחנה נוספת עם מספיק מידע לתכנון מסלול מתאים. אפשר לשתף דייט במקום אחד.' : 'There isn’t enough verified route information for a suitable second stop. You can share a one-place date.'}
                     </div>
                   ) : null}
                   {secondStopChoices.map((location) => (
@@ -266,6 +264,7 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
                       onSelect={() => setSecondStop(location)}
                       onOpenDetail={() => onOpenDetail(location)}
                       distanceFrom={firstStop}
+                      travelMode={builderMode === 'nearby' ? 'walking' : 'driving'}
                     />
                   ))}
                 </div>
@@ -282,16 +281,16 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
           </div>
           <p style={{ margin: '14px 0 0', color: '#6E6450', lineHeight: 1.6 }}>{summaryText || tx.buildPlanPreviewPrompt}</p>
 
-          {firstStop && secondStop ? (
-            <div style={{ marginTop: 16, borderRadius: 12, overflow: 'hidden', height: 240, border: `1px solid ${BORDER}` }}>
+          {firstStop ? (
+            <div style={{ marginTop: 16, borderRadius: 12, overflow: 'hidden', height: 340, border: `1px solid ${BORDER}` }}>
               <Suspense fallback={<div style={{ height: '100%', background: '#EDE7D9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>Loading map…</div>}>
-                <PlanRouteMap stops={[firstStop, secondStop]} lang={lang} />
+                <PlanRouteMap stops={[firstStop, secondStop].filter(Boolean)} lang={lang} travelMode={builderMode === 'nearby' ? 'walking' : 'driving'} />
               </Suspense>
             </div>
           ) : null}
 
           <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
-            <button onClick={handleShare} disabled={!firstStop || !secondStop} style={!firstStop || !secondStop ? disabledButtonStyle : primaryButtonStyle}>
+            <button onClick={handleShare} disabled={!firstStop} style={!firstStop ? disabledButtonStyle : primaryButtonStyle}>
               {tx.shareCustomPlan}
             </button>
             <button onClick={() => {
@@ -310,7 +309,7 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
   )
 }
 
-function SelectableLocationCard({ location, lang, tx, selected, actionLabel, onSelect, onOpenDetail, distanceFrom }) {
+function SelectableLocationCard({ location, lang, tx, selected, actionLabel, onSelect, onOpenDetail, distanceFrom, travelMode = 'walking' }) {
   const text = getLocalizedLocation(location, lang)
   const category = normalizeCategory(location.category)
   const color = getCategoryColor(category)
@@ -320,7 +319,7 @@ function SelectableLocationCard({ location, lang, tx, selected, actionLabel, onS
     ? (() => {
         const km = getDistanceKm(distanceFrom.lat, distanceFrom.lng, location.lat, location.lng)
         const dist = km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`
-        return `${dist} · ${formatWalkTime(km)}`
+        return `${dist} · ≈${travelMinutes(distanceFrom, location, travelMode)} ${lang === 'he' ? 'דקות' : 'min'} ${travelMode === 'driving' ? (lang === 'he' ? 'נסיעה' : 'drive') : (lang === 'he' ? 'הליכה' : 'walk')}`
       })()
     : null
 
@@ -356,6 +355,7 @@ function SelectableLocationCard({ location, lang, tx, selected, actionLabel, onS
           </div>
 
           <div style={{ fontSize: 13, color: MUTED, lineHeight: 1.55, marginTop: 8 }}>{text.description}</div>
+          <VenueFoodDetails loc={location} lang={lang} compact />
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
             <button onClick={onSelect} style={selected ? secondaryMiniButtonStyle : primaryMiniButtonStyle}>

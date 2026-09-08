@@ -1,4 +1,5 @@
 import { CATEGORIES, CITIES, CATEGORY_EMOJI } from '../lib/constants'
+import { isDiscoverable } from '../lib/venueCatalog.js'
 
 const ACCENT = '#C9A84C'
 const PANEL  = '#FFFFFF'
@@ -8,9 +9,10 @@ const MUTED  = '#8A7F6C'
 const DEFAULTS = {
   cityFilter: 'All Cities',
   categoryFilter: 'All',
-  occasionFilter: 'all',
+  occasionFilter: 'All',
   priceFilter: 0,
   dateFilter: 'all',
+  dietary: [], kosher: 'any', budget: 'any', menuOnly: false,
 }
 
 function chipStyle(active) {
@@ -37,7 +39,7 @@ export default function FilterBar({ tx, filters, setFilters, locations = [] }) {
   // cities are reachable without scrolling a 50-chip row; fall back to the
   // static list until locations load.
   const cityCounts = new Map()
-  for (const loc of locations) {
+  for (const loc of locations.filter(isDiscoverable)) {
     if (loc.city && loc.city !== 'Various') cityCounts.set(loc.city, (cityCounts.get(loc.city) || 0) + 1)
   }
   const cityOptions = cityCounts.size > 0
@@ -62,7 +64,8 @@ export default function FilterBar({ tx, filters, setFilters, locations = [] }) {
     cityFilter !== DEFAULTS.cityFilter ||
     categoryFilter !== DEFAULTS.categoryFilter ||
     dateFilter !== DEFAULTS.dateFilter ||
-    priceFilter !== DEFAULTS.priceFilter
+    priceFilter !== DEFAULTS.priceFilter || (filters.dietary || []).length > 0 || filters.menuOnly ||
+    (filters.kosher && filters.kosher !== 'any') || (filters.budget && filters.budget !== 'any')
 
   const clearAll = () => setFilters(prev => ({ ...prev, ...DEFAULTS }))
 

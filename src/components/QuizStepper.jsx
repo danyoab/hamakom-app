@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { t } from '../lib/translations'
+import { canonicalCity } from '../lib/planGates.js'
 
 const ACCENT = '#9A7A28'   // gold for eyebrows (readable on cream)
 const GOLD   = '#C9A84C'   // bright gold for dots / fills
@@ -16,20 +17,26 @@ function slugify(city) {
 }
 
 function cityImagePath(city) {
-  return `/city-images/${slugify(city)}.jpg`
+  const pictured = ['Jerusalem', 'Tel Aviv', 'Beit Shemesh', "Modi'in", 'Tzur Hadassah', 'Haifa', 'Herzliya', "Ra'anana", 'Netanya', 'Petach Tikva', 'Givat Shmuel', 'Zichron Yaakov', 'Caesarea', 'Eilat', 'Tiberias', 'Beer Sheva', 'Dead Sea', 'Mitzpe Ramon']
+  return pictured.includes(city) ? `/city-images/${slugify(city)}.jpg` : null
 }
 
 export default function QuizStepper({ lang, font, cityOptions = [], onComplete, onBack }) {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState({})
   const [chosen, setChosen] = useState(null)
+  const [citySearch, setCitySearch] = useState('')
+  const [allCities, setAllCities] = useState(false)
+  const timer = useRef(null)
+  const selecting = useRef(false)
+  useEffect(() => () => clearTimeout(timer.current), [])
   const isHe = lang === 'he'
   const dir  = isHe ? 'rtl' : 'ltr'
 
   // Quiz order is intentional:
   //   1. city — hardest constraint, scopes everything downstream
   //   2. seriousness — sets the whole evening's tone
-  //   3. length — optional pacing override (skippable; engine infers it)
+  // Duration and detailed preferences can be adjusted on the results page.
   // We intentionally do NOT ask "what kind of experience?" here: the results
   // page's vibe tabs already let people pick (and switch) the vibe live, so the
   // quiz leads with the strongest plan across all vibes instead of forcing the
@@ -64,20 +71,6 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
         { value: 'getting-serious',   en: 'Already close',                he: 'כבר קרובים',            suben: 'Make the evening feel intentional',       subhe: 'לתת לערב להרגיש מכוון' },
       ],
     },
-    {
-      id: 'length',
-      en: 'How long? (optional)',
-      he: 'כמה זמן? (אופציונלי)',
-      suben: 'Skip if you trust us to pace it.',
-      subhe: 'דלגו אם אתם סומכים עלינו על הקצב.',
-      type: 'standard',
-      skippable: true,
-      options: [
-        { value: 'short',   en: 'Quick and easy',          he: 'קצר וקליל',         suben: '1–2 hours — no overcommitting',          subhe: '1–2 שעות — בלי התחייבות גדולה' },
-        { value: 'medium',  en: 'A proper evening',        he: 'ערב מסודר',          suben: '2–3 hours — a real plan with flow',      subhe: '2–3 שעות — תוכנית אמיתית עם זרימה' },
-        { value: 'long',    en: 'Make a full night of it', he: 'ערב שלם',            suben: '3+ hours — go all in',                   subhe: '3+ שעות — ללכת על זה לגמרי' },
-      ],
-    },
   ], [cityOptions])
 
   const question = questions[step]
@@ -85,14 +78,16 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
   const pct      = Math.round(((step + 1) / total) * 100)
 
   const handleSelect = (value) => {
-    if (chosen !== null) return
+    if (selecting.current) return
+    selecting.current = true
     setChosen(value)
     const nextAnswers = { ...answers, [question.id]: value }
 
     // City question: advance immediately (photo taps feel instant)
     const delay = question.type === 'city' ? 180 : 220
 
-    setTimeout(() => {
+    timer.current = setTimeout(() => {
+      selecting.current = false
       setChosen(null)
       setAnswers(nextAnswers)
       if (step < total - 1) setStep(s => s + 1)
@@ -101,19 +96,11 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
   }
 
   const handleBack = () => {
+    clearTimeout(timer.current)
+    selecting.current = false
+    setChosen(null)
     if (step > 0) setStep(s => s - 1)
     else onBack()
-  }
-
-  const handleSkip = () => {
-    if (!question.skippable || chosen !== null) return
-    const nextAnswers = { ...answers } // no value for this question
-    if (step < total - 1) {
-      setAnswers(nextAnswers)
-      setStep(s => s + 1)
-    } else {
-      onComplete({ ...nextAnswers, when: 'planning-ahead' })
-    }
   }
 
   return (
@@ -172,22 +159,16 @@ export default function QuizStepper({ lang, font, cityOptions = [], onComplete, 
             </p>
           </div>
 
-          {question.skippable ? (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-              <button
-                onClick={handleSkip}
-                disabled={chosen !== null}
-                style={{ background: 'none', border: 'none', color: MUTED, fontSize: 13, cursor: chosen !== null ? 'default' : 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}
-              >
-                {isHe ? 'דלג — אנחנו נחליט' : 'Skip — let us pace it'}
-              </button>
-            </div>
-          ) : null}
-
           {/* City photo grid */}
+          {question.type === 'city' && <div style={{ marginBottom: 12 }}>
+            <input aria-label={isHe ? 'חיפוש עיר' : 'Search cities'} placeholder={isHe ? 'חפשו עיר או אזור…' : 'Search any city or area…'} value={citySearch} onChange={e => setCitySearch(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: 13, border: `1px solid ${BORDER}`, borderRadius: 12, font: 'inherit', color: TEXT, background: PANEL }} />
+            {!citySearch && <button onClick={() => setAllCities(v => !v)} style={{ background: 'none', border: 0, color: ACCENT, padding: '10px 0 0', cursor: 'pointer', font: 'inherit', fontSize: 12 }}>{allCities ? (isHe ? 'הצגת ערים מרכזיות' : 'Show popular cities') : (isHe ? `כל ${cityOptions.length} הערים והאזורים` : `All ${cityOptions.length} cities and areas`)}</button>}
+          </div>}
           {question.type === 'city' ? (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {question.options.map(option => {
+              {question.options.filter((option, i) => citySearch
+                ? [option.en, option.he, option.value].some(v => v?.toLowerCase().includes(citySearch.toLowerCase())) || canonicalCity(citySearch) === option.value
+                : allCities || i < 12 || option.value === 'flexible').map(option => {
                 const isFlexible = option.value === 'flexible'
                 const isChosen   = chosen === option.value
                 const imgUrl     = isFlexible ? null : cityImagePath(option.value)

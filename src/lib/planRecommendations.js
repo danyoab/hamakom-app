@@ -8,7 +8,11 @@ import {
   sameLocale,
   distanceKm,
 } from './planCoherence.js'
-import { plannableLocations, isRealPlan, sameCity, violatesFoodPairing, foodClassOf, MAX_LEG_KM } from './planGates.js'
+import { plannableLocations, isRealPlan, sameCity, violatesFoodPairing, foodClassOf } from './planGates.js'
+import { isDiscoverable } from './venueCatalog.js'
+import { matchesVenuePreferences } from './venuePreferences.js'
+import { finalizePlan, maxLegKm, planLocationRows, validatePlanLocations } from './planValidation.js'
+import { portablePlanId } from './sharedPlans.js'
 
 // Variety knobs — see /plans/the-plans-feel-limited-quiet-moon.md
 const SCORE_BAND_WIDTH = 2.5
@@ -372,7 +376,7 @@ function scorePrimaryBoost(location, answers, usageProfile) {
 
 function scoreSupportStop(primary, candidate, answers, usageProfile, stopIndex, selectedIds = [], totalStops = 3, prevStop = null, selectedStops = []) {
   if (candidate.id === primary.id) return -Infinity
-  if (candidate.city !== primary.city) return -Infinity
+  if (!sameCity(candidate.city, primary.city)) return -Infinity
   if (selectedIds.includes(candidate.id)) return -Infinity
   if (isVeryDisliked(candidate, usageProfile)) return -Infinity
   // Same-city is necessary but not sufficient: 'Various' chain rows or rows
@@ -386,12 +390,13 @@ function scoreSupportStop(primary, candidate, answers, usageProfile, stopIndex, 
   // previous stop is rejected outright — we return a shorter plan rather than
   // drag the user across town (kills the proven 2.96–5.69 km legs).
   const leg = distanceKm(anchor, candidate)
-  if (leg != null && leg > MAX_LEG_KM) return -Infinity
+  if (leg == null || leg > maxLegKm(answers.travelMode)) return -Infinity
 
   // H6: no two dinners / heavy-food stops. Reject a candidate that would create
   // a second heavy meal, or a food→food adjacency that isn't a light follow-on
   // (dessert/bar). Blocks restaurant→restaurant and café→restaurant.
   if (violatesFoodPairing(selectedStops, candidate, prevStop)) return -Infinity
+  if (!validatePlanLocations([...selectedStops, candidate], answers).valid) return -Infinity
 
   const candidateCategory = normalizeCategory(candidate.category)
   const primaryCategory = normalizeCategory(primary.category)
@@ -442,7 +447,7 @@ function buildSupportStops(primary, locations, answers, usageProfile) {
   const selectedIds = [primary.id]
 
   while (chosen.length < desiredCount - 1) {
-    const prevStop = chosen.length ? chosen[chosen.length - 1] : null
+    const prevStop = chosen.length ? chosen[chosen.length - 1] : primary
     const selectedStops = [primary, ...chosen]
     const next = [...locations]
       .map((candidate) => ({
@@ -668,7 +673,7 @@ function buildGeneratedShareSummary(primary, supportStops, lang) {
   return `Start at ${primary.name} and let the night unfold from one strong first move.`
 }
 
-function buildGeneratedPlan(location, locations, answers, behavior, usageProfile) {
+function buildGeneratedPlan(location, locations, answers, behavior, usageProfile, singleOnly = false) {
   if (isVeryDisliked(location, usageProfile)) return null
 
   // Length is optional in the quiz now; infer when missing.
@@ -680,11 +685,10 @@ function buildGeneratedPlan(location, locations, answers, behavior, usageProfile
   const seriousnessTags = deriveSeriousnessTags(location)
   const whenTags = deriveWhenTags(location)
   const lengthTags = deriveLengthTags(location)
-  const supportLocations = buildSupportStops(location, locations, answers, usageProfile)
-  // A one-stop "plan" is not a plan — it's a place. Drop so the caller can
-  // either pick the next anchor or, if every anchor fails, surface an
-  // explicit "not enough strong options yet" fallback.
-  if (supportLocations.length === 0) return null
+  const supportLocations = singleOnly ? [] : buildSupportStops(location, locations, answers, usageProfile)
+  // Prefer a coherent route. The caller can explicitly request a one-place
+  // date when route data is missing; never fabricate a second stop.
+  if (supportLocations.length === 0 && !singleOnly) return null
   const focus = focusTags.includes(answers.focus) ? answers.focus : focusTags[0]
   const seriousness = seriousnessTags.includes(answers.seriousness) ? answers.seriousness : seriousnessTags[0]
   const chosenLength = lengthTags.includes(answers.length) ? answers.length : lengthTags[0]
@@ -703,7 +707,12 @@ function buildGeneratedPlan(location, locations, answers, behavior, usageProfile
       : index === lastIndex && stopLocations.length >= 3
         ? 'extension'
         : 'transition'
-    return buildStop(loc, role)
+    const stop = buildStop(loc, role)
+    return singleOnly ? { ...stop,
+      instruction_en: 'Meet here and take time to settle in. Keep the date as short or as relaxed as feels right.',
+      instruction_he: 'נפגשים כאן ומתמקמים בנחת. אפשר להישאר לזמן קצר או להאריך, לפי מה שמתאים לכם.',
+      order_tip_en: '', order_tip_he: '',
+    } : stop
   })
 
   // Leg distances → "walkable cluster" framing (RULE 3) + route reason (RULE 5).
@@ -731,20 +740,20 @@ function buildGeneratedPlan(location, locations, answers, behavior, usageProfile
   const flowPenalty = _compose.flowWarnings.length * 1.5
 
   return {
-    id: `generated-location-plan-${location.id}`,
-    slug: `generated-location-plan-${location.id}`,
-    title_en,
-    title_he,
+    id: portablePlanId(stopLocations.map(l => l.id), answers),
+    slug: `generated-location-plan-${stopLocations.map(l => l.id).join('-')}`,
+    title_en: singleOnly ? `An easy date at ${location.name}` : title_en,
+    title_he: singleOnly ? `דייט ב${location.name_he || location.name}` : title_he,
     identity_label_en: buildIdentity(focus, seriousness, 'en'),
     identity_label_he: buildIdentity(focus, seriousness, 'he'),
     when_tags: whenTags,
-    focus_tags: focusTags,
+    focus_tags: [focus, ...focusTags.filter(f => f !== focus)],
     seriousness_tags: seriousnessTags,
     length_tags: lengthTags,
     city: location.city,
     region: location.region || '',
-    narrative_en,
-    narrative_he,
+    narrative_en: singleOnly ? 'One place, time to talk, and no rushing between stops. Check the venue details before you go.' : narrative_en,
+    narrative_he: singleOnly ? 'מקום אחד, זמן לשיחה ובלי למהר בין תחנות. בדקו את פרטי המקום לפני היציאה.' : narrative_he,
     start_time_text_en: buildStartTimeText(when, 'en'),
     start_time_text_he: buildStartTimeText(when, 'he'),
     duration_text_en: buildDurationText(chosenLength, 'en'),
@@ -753,8 +762,8 @@ function buildGeneratedPlan(location, locations, answers, behavior, usageProfile
     budget_text_he: buildBudgetText(location.price, 'he'),
     share_summary_en: buildGeneratedShareSummary(location, supportLocations, 'en'),
     share_summary_he: buildGeneratedShareSummary(location, supportLocations, 'he'),
-    route_reason_en,
-    route_reason_he,
+    route_reason_en: singleOnly ? 'Keep it simple: meet here and stay as long as feels comfortable.' : route_reason_en,
+    route_reason_he: singleOnly ? 'שומרים על פשטות: נפגשים כאן ונשארים כמה שנעים לכם.' : route_reason_he,
     walk_cluster: walkCluster,
     featured: Boolean(location.featured),
     tonight_pick_weight: 0,
@@ -776,18 +785,22 @@ function buildGeneratedPlan(location, locations, answers, behavior, usageProfile
 }
 
 export function getSmartMatchedPlans(curatedPlans, locations, answers, count = 2, behavior = {}) {
+  if (!answers || count <= 0) return []
+  behavior = { ...behavior, locations }
   const usageProfile = buildLocationUsageProfile(behavior)
 
-  // Venue-level hard gates (DATE_PLANNING_RULES H1/H2/H3): only OPERATIONAL,
-  // real venues are eligible — as anchors AND as support stops. Closed/temp-
-  // closed/unknown rows are removed before any composition happens.
-  const pool = plannableLocations(locations)
+  // Individual ideas can disclose unknown availability. Combining stops
+  // requires operating status and actual venue coordinates for every stop.
+  const discoveryPool = (locations || []).filter(l => isDiscoverable(l) && matchesVenuePreferences(l, answers))
+  const pool = plannableLocations(discoveryPool)
 
   const wantsCity = answers.city && answers.city !== 'flexible'
   const curated = getMatchedPlans(curatedPlans, answers, curatedPlans.length, behavior)
     // H5: drop placeholder/generic plans — every stop must link to a real venue.
     // H4: a curated plan must match the chosen city (no cross-city fallback).
     .filter((plan) => isRealPlan(plan) && (!wantsCity || sameCity(plan.city, answers.city)))
+    .map(plan => finalizePlan(plan, planLocationRows(plan, locations), answers))
+    .filter(Boolean)
     .map((plan) => ({
       ...plan,
       source_type: plan.source_type || 'curated',
@@ -822,9 +835,22 @@ export function getSmartMatchedPlans(curatedPlans, locations, answers, count = 2
     }
   }
 
-  const generated = anchorPool
+  let generated = anchorPool
     .map((location) => buildGeneratedPlan(location, pool, answers, behavior, usageProfile))
     .filter(Boolean)
+    .map(plan => finalizePlan(plan, planLocationRows(plan, locations), answers))
+    .filter(Boolean)
+
+  // A single café / activity is a useful date. Never fabricate a second stop
+  // to satisfy a stop-count target, and never hide all places for missing GPS.
+  if (!generated.length && !curated.length) {
+    generated = discoveryPool.filter(l => (!wantsCity || sameCity(l.city, answers.city))
+      && (!answers.focus || deriveFocusTags(l).includes(answers.focus)))
+      .map(l => buildGeneratedPlan(l, [], answers, behavior, usageProfile, true))
+      .filter(Boolean)
+      .map(plan => finalizePlan(plan, planLocationRows(plan, locations), answers))
+      .filter(Boolean)
+  }
 
   const recentIds = getRecentPlanIds()
   const adjusted = [...curated, ...generated].map((plan) => ({

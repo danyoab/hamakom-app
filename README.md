@@ -2,6 +2,8 @@
 
 HaMakom is a mobile-first bilingual React/Vite app for observant Jewish singles in Israel. The product direction is planner-first: one strong date plan first, calm alternatives second.
 
+Current behavior and verification: [planning contract](PLANNING_CONTRACT.md) and [8 September system audit](reports/SYSTEM_AUDIT_2026-09-08.md). The release migrations are applied to the current project. A new environment must apply them too; a passing fallback audit does not verify its database.
+
 ## Stack
 
 - React + Vite
@@ -22,7 +24,6 @@ npm install
 ```bash
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
-VITE_ADMIN_PIN=...
 ```
 
 3. Start the app:
@@ -36,8 +37,8 @@ npm run dev
 Blocking:
 - Set production `VITE_SUPABASE_URL`
 - Set production `VITE_SUPABASE_ANON_KEY`
-- Change `VITE_ADMIN_PIN` from the default `1234`
-- Run the SQL from the Admin `SQL` tab in Supabase
+- Grant admin access through trusted Supabase app_metadata.role = admin; there is no client PIN security boundary
+- Apply the versioned database migrations; never reapply historical public-access policies over the release migrations
 - Make sure Google auth and email magic links are enabled in Supabase Auth
 - Add your production app URL to Supabase Auth redirect URLs
 - Create the `location-images` storage bucket in Supabase if image upload is needed
@@ -45,7 +46,8 @@ Blocking:
 Quality checks:
 - `npm run build`
 - `npm run lint`
-- Test quiz -> result -> save gate -> sign in -> restore flow
+- `npm test` and `npm run audit:system`
+- Test quiz -> result -> guest save -> reload -> optional sign in -> second-device restore
 - Test saved plans and saved places
 - Test admin login
 - Test analytics tab after real events exist
@@ -75,7 +77,7 @@ When adding a place, update all relevant layers so it appears consistently in Ex
    - `kashrus`, `featured`, `status` (usually `approved`)
 2. If the city is new, add it to `src/lib/constants.js`:
    - Include city in `CITIES`
-   - Add city coordinates to `CITY_COORDS` for map support
+   - City centers are only display context. Route pins require actual venue coordinates.
 3. If relevant, add/update a plan in `src/data/datePlans.js` that uses the place in `stops`.
 4. Keep quiz city text complete by adding any new plan city copy in `src/lib/quiz.js` (`cityText` map).
 5. If Supabase is enabled, insert the same location into the `locations` table with `status='approved'`.
@@ -83,7 +85,7 @@ When adding a place, update all relevant layers so it appears consistently in Ex
 6. Verify in UI:
    - Explore search finds both English and Hebrew name/city variants
    - City/category filters include and show the place
-   - Map pin appears when city coordinates exist
+   - Map pin appears only when actual venue coordinates exist
 
 ## Vercel Deployment
 
@@ -92,7 +94,6 @@ When adding a place, update all relevant layers so it appears consistently in Ex
 3. Add environment variables:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_ADMIN_PIN`
    - `VITE_PUBLIC_APP_URL`
 4. Deploy
 5. In Supabase Auth, add the Vercel production URL and preview URL pattern as redirect URLs

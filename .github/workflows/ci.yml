@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -24,6 +24,15 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Planner regression tests
+        run: npm test
+
+      - name: Offline catalog audit
+        run: npm run audit:system
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev
 
       - name: Build
         run: npm run build

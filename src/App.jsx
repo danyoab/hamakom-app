@@ -3,6 +3,7 @@ import { t } from './lib/translations'
 import { useLocations } from './hooks/useLocations'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useSyncSaves } from './hooks/useSyncSaves'
+import { shouldClearAccountData } from './lib/saveSync.js'
 import { useViewportBottomGap } from './hooks/useViewportBottomGap'
 import { supabase } from './lib/supabase'
 import { getAuthRedirectUrl } from './lib/authRedirect'
@@ -19,6 +20,7 @@ import {
   createRecommendationImpression,
   grantAnalyticsConsent,
   hasAnalyticsConsent,
+  hasAnalyticsDecision,
   revokeAnalyticsConsent,
   saveUserFeedback,
   trackEvent,
@@ -28,13 +30,19 @@ import { getRecommendedLocations } from './lib/locationRecommendations'
 import { getSmartMatchedPlans, recordPlanImpression } from './lib/planRecommendations'
 import { isRealVenueRow, isOperational, sameCity, foodClassOf } from './lib/planGates'
 import { resolveCuratedPlans, curatedPlanSafe } from './lib/curatedResolver'
+import { catalogSearch, isDiscoverable } from './lib/venueCatalog.js'
+import { matchesVenuePreferences } from './lib/venuePreferences.js'
+import { finalizePlan, planLocationRows } from './lib/planValidation.js'
+import VenuePreferences from './components/VenuePreferences.jsx'
+import PlanPreferences from './components/PlanPreferences.jsx'
+import { getPlanPreferences, planPreferenceLabels, preferencesFromPlan } from './lib/planPreferences.js'
+import { restoreSavedPlan, restoreSharedPlan } from './lib/sharedPlans.js'
 import {
   clearAnswersFromSession,
   clearPendingSaveFromSession,
   loadAnswersFromSession,
   loadPendingSaveFromSession,
   saveAnswersToSession,
-  savePendingSaveToSession,
 } from './lib/quiz'
 import { lazy, Suspense } from 'react'
 import Card from './components/Card'
@@ -45,7 +53,6 @@ import FilterBar from './components/FilterBar'
 import QuizStepper from './components/QuizStepper'
 import ResultsGateModal from './components/ResultsGateModal'
 import ResultsPage from './components/ResultsPage'
-import PlanPreviewPage from './components/PlanPreviewPage'
 import CustomPlanBuilder from './components/CustomPlanBuilder'
 import PrivacyPage from './components/PrivacyPage'
 import DeleteAccountPage from './components/DeleteAccountPage'
@@ -79,6 +86,7 @@ const INITIAL_FILTERS = {
   occasionFilter: 'All',
   priceFilter: 0,
   dateFilter: 'all',
+  dietary: [], kosher: 'any', budget: 'any', menuOnly: false,
 }
 
 function areFiltersDefault(filters) {
@@ -87,7 +95,8 @@ function areFiltersDefault(filters) {
     filters.categoryFilter === INITIAL_FILTERS.categoryFilter &&
     filters.occasionFilter === INITIAL_FILTERS.occasionFilter &&
     filters.priceFilter === INITIAL_FILTERS.priceFilter &&
-    filters.dateFilter === INITIAL_FILTERS.dateFilter
+    filters.dateFilter === INITIAL_FILTERS.dateFilter && !(filters.dietary || []).length && !filters.menuOnly &&
+    (!filters.kosher || filters.kosher === 'any') && (!filters.budget || filters.budget === 'any')
   )
 }
 
@@ -149,7 +158,9 @@ export default function App() {
   const [resultIndex, setResultIndex] = useState(0)
   const [suggestPrefillCity, setSuggestPrefillCity] = useState('')
   const [authUser, setAuthUser] = useState(null)
+  const savedOwner = useRef(null)
   const [savedPlanIds, setSavedPlanIds] = useLocalStorage('hamakom-saved-plans', [])
+  const [savedPlanSnapshots, setSavedPlanSnapshots] = useLocalStorage('hamakom-saved-plan-details-v2', {})
   const [savedPlaceIds, setSavedPlaceIds] = useLocalStorage('hamakom-saved-places', [])
   const [clickedLocationCounts, setClickedLocationCounts] = useLocalStorage('hamakom-clicked-locations', {})
   const [planReminderIds, setPlanReminderIds] = useLocalStorage('hamakom-plan-reminders', [])
@@ -161,9 +172,9 @@ export default function App() {
   const [browseFilters, setBrowseFilters] = useState(INITIAL_FILTERS)
   const [saveGateItem, setSaveGateItem] = useState(null)
   const [previewPlan, setPreviewPlan] = useState(null)
-  const [exploreExpanded, setExploreExpanded] = useState(false)
+  const [exploreExpanded, setExploreExpanded] = useState(true)
   const [currentRecommendationId, setCurrentRecommendationId] = useState(null)
-  const [showConsentBanner, setShowConsentBanner] = useState(() => !hasAnalyticsConsent())
+  const [showConsentBanner, setShowConsentBanner] = useState(() => !hasAnalyticsDecision())
   const [analyticsEnabled, setAnalyticsEnabled] = useState(() => hasAnalyticsConsent())
   const [feedbackNudgePlanId, setFeedbackNudgePlanId] = useState(null)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
@@ -208,12 +219,12 @@ export default function App() {
   const matchedPlans = useMemo(() => {
     if (!quizAnswers) return []
     const opts = { feedbackByItem: dateFeedback, savedPlaceIds, clickedLocationCounts }
-    const FOCI = ['outdoors', 'food-drink', 'atmosphere', 'activity']
+    const FOCI = quizAnswers.focus ? [quizAnswers.focus] : ['outdoors', 'food-drink', 'atmosphere', 'activity']
     const perVibe = FOCI.flatMap((focus) =>
       getSmartMatchedPlans(resolvedDatePlans, locations, { ...quizAnswers, focus }, 4, opts),
     )
     if (!perVibe.length) return []
-    perVibe.sort((a, b) => (b._score || 0) - (a._score || 0))
+    perVibe.sort((a, b) => Number(a._singleVenue) - Number(b._singleVenue) || (b._score || 0) - (a._score || 0))
     const primary = perVibe[0]
     const out = [primary]
     const seenIds = new Set([primary.id])
@@ -225,6 +236,14 @@ export default function App() {
       if (seenVibes.has(vibe)) continue
       seenIds.add(plan.id)
       seenVibes.add(vibe)
+      out.push(plan)
+    }
+    // Cities with several good cafés should still have alternatives, even
+    // when those dates share a category.
+    for (const plan of perVibe) {
+      if (out.length >= 3) break
+      if (seenIds.has(plan.id) || !sameCity(plan.city, primary.city)) continue
+      seenIds.add(plan.id)
       out.push(plan)
     }
     return out
@@ -242,17 +261,20 @@ export default function App() {
   // if verification empties the pool (e.g. locations still loading).
   const tonightPool = useMemo(() => {
     const safe = resolvedDatePlans.filter(curatedPlanSafe)
-    return safe.length ? safe : resolvedDatePlans
-  }, [resolvedDatePlans])
+      .map(p => finalizePlan(p, planLocationRows(p, locations))).filter(Boolean)
+    return safe.length ? safe : getSmartMatchedPlans([], locations, { city: 'flexible', seriousness: 'just-met', length: 'short' }, 8)
+  }, [resolvedDatePlans, locations])
   const tonightPlan = useMemo(() => getTonightPlan(tonightPool), [tonightPool])
-  const savedPlans = useMemo(() => datePlans.filter((plan) => savedPlanIds.includes(plan.id)), [datePlans, savedPlanIds])
+  const savedPlans = useMemo(() => savedPlanIds.map(id => {
+    const plan = savedPlanSnapshots[id] || resolvedDatePlans.find(p => p.id === id) || restoreSavedPlan(id, locations)
+    return plan ? finalizePlan(plan, planLocationRows(plan, locations), { travelMode: plan.travel_mode, date: plan.planning_date, startTime: plan.start_time }) : null
+  }).filter(Boolean), [resolvedDatePlans, savedPlanIds, savedPlanSnapshots, locations])
   const savedPlaces = useMemo(() => locations.filter((location) => savedPlaceIds.includes(location.id)), [locations, savedPlaceIds])
   const savedCount = savedPlans.length + savedPlaces.length
   const availablePlanCities = useMemo(() => {
-    const planCities = new Set(datePlans.map((plan) => plan.city).filter(Boolean))
-    const merged = [...QUIZ_CITIES, ...[...planCities].filter((c) => !QUIZ_CITIES.includes(c))]
-    return merged
-  }, [datePlans])
+    const cities = new Set(locations.filter(isDiscoverable).map(l => l.city))
+    return [...QUIZ_CITIES.filter(c => cities.has(c)), ...[...cities].filter(c => !QUIZ_CITIES.includes(c)).sort()]
+  }, [locations])
   const backupLocations = useMemo(() => {
     if (!quizAnswers) return []
     return getRecommendedLocations(locations, quizAnswers, {
@@ -341,6 +363,7 @@ export default function App() {
     const query = browseSearch.trim().toLowerCase()
 
     return locations.filter((location) => {
+      if (!isDiscoverable(location) || !matchesVenuePreferences(location, browseFilters)) return false
       const displayName = lang === 'he' ? location.name_he || location.name : location.name
       const displayCity = lang === 'he' ? location.city_he || location.city : location.city
       const searchableFields = [
@@ -351,10 +374,10 @@ export default function App() {
         location.city,
         location.city_he,
       ]
-      const matchesSearch = !query || searchableFields.some((value) => (value || '').toLowerCase().includes(query))
+      const matchesSearch = !query || catalogSearch(location, query) || searchableFields.some((value) => (value || '').toLowerCase().includes(query))
       if (!matchesSearch) return false
 
-      if (cityFilter !== 'All Cities' && location.city !== cityFilter) return false
+      if (cityFilter !== 'All Cities' && !sameCity(location.city, cityFilter)) return false
       if (categoryFilter !== 'All' && location.category !== categoryFilter) return false
       if (occasionFilter !== 'All' && !location.occasion?.includes(occasionFilter)) return false
       if (priceFilter > 0 && location.price !== priceFilter) return false
@@ -436,6 +459,30 @@ export default function App() {
   useEffect(() => {
     if (!supabase) return undefined
 
+    const applyAccount = (user) => {
+      let previous = savedOwner.current
+      try { previous ||= localStorage.getItem('hamakom-saves-owner') } catch { /* Private browsing. */ }
+      const next = user?.id || null
+      if (shouldClearAccountData(previous, next)) {
+        setSavedPlanIds([])
+        setSavedPlaceIds([])
+        setSavedPlanSnapshots({})
+        setPlanReminderIds([])
+        setReminderTimestamps({})
+        setDateFeedback({})
+        setClickedLocationCounts({})
+        setQuizAnswers(null)
+        clearAnswersFromSession()
+        clearPendingSaveFromSession()
+      }
+      savedOwner.current = next
+      try {
+        if (next) localStorage.setItem('hamakom-saves-owner', next)
+        else localStorage.removeItem('hamakom-saves-owner')
+      } catch { /* In-memory isolation still applies. */ }
+      setAuthUser(user)
+    }
+
     const restoreQuiz = () => {
       const pendingAnswers = loadAnswersFromSession()
       if (pendingAnswers) {
@@ -462,8 +509,8 @@ export default function App() {
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      applyAccount(session?.user || null)
       if (!session?.user) return
-      setAuthUser(session.user)
       commitPendingSave()
       restoreQuiz()
     })
@@ -472,7 +519,7 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       const user = session?.user ?? null
-      setAuthUser(user)
+      applyAccount(user)
 
       if (user && event === 'SIGNED_IN') {
         void trackEvent('signup_completed', { userId: user.id })
@@ -489,7 +536,7 @@ export default function App() {
       subscription.unsubscribe()
       disposeNativeAuth()
     }
-  }, [saveGateItem, setSavedPlaceIds, setSavedPlanIds])
+  }, [saveGateItem, setSavedPlaceIds, setSavedPlanIds, setSavedPlanSnapshots, setPlanReminderIds, setReminderTimestamps, setDateFeedback, setClickedLocationCounts])
 
   useEffect(() => {
     if (!authUser || !quizAnswers || !supabase) return
@@ -574,6 +621,13 @@ export default function App() {
 
   const openRoute = useCallback((route) => {
     if (!route) return
+    if (route.type === 'plan') {
+      const shared = restoreSharedPlan(route, locations)
+      if (route.lang === 'he' || route.lang === 'en') setLang(route.lang)
+      setPreviewPlan(shared)
+      setOverlay(shared ? 'shared-plan' : 'unavailable-plan')
+      return
+    }
     if (route.type === 'location') {
       const loc = locations.find((l) => l.slug === route.key || String(l.id) === route.key)
       if (!loc) {
@@ -607,7 +661,7 @@ export default function App() {
       setBusinessLeadContext({ source: 'direct_url', location: null })
       setOverlay('businesses')
     }
-  }, [authUser?.id, locations])
+  }, [authUser?.id, locations, setLang])
 
   const handleAppBack = useCallback(() => {
     if (overlay === 'detail') {
@@ -662,9 +716,10 @@ export default function App() {
   // /location/<slug>, /privacy, and /terms open directly (no login required).
   const deepLinkHandled = useRef(false)
   useEffect(() => {
-    if (deepLinkHandled.current || loading) return
-    const route = parseAppRoute(window.location.pathname)
+    if (deepLinkHandled.current) return
+    const route = parseAppRoute(window.location.pathname + window.location.search)
     if (!route) return
+    if (loading && ['plan', 'location'].includes(route.type)) return
     if (route.type === 'location' && !locations.length) return
     deepLinkHandled.current = true
     openRoute(route)
@@ -672,12 +727,12 @@ export default function App() {
 
   useEffect(() => {
     const onPop = () => {
-      const route = parseAppRoute(window.location.pathname)
+      const route = parseAppRoute(window.location.pathname + window.location.search)
       if (route) {
         openRoute(route)
         return
       }
-      setOverlay((cur) => (cur === 'detail' || cur === 'privacy' || cur === 'terms' || cur === 'delete-account' || cur === 'businesses' ? null : cur))
+      setOverlay((cur) => (['detail', 'privacy', 'terms', 'delete-account', 'businesses', 'shared-plan', 'unavailable-plan'].includes(cur) ? null : cur))
       setSelectedLocation(null)
     }
     window.addEventListener('popstate', onPop)
@@ -757,6 +812,17 @@ export default function App() {
     })
   }
 
+  const applyPlanPreferences = (preferences, base = quizAnswers) => {
+    const next = { ...base, ...getPlanPreferences(preferences), _seed: base?._seed || Date.now(), when: 'planning-ahead' }
+    setQuizAnswers(next)
+    setResultIndex(0)
+    saveAnswersToSession(next)
+    setPreviewPlan(null)
+    window.history.replaceState({}, '', '/')
+    setOverlay('quiz-results')
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+  }
+
   // Re-run the results flow with patched answers (proven recovery actions:
   // keep the city + change the vibe, or keep the vibe + change the city).
   const applyRecovery = (patch) => {
@@ -776,6 +842,7 @@ export default function App() {
 
   const handleSavePlan = () => {
     if (!currentPlan) return
+    setSavedPlanSnapshots(prev => ({ ...prev, [currentPlan.id]: currentPlan }))
 
     void trackEvent('save_clicked', {
       userId: authUser?.id,
@@ -784,26 +851,9 @@ export default function App() {
       properties: { signed_in: Boolean(authUser) },
     })
 
-    if (authUser) {
-      setSavedPlanIds((prev) => (prev.includes(currentPlan.id) ? prev : [...prev, currentPlan.id]))
-      void trackEvent('plan_saved', {
-        userId: authUser.id,
-        itemType: 'plan',
-        itemId: currentPlan.id,
-      })
-      void upsertRecommendationOutcome(currentRecommendationId, { saved: true })
-      return
-    }
-
-    saveAnswersToSession(quizAnswers)
-    savePendingSaveToSession({ type: 'plan', id: currentPlan.id })
-    setSaveGateItem({
-      type: 'plan',
-      title: lang === 'he' ? currentPlan.title_he : currentPlan.title_en,
-      subtitle: lang === 'he' ? currentPlan.start_time_text_he : currentPlan.start_time_text_en,
-      returnOverlay: 'quiz-results',
-    })
-    setOverlay('save-gate')
+    setSavedPlanIds((prev) => (prev.includes(currentPlan.id) ? prev : [...prev, currentPlan.id]))
+    void trackEvent('plan_saved', { userId: authUser?.id, itemType: 'plan', itemId: currentPlan.id })
+    void upsertRecommendationOutcome(currentRecommendationId, { saved: true })
   }
 
   const handleRemovePlan = (planId) => {
@@ -861,7 +911,7 @@ export default function App() {
     }
   }
 
-  const handleToggleSavePlace = (location, options = {}) => {
+  const handleToggleSavePlace = (location) => {
     if (!location) return
 
     void trackEvent('save_clicked', {
@@ -871,28 +921,9 @@ export default function App() {
       properties: { signed_in: Boolean(authUser) },
     })
 
-    if (authUser) {
-      const willSave = !savedPlaceIds.includes(location.id)
-      setSavedPlaceIds((prev) => (prev.includes(location.id) ? prev.filter((id) => id !== location.id) : [...prev, location.id]))
-      void trackEvent('saved_place_toggled', {
-        userId: authUser.id,
-        itemType: 'place',
-        itemId: location.id,
-        properties: { saved: willSave },
-      })
-      return
-    }
-
-    if (savedPlaceIds.includes(location.id)) return
-
-    savePendingSaveToSession({ type: 'place', id: location.id })
-    setSaveGateItem({
-      type: 'place',
-      title: lang === 'he' ? location.name_he || location.name : location.name,
-      subtitle: lang === 'he' ? location.city_he || location.city : location.city,
-      returnOverlay: options.returnOverlay ?? overlay ?? null,
-    })
-    setOverlay('save-gate')
+    const willSave = !savedPlaceIds.includes(location.id)
+    setSavedPlaceIds((prev) => (prev.includes(location.id) ? prev.filter((id) => id !== location.id) : [...prev, location.id]))
+    void trackEvent('saved_place_toggled', { userId: authUser?.id, itemType: 'place', itemId: location.id, properties: { saved: willSave } })
   }
 
   const openDetail = (location) => {
@@ -910,7 +941,7 @@ export default function App() {
     setSelectedLocation(location)
     setOverlay('detail')
     const slug = location.slug || location.id
-    window.history.pushState({}, '', `/location/${slug}`)
+    window.history.pushState({}, '', `/location/${encodeURIComponent(slug)}`)
   }
 
   const openLocationFromResults = (location) => {
@@ -1072,17 +1103,32 @@ export default function App() {
     )
   }
 
+  if (loading && !overlay && /^\/(?:plan(?:\?|$)|location\/)/.test(window.location.pathname + window.location.search)) {
+    return <div role="status" style={{ padding: '60px 24px', textAlign: 'center', color: APP_TEXT, fontFamily: font }}>{lang === 'he' ? 'פותחים את פרטי המקום והשעות…' : 'Opening the place and checking its details…'}</div>
+  }
+
+  if (overlay === 'unavailable-plan') {
+    return <EmptyState title={lang === 'he' ? 'צריך לעדכן את התוכנית הזו' : 'This plan needs an update'} text={lang === 'he' ? 'חלק מהמקומות או המעברים כבר לא ניתנים לאימות. בחרו תוכנית חדשה.' : 'A place or route in this shared plan is no longer available or verifiable. Find a fresh date idea.'} actionLabel={tx.planHeroAction} onAction={openQuiz} />
+  }
+
+  if (overlay === 'shared-plan' && previewPlan) {
+    return <ResultsPage lang={lang} font={font} plan={previewPlan} locations={locations}
+      answers={preferencesFromPlan(previewPlan)} onApplyPreferences={p => applyPlanPreferences(p, preferencesFromPlan(previewPlan))} onRetakeQuiz={openQuiz} onBrowseAll={() => { setOverlay(null); setTab('explore'); window.history.pushState({}, '', '/') }}
+      onOpenBackupLocation={loc => openDetail(loc, 'shared-plan')} onBuildYourOwnPlan={() => setOverlay('build-plan')}
+      onSavePlan={() => { setSavedPlanSnapshots(prev => ({ ...prev, [previewPlan.id]: previewPlan })); setSavedPlanIds(prev => [...new Set([...prev, previewPlan.id])]) }}
+      saved={savedPlanIds.includes(previewPlan.id)} onSetReminder={() => handleTogglePlanReminder(previewPlan.id)}
+      reminderSet={planReminderIds.includes(previewPlan.id)} onSuggestPlace={() => setOverlay('suggest')} />
+  }
+
   if (overlay === 'plan-preview' && (previewPlan || tonightPlan)) {
-    return (
-      <PlanPreviewPage
-        lang={lang}
-        font={font}
-        plan={previewPlan || tonightPlan}
-        title={tx.tonightsPick}
-        onBack={() => { setPreviewPlan(null); setOverlay(null) }}
-        onPlanMyOwnDate={openQuiz}
-      />
-    )
+    const plan = previewPlan || tonightPlan
+    return <ResultsPage lang={lang} font={font} plan={plan} locations={locations} answers={preferencesFromPlan(plan)}
+      onApplyPreferences={p => applyPlanPreferences(p, preferencesFromPlan(plan))}
+      onRetakeQuiz={openQuiz} onBrowseAll={() => { setPreviewPlan(null); setOverlay(null); selectTab('explore') }}
+      onBuildYourOwnPlan={openCustomPlanBuilder} onOpenBackupLocation={openDetail}
+      onSavePlan={() => { setSavedPlanSnapshots(prev => ({ ...prev, [plan.id]: plan })); setSavedPlanIds(prev => [...new Set([...prev, plan.id])]) }}
+      saved={savedPlanIds.includes(plan.id)} onSetReminder={() => handleTogglePlanReminder(plan.id)}
+      reminderSet={planReminderIds.includes(plan.id)} />
   }
 
   if (overlay === 'build-plan') {
@@ -1113,6 +1159,8 @@ export default function App() {
       'activity': { en: 'something to do together', he: 'פעילות משותפת' },
     }
     const hasRecovery = recovery.vibes.length > 0 || recovery.cities.length > 0
+    const hasPreferences = planPreferenceLabels(quizAnswers, lang).length > 0
+    const preferencePanel = <div style={{ width: '100%', maxWidth: 460, marginTop: 18 }}><PlanPreferences answers={quizAnswers} lang={lang} onApply={applyPlanPreferences} /></div>
 
     const chipStyle = { background: '#FFFFFF', color: '#241E16', border: '1px solid #E6DCC8', borderRadius: 999, padding: '9px 16px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }
 
@@ -1175,6 +1223,7 @@ export default function App() {
               </button>
             </div>
           </div>
+          {preferencePanel}
           {recoveryBlock}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 22 }}>
             <button onClick={() => setOverlay('quiz')} style={chipStyle}>
@@ -1196,15 +1245,18 @@ export default function App() {
       <div style={{ minHeight: '100dvh', background: '#F7F2E8', color: '#241E16', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', textAlign: 'center' }}>
         <div style={{ fontSize: 36, marginBottom: 12 }}>🌒</div>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 12px', maxWidth: 420, lineHeight: 1.25 }}>
-          {isHe
+          {hasPreferences
+            ? (isHe ? 'אין כרגע רעיונות שמתאימים לכל ההעדפות' : 'No ideas match all these preferences yet')
+            : isHe
             ? cityLabel ? `אין לנו עדיין מספיק אופציות חזקות ב${cityLabel}` : 'אין לנו עדיין מספיק אופציות חזקות לדייט הזה'
             : cityLabel ? `Not enough strong options in ${cityLabel} yet` : 'Not enough strong options for this date yet'}
         </h1>
         <p style={{ fontSize: 14, color: '#8A7F6C', maxWidth: 420, lineHeight: 1.55, margin: '0 0 4px' }}>
           {isHe
-            ? 'עדיין אין לנו מספיק אופציות מאומתות שמתאימות בדיוק לתשובות שלכם.'
-            : 'We don’t have enough verified options that match exactly what you asked for yet.'}
+            ? 'אפשר לעדכן את ההעדפות כאן או לעיין במקומות באזור.'
+            : 'Adjust your preferences below or browse places in the area.'}
         </p>
+        {preferencePanel}
         {recoveryBlock}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 22 }}>
           <button
@@ -1229,6 +1281,7 @@ export default function App() {
       <>
         <div style={{ paddingBottom: 76 }}>
         <ResultsPage
+          locations={locations}
           lang={lang}
           font={font}
           plan={currentPlan}
@@ -1240,6 +1293,7 @@ export default function App() {
           alternatePlan={alternatePlan}
           backupLocations={backupLocations}
           answers={quizAnswers || {}}
+          onApplyPreferences={applyPlanPreferences}
           saved={savedPlanIds.includes(currentPlan.id)}
           reminderSet={planReminderIds.includes(currentPlan.id)}
           onBrowseAll={() => {
@@ -1445,6 +1499,7 @@ export default function App() {
               onTogglePlanReminder={handleTogglePlanReminder}
               onSubmitFeedback={handleSubmitFeedback}
               onOpenPlace={openDetail}
+              onOpenPlan={plan => { setPreviewPlan(plan); setOverlay('plan-preview') }}
               onGoHome={() => selectTab('home')}
             />
             </div>
@@ -1473,6 +1528,10 @@ export default function App() {
               onOpenDeleteAccount={() => { window.history.pushState({}, '', '/delete-account'); setOverlay('delete-account') }}
               onOpenBusinesses={() => openBusinesses('profile')}
               analyticsEnabled={analyticsEnabled}
+              onSignOut={async () => {
+                const { error } = await supabase.auth.signOut({ scope: 'local' })
+                if (error) alert(lang === 'he' ? 'ההתנתקות נכשלה. נסו שוב.' : 'Could not sign out. Please try again.')
+              }}
               onDeleteAccount={async () => {
                 const confirmed = window.confirm(
                   lang === 'he'
@@ -1483,15 +1542,12 @@ export default function App() {
                 try {
                   const { data: { session } } = await supabase.auth.getSession()
                   if (!session) return
-                  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${session.access_token}` },
-                  })
-                  if (res.ok) {
+                  const { error } = await supabase.functions.invoke('delete-account', { body: {} })
+                  if (!error) {
                     await supabase.auth.signOut()
                     localStorage.clear()
                     window.location.reload()
-                  }
+                  } else throw new Error('Account deletion failed')
                 } catch {
                   alert(lang === 'he' ? 'שגיאה במחיקת החשבון. נסו שוב.' : 'Error deleting account. Please try again.')
                 }
@@ -1523,7 +1579,7 @@ export default function App() {
             setAnalyticsEnabled(true)
             setShowConsentBanner(false)
           }}
-          onDecline={() => setShowConsentBanner(false)}
+          onDecline={() => { revokeAnalyticsConsent(); setAnalyticsEnabled(false); setShowConsentBanner(false) }}
           onOpenPrivacy={() => { window.history.pushState({}, '', '/privacy'); setOverlay('privacy') }}
         />
       ) : showFeedbackModal ? (
@@ -1649,8 +1705,8 @@ function HomePage({
           {/* Trust line — single subtle row, no chip boxes */}
           <div className="hm-reveal" style={{ animationDelay: '0.23s', fontSize: 13, color: '#9A8F7C', marginBottom: 16 }}>
             {isHe
-              ? 'חידון של 60 שניות · מסלולים מובחרים · פרטי כשרות כשאומתו'
-              : '60-second quiz · Curated routes · Kashrut details when verified'}
+              ? 'שאלון קצר · תפריטים כשזמינים · פרטי כשרות בשקיפות'
+              : 'A quick quiz · Menus where available · Clear kashrut details'}
           </div>
 
           <div className="hm-reveal" style={{ animationDelay: '0.29s' }}>
@@ -1660,7 +1716,7 @@ function HomePage({
           </div>
           <div className="hm-reveal" style={{ animationDelay: '0.35s', textAlign: 'center', margin: '10px 0 2px' }}>
             <span style={{ fontSize: 13.5, color: '#9A8F7C' }}>
-              {isHe ? 'בערך דקה · 3 הקשות מהירות' : 'Takes about a minute · 3 quick taps'}
+              {isHe ? 'שתי בחירות קצרות · עוד התאמות בתוצאות' : '2 quick choices · Fine-tune your results anytime'}
             </span>
           </div>
           <div className="hm-reveal" style={{ animationDelay: '0.4s', textAlign: 'center' }}>
@@ -1686,8 +1742,8 @@ function HomePage({
           <div style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 22, padding: '6px 16px' }}>
             {[
               ['🕍', isHe ? 'כשרות בשקיפות' : 'Transparent kashrut details', isHe ? 'רשות הכשרות ותאריך הבדיקה מוצגים כשאומתו — בלי ניחושים.' : 'Authority and verification date are shown when confirmed — never guessed.'],
-              ['🗺️', isHe ? 'מסלולים אמיתיים' : 'Real routes, not lists', isHe ? '2–3 עצירות במרחק הליכה, עם סדר וקצב שנבנו בקפידה.' : '2–3 stops within walking distance, sequenced with a start time and pace.'],
-              ['✓', isHe ? 'מקומות מאומתים' : 'Verified venues', isHe ? 'אנחנו בודקים שכל מקום בתוכנית פעיל לפני שהוא מוצג.' : 'Every place in a plan is checked to be open and operating.'],
+              ['🗺️', isHe ? 'דייט בקצב שלכם' : 'A date at your pace', isHe ? 'מקום אחד טוב או מסלול קצר, לפי המידע הזמין וההעדפות שלכם.' : 'One good place or a short route, based on your preferences and the available venue information.'],
+              ['✓', isHe ? 'מידע ברור' : 'Know before you go', isHe ? 'תפריטים ומקורות מידע כשיש; פרטים לא מאומתים מסומנים בבירור.' : 'Menus and sources where available, with unconfirmed details clearly marked.'],
             ].map(([icon, title, text], i) => (
               <div key={title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 0', borderTop: i === 0 ? 'none' : `1px solid ${APP_BORDER}` }}>
                 <span aria-hidden style={{ fontSize: 17, lineHeight: 1.3, flexShrink: 0 }}>{icon}</span>
@@ -1709,7 +1765,7 @@ function HomePage({
 
         {error ? (
           <div style={{ background: '#FBEDEA', border: '1px solid #E3BBAE', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#9C3F2C' }}>
-            {isHe ? 'לא ניתן להתחבר לשרת, מוצגים נתוני גיבוי.' : 'Could not reach the server, showing cached data.'}
+            {isHe ? 'לא ניתן לרענן כרגע. מוצג הקטלוג השמור — בדקו פרטים עם המקום.' : 'Unable to refresh right now. Showing the saved catalog — confirm details with the venue.'}
           </div>
         ) : null}
         {loading ? <div style={{ color: APP_MUTED, fontSize: 13 }}>{tx.loading}</div> : null}
@@ -1785,7 +1841,7 @@ function ExplorePage({
         >
           <Suspense fallback={<div style={{ flex: 1, background: '#EDE7D9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A99A85', fontSize: 13 }}>Loading map…</div>}>
             <MapView
-              locations={locations}
+              locations={filteredLocations}
               lang={lang}
               tx={tx}
               font={font}
@@ -1809,6 +1865,7 @@ function ExplorePage({
           <div style={{ display: 'grid', gap: 12 }}>
             <input
               value={browseSearch}
+              aria-label={tx.searchPlaceholder}
               onChange={(event) => {
                 setBrowseSearch(event.target.value)
                 if (event.target.value) setExploreExpanded(true)
@@ -1839,7 +1896,13 @@ function ExplorePage({
               }}
             />
 
-            {loading ? (
+            <details style={{ background: '#fff', border: `1px solid ${APP_BORDER}`, borderRadius: 14, padding: 14 }}>
+              <summary style={{ cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>{lang === 'he' ? 'תזונה, כשרות ותפריטים' : 'Dietary needs, kashrut & menus'}{browseFilters.dietary?.length ? ` (${browseFilters.dietary.length})` : ''}</summary>
+              <div style={{ marginTop: 16 }}><VenuePreferences lang={lang} value={browseFilters} onChange={next => { setBrowseFilters(next); setExploreExpanded(true) }} /></div>
+            </details>
+            <div aria-live="polite" style={{ fontSize: 12, color: APP_SOFT }}>{lang === 'he' ? (filteredLocations.length === 1 ? 'מקום מתאים אחד' : `${filteredLocations.length} מקומות מתאימים`) : `${filteredLocations.length} matching ${filteredLocations.length === 1 ? 'place' : 'places'}`}</div>
+
+            {loading && !locations.length ? (
               <SkeletonCardGrid count={6} label={tx.loading} />
             ) : showCurated ? (
               <div style={{ display: 'grid', gap: 14 }}>
@@ -1952,7 +2015,7 @@ function TonightPlanCard({ lang, plan, onOpenPlan }) {
   const meta = [
     isHe ? plan.start_time_text_he : plan.start_time_text_en,
     isHe ? plan.duration_text_he : plan.duration_text_en,
-    `${(plan.stops || []).length} ${isHe ? 'תחנות' : 'stops'}`,
+    plan._singleVenue ? (isHe ? 'מקום אחד' : 'One place') : `${(plan.stops || []).length} ${isHe ? 'תחנות' : 'stops'}`,
   ].filter(Boolean)
 
   return (
@@ -1971,7 +2034,7 @@ function TonightPlanCard({ lang, plan, onOpenPlan }) {
           {plan.city ? `${isHe ? 'בחירת הערב' : "Tonight's pick"} · ${plan.city}` : (isHe ? 'בחירת הערב' : "Tonight's pick")}
         </span>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#4F7144', background: '#E9F0E4', borderRadius: 999, padding: '4px 9px', whiteSpace: 'nowrap' }}>
-          {isHe ? 'נבחר בקפידה' : 'Hand-picked'}
+          {plan.source_type === 'generated-location' ? (isHe ? 'רעיון לדייט' : 'Date idea') : (isHe ? 'נבחר בקפידה' : 'Hand-picked')}
         </span>
       </div>
 
@@ -1997,7 +2060,7 @@ function TonightPlanCard({ lang, plan, onOpenPlan }) {
   )
 }
 
-function SavedPage({ lang, tx, authUser, plans, places, reminderIds, feedbackByItem, onRemovePlan, onRemovePlace, onTogglePlanReminder, onSubmitFeedback, onOpenPlace, onGoHome }) {
+function SavedPage({ lang, tx, authUser, plans, places, reminderIds, feedbackByItem, onRemovePlan, onRemovePlace, onTogglePlanReminder, onSubmitFeedback, onOpenPlace, onOpenPlan, onGoHome }) {
   if (!authUser && !plans.length && !places.length) {
     return <SavedSignInCard lang={lang} onGoHome={onGoHome} />
   }
@@ -2022,6 +2085,7 @@ function SavedPage({ lang, tx, authUser, plans, places, reminderIds, feedbackByI
                 onToggleReminder={() => onTogglePlanReminder(plan.id)}
                 onSubmitFeedback={(feedback) => onSubmitFeedback(`plan:${plan.id}`, feedback)}
                 onRemove={() => onRemovePlan(plan.id)}
+                onOpen={() => onOpenPlan(plan)}
               />
             ))}
           </div>
@@ -2217,7 +2281,7 @@ function SavedSectionEmpty({ text }) {
   )
 }
 
-function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder, onSubmitFeedback, onRemove }) {
+function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder, onSubmitFeedback, onRemove, onOpen }) {
   const [showFeedback, setShowFeedback] = useState(false)
   const [draftRating, setDraftRating] = useState(feedback?.rating || 0)
   const [draftAgain, setDraftAgain] = useState(feedback?.again ?? null)
@@ -2238,8 +2302,9 @@ function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder
       </div>
       <div style={{ color: '#6E6450', fontSize: 15, lineHeight: 1.55, marginBottom: 12 }}>{isHe ? plan.narrative_he : plan.narrative_en}</div>
       <div style={{ display: 'grid', gap: 8 }}>
+        <button onClick={onOpen} style={primaryButtonStyle}>{isHe ? 'פתחו את פרטי הדייט' : 'Open date details'}</button>
         <button onClick={onToggleReminder} style={secondaryButtonStyle}>
-          {reminderSet ? (isHe ? 'הסירו תזכורת' : 'Remove Reminder') : isHe ? 'קבעו תזכורת' : 'Set Reminder'}
+          {reminderSet ? (isHe ? 'בטלו בדיקה בביקור הבא' : 'Remove next-visit check-in') : isHe ? 'בדיקה בביקור הבא באתר' : 'Check in next time I visit'}
         </button>
         <button onClick={handleShare} style={secondaryButtonStyle}>
           {tx.shareSavedPlan}
@@ -2338,6 +2403,7 @@ function ProfilePage({
   analyticsEnabled,
   onToggleAnalytics,
   onDeleteAccount,
+  onSignOut,
   onOpenFeedback,
 }) {
   const isHe = lang === 'he'
@@ -2553,6 +2619,7 @@ function ProfilePage({
 
         {authUser ? (
           <section className="hm-reveal" style={{ animationDelay: '0.42s' }}>
+            <button onClick={onSignOut} style={{ width: '100%', background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 12, padding: 14, marginBottom: 14, color: APP_TEXT, font: 'inherit', cursor: 'pointer' }}>{isHe ? 'התנתקות' : 'Sign out'}</button>
             <div style={{ background: '#FFF8F8', border: '1px solid #F0D4D4', borderRadius: 16, padding: 16 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#9B2C2C', marginBottom: 4 }}>
                 {isHe ? 'אזור מסוכן' : 'Danger zone'}

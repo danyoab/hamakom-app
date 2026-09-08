@@ -13,7 +13,7 @@
 //   (planGates.js) can pass and the plan becomes eligible for quiz results.
 // - A stop that resolves to a CLOSED / non-operational venue marks the plan
 //   unsafe (`curatedPlanSafe` → false) so Tonight's Pick / Surprise Me skip it.
-import { canonicalCity, isOperational, isRealVenueRow } from './planGates'
+import { canonicalCity, isOperational, isRealVenueRow } from './planGates.js'
 
 const STOPWORDS = new Set(['and', 'the', 'at', 'of', 'in', 'a', 'an'])
 
@@ -60,15 +60,16 @@ export function resolveCuratedPlan(plan, locations) {
 
   let changed = false
   const stops = plan.stops.map((stop) => {
-    if (stop.source_location_id != null || stop._locationId != null) return stop
-    const match = matchStopToLocation(stop, cityLocations)
-    if (!match) return stop
+    const id = stop.source_location_id ?? stop._locationId ?? stop.location_id
+    const match = id != null ? cityLocations.find(l => String(l.id) === String(id)) : matchStopToLocation(stop, cityLocations)
+    if (!match) { changed = true; return { ...stop, _resolvedOperational: false } }
     changed = true
     return {
       ...stop,
       _locationId: match.id,
-      lat: stop.lat ?? match.lat,
-      lng: stop.lng ?? match.lng,
+      source_location_id: match.id,
+      lat: match.lat,
+      lng: match.lng,
       _resolvedOperational: isRealVenueRow(match) && isOperational(match),
     }
   })
@@ -82,5 +83,5 @@ export function resolveCuratedPlans(plans, locations) {
 // Safe = no stop is KNOWN to point at a closed/unverifiable venue.
 // Unresolved stops (undefined) are tolerated; resolved-but-closed is not.
 export function curatedPlanSafe(plan) {
-  return (plan?.stops || []).every((stop) => stop._resolvedOperational !== false)
+  return Boolean(plan?.stops?.length) && plan.stops.every((stop) => stop._resolvedOperational === true)
 }

@@ -2,6 +2,11 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import { getMapsUrl } from '../lib/constants'
 import { buildPlanIdentity, getPlanFitSummary } from '../lib/quiz'
 import { shareContent, sharePlanMessage } from '../lib/share'
+import VenueFoodDetails from './VenueFoodDetails.jsx'
+import { sharedPlanPath } from '../lib/sharedPlans.js'
+import { siteOrigin } from '../lib/seo.js'
+import PlanPreferences from './PlanPreferences.jsx'
+import { getPlanNavigationUrl } from '../lib/planMap.js'
 
 const PlanRouteMap = lazy(() => import('./PlanRouteMap'))
 
@@ -103,6 +108,7 @@ export default function ResultsPage({
   font,
   plan,
   plans = [],
+  locations = [],
   planIndex = 0,
   onSelectPlan,
   backupLocations = [],
@@ -120,9 +126,14 @@ export default function ResultsPage({
   onRetakeQuiz,
   onBuildYourOwnPlan,
   onSuggestPlace,
+  onApplyPreferences,
 }) {
   const [showBackups, setShowBackups] = useState(false)
+  const [copiedLink, setCopiedLink] = useState('')
+  const [manualLink, setManualLink] = useState('')
+  const planLink = `${siteOrigin()}${sharedPlanPath(plan, lang)}`
   const isHe  = lang === 'he'
+  const cityLabel = isHe ? plan.city_he || plan.city : plan.city
   const dir   = isHe ? 'rtl' : 'ltr'
   const text  = getLocalizedPlanText(plan, lang)
   const identity   = buildPlanIdentity(answers)
@@ -130,11 +141,12 @@ export default function ResultsPage({
   const isShortPlan = (answers.length || plan.length_tags?.[0]) === 'short'
   const primaryStops  = isShortPlan ? plan.stops.slice(0, 2) : plan.stops
   const optionalStops = isShortPlan ? plan.stops.slice(2) : []
-  const firstStopMaps = useMemo(() => getMapsUrl(plan.stops?.[0]?.maps_query), [plan])
+  const planMapsUrl = getPlanNavigationUrl(plan.stops, plan.travel_mode)
 
   // Approximate clock time per stop + walking time between stops, so the
   // itinerary scans as a real evening instead of a list of paragraphs.
   const itinerary = useMemo(() => {
+    if (plan._schedule) return plan._schedule.scheduled.map(s => ({ timeLabel: s.arrival == null ? null : formatClock(s.arrival, isHe), walk: s.travel }))
     const initial = { time: parseStartMinutes(plan), rows: [] }
     return primaryStops.reduce((state, stop, i) => {
       const walk = i > 0 ? walkMinutesBetween(primaryStops[i - 1], stop) : null
@@ -150,8 +162,8 @@ export default function ResultsPage({
 
   const handleShare = async () => {
     try {
-      await shareContent(sharePlanMessage(plan, lang))
-      onSharePlan?.()
+      const shared = await shareContent(sharePlanMessage(plan, lang))
+      if (shared) onSharePlan?.()
     } catch { /* cancelled */ }
   }
 
@@ -186,13 +198,21 @@ export default function ResultsPage({
           <div className="hm-reveal" style={{ animationDelay: '0.14s', display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
             {text.startTime ? <Chip>🕐 {text.startTime}</Chip> : null}
             {text.duration  ? <Chip>{text.duration}</Chip>  : null}
-            <Chip>{primaryStops.length} {isHe ? 'עצירות' : 'stops'}</Chip>
+            <Chip>{plan._singleVenue ? (isHe ? 'דייט במקום אחד' : 'One-place date') : `${primaryStops.length} ${isHe ? 'עצירות' : 'stops'}`}</Chip>
+            {plan.planning_date && <Chip>{plan.planning_date}</Chip>}
             {text.budget    ? <Chip>{text.budget}</Chip>    : null}
-            {plan.city      ? <Chip>📍 {plan.city}</Chip>  : null}
+            {plan.city      ? <Chip>📍 {cityLabel}</Chip>  : null}
           </div>
 
           <p className="hm-reveal" style={{ animationDelay: '0.2s', margin: 0, fontSize: 14, color: SOFT, lineHeight: 1.6, fontStyle: 'italic' }}>
             {fitSummary}
+          </p>
+
+          <p style={{ margin: '12px 0 0', fontSize: 12, lineHeight: 1.6, color: SOFT }}>
+            {plan._availabilityUnconfirmed
+              ? (isHe ? 'רעיון מהמאגר שלנו; הפעילות הנוכחית עדיין לא אומתה. בדקו עם המקום לפני היציאה.' : 'A place from our catalog; current operation has not been confirmed. Check with the venue before going.')
+              : (isHe ? 'שעות וזמינות אינן מובטחות. אישור הזמנה ופרטים עדכניים — ישירות מול המקום.' : 'Opening hours and availability are not guaranteed. Confirm reservations and current details with the venue.')}
+            {plan.planning_date && (isHe ? ' זמני הביקור משוערים; חגים ושבת עשויים לשנות שעות.' : ' Visit times are estimates; holiday and Shabbat hours may differ.')}
           </p>
 
           {plan._cityMismatch && plan.city ? (
@@ -207,35 +227,43 @@ export default function ResultsPage({
 
       <div style={{ maxWidth: 540, margin: '0 auto', padding: '18px 18px 48px' }}>
 
+        {onApplyPreferences && <PlanPreferences answers={answers} lang={lang} onApply={onApplyPreferences} />}
+
         {/* ── Vibe tabs (other plans in this city) ─────────────── */}
         {plans.length > 1 ? (
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#A99A78', textTransform: 'uppercase', marginBottom: 9 }}>
               {plan.city
-                ? (isHe ? `${plans.length} תוכניות ב${plan.city}` : `${plans.length} plans in ${plan.city}`)
+                ? (isHe ? `${plans.length} תוכניות ב${cityLabel}` : `${plans.length} plans in ${plan.city}`)
                 : (isHe ? 'וייבים נוספים' : 'Other vibes to try')}
             </div>
             <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
               {plans.map((p, i) => {
                 const active = i === planIndex
                 const vl = vibeLabel(p, lang)
+                const sameVibe = plans.filter(other => vibeLabel(other, lang).title === vl.title).length > 1
+                const firstName = isHe ? p.stops?.[0]?.name_he || p.stops?.[0]?.name_en : p.stops?.[0]?.name_en
+                const tabTitle = sameVibe ? firstName || (isHe ? `אפשרות ${i + 1}` : `Option ${i + 1}`) : vl.title
+                const tabSubtitle = sameVibe ? vl.title : vl.sub
                 return (
                   <button
                     key={p.id}
+                    aria-pressed={active}
+                    title={tabTitle}
                     onClick={() => onSelectPlan?.(i)}
                     style={{
-                      flexShrink: 0, borderRadius: 14, padding: '11px 15px', cursor: 'pointer',
+                      flexShrink: 0, maxWidth: 220, borderRadius: 14, padding: '11px 15px', cursor: 'pointer',
                       fontFamily: font, textAlign: isHe ? 'right' : 'left', transition: 'all 0.18s',
                       background: active ? INK : PANEL,
                       border: `1.5px solid ${active ? INK : '#E6DCC8'}`,
                     }}
                   >
-                    <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: active ? '#F4ECD8' : '#3C342A' }}>
-                      {vl.title}
+                    <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13.5, fontWeight: 700, color: active ? '#F4ECD8' : '#3C342A' }}>
+                      {tabTitle}
                     </span>
-                    {vl.sub ? (
+                    {tabSubtitle ? (
                       <span style={{ display: 'block', fontSize: 11, marginTop: 1, color: active ? 'rgba(244,236,216,0.7)' : '#A99A85' }}>
-                        {vl.sub}
+                        {tabSubtitle}
                       </span>
                     ) : null}
                   </button>
@@ -245,11 +273,11 @@ export default function ResultsPage({
           </div>
         ) : null}
 
-        {/* ── Route map (only when stops have coords) ──────────── */}
-        {primaryStops.filter(s => s.lat && s.lng).length >= 2 ? (
-          <div className="hm-reveal" style={{ animationDelay: '0.26s', marginBottom: 12, borderRadius: 16, overflow: 'hidden', height: 240, border: `1px solid ${BORDER}` }}>
-            <Suspense fallback={<div style={{ height: '100%', background: '#EDE7D9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>Loading map…</div>}>
-              <PlanRouteMap stops={primaryStops.map(s => ({ id: s.maps_query || s.name_en, name: s.name_en, name_he: s.name_he, lat: s.lat, lng: s.lng, city: plan.city }))} lang={lang} />
+        {/* A plan always has a map, including one-place and area-only ideas. */}
+        {primaryStops.length > 0 ? (
+          <div className="hm-reveal" style={{ animationDelay: '0.26s', marginBottom: 12, borderRadius: 16, overflow: 'hidden', height: 340, border: `1px solid ${BORDER}` }}>
+            <Suspense fallback={<div role="status" style={{ height: '100%', background: '#EDE7D9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>{isHe ? 'טוענים מפה…' : 'Loading map…'}</div>}>
+              <PlanRouteMap stops={primaryStops.map(s => ({ ...s, city: plan.city, city_he: plan.city_he }))} lang={lang} planCity={plan.city} travelMode={plan.travel_mode} onOpenMaps={onOpenPlanMaps} />
             </Suspense>
           </div>
         ) : null}
@@ -270,6 +298,9 @@ export default function ResultsPage({
                 total={primaryStops.length}
                 timeLabel={itinerary[i]?.timeLabel}
                 walkToNext={itinerary[i + 1]?.walk ?? null}
+                travelMode={plan.travel_mode}
+                location={locations.find(l => String(l.id) === String(stop.source_location_id ?? stop._locationId))}
+                onOpenLocation={onOpenBackupLocation}
               />
             ))}
           </div>
@@ -292,7 +323,7 @@ export default function ResultsPage({
               <span style={{ fontSize: 13, flexShrink: 0, lineHeight: 1.4 }}>✨</span>
               <div>
                 <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', color: ACCENT, textTransform: 'uppercase', marginBottom: 3 }}>
-                  {isHe ? 'למה המסלול הזה עובד' : 'Why this route works'}
+                {plan._singleVenue ? (isHe ? 'למה המקום הזה מתאים' : 'Why this place works') : (isHe ? 'למה המסלול הזה עובד' : 'Why this route works')}
                 </div>
                 <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: SOFT }}>{text.routeReason}</p>
               </div>
@@ -331,22 +362,30 @@ export default function ResultsPage({
             {isHe ? 'שתף' : 'Share'}
           </button>
 
+          <button onClick={async () => {
+            try { await navigator.clipboard.writeText(planLink); setCopiedLink(planLink); setManualLink('') }
+            catch { setManualLink(planLink) }
+          }} style={secondaryBtn(font)}>
+            {copiedLink === planLink ? (isHe ? '✓ הקישור הועתק' : '✓ Link copied') : (isHe ? 'העתקת קישור' : 'Copy link')}
+          </button>
+          {manualLink === planLink && <input aria-label={isHe ? 'קישור לשיתוף' : 'Link to share'} readOnly value={planLink} onFocus={e => e.target.select()} style={{ gridColumn: '1 / -1', width: '100%', boxSizing: 'border-box', padding: 12 }} />}
+
           <button
             onClick={onSetReminder}
             style={reminderSet ? { ...secondaryBtn(font), color: '#4F7144', borderColor: '#C7DCBC', background: '#E9F0E4' } : secondaryBtn(font)}
           >
-            {reminderSet ? (isHe ? '✓ תזכורת' : '✓ Reminder') : isHe ? 'תזכורת' : 'Reminder'}
+            {reminderSet ? (isHe ? '✓ בדיקה בביקור הבא' : '✓ Check-in saved') : isHe ? 'בדיקה בביקור הבא' : 'Check in next visit'}
           </button>
 
-          {firstStopMaps ? (
+          {planMapsUrl ? (
             <a
-              href={firstStopMaps}
+              href={planMapsUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => onOpenPlanMaps?.()}
               style={{ ...secondaryBtn(font), gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
             >
-              {isHe ? 'פתח במפות' : 'Open in Maps'} →
+              {isHe ? plan.stops.length > 1 ? 'ניווט למסלול' : 'פתח במפות' : plan.stops.length > 1 ? 'Navigate the route' : 'Open in Maps'} ↗
             </a>
           ) : null}
         </div>
@@ -356,8 +395,8 @@ export default function ResultsPage({
           <span style={{ fontSize: 13, lineHeight: 1.4, flexShrink: 0 }}>ℹ️</span>
           <p style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
             {isHe
-              ? 'אנחנו מוודאים שהמקומות פעילים, אבל שעות הפעילות עשויות להשתנות. בדקו בקישור למפה או התקשרו לפני שיוצאים.'
-              : 'We verify venues are active, but hours can change. Please check the map link or call before going.'}
+              ? 'בדקו שעות, כשרות וזמינות שולחן עם המקום. זמני המעבר הם הערכות לפי מרחק אווירי, לא ניווט. בדיקה בביקור הבא תופיע כשתחזרו לאתר; זו אינה התראה בטלפון.'
+              : 'Check hours, kashrut and table availability with the venue. Travel estimates use straight-line distance, not a mapped route. Check-ins appear when you return to the app; they are not phone notifications.'}
           </p>
         </div>
 
@@ -374,7 +413,7 @@ export default function ResultsPage({
             >
               {showBackups
                 ? (isHe ? 'הסתר חלופות' : 'Hide alternatives')
-                : (isHe ? 'רוצים וייב אחר? ראו 3 חלופות' : 'Want a different vibe? See 3 alternatives')}
+                : (isHe ? `עוד ${backupLocations.length} מקומות לשקול` : `${backupLocations.length} more places to consider`)}
             </button>
 
             {showBackups ? (
@@ -440,7 +479,7 @@ function Chip({ children }) {
   )
 }
 
-function StopCard({ stop, index, lang, total, timeLabel, walkToNext }) {
+function StopCard({ stop, index, lang, total, timeLabel, walkToNext, travelMode, location, onOpenLocation }) {
   const isHe = lang === 'he'
   const title       = isHe ? stop.name_he        : stop.name_en
   const instruction = isHe ? stop.instruction_he  : stop.instruction_en
@@ -448,7 +487,7 @@ function StopCard({ stop, index, lang, total, timeLabel, walkToNext }) {
   const mapsUrl     = getMapsUrl(stop.maps_query)
   const isLast      = index === total - 1
   const roleLabel   = stop.role ? ROLE_LABELS[stop.role]?.[isHe ? 'he' : 'en'] : null
-  const duration    = isHe ? stop.duration_text_he : stop.duration_text_en
+  const duration    = stop.duration ? `${stop.duration} ${isHe ? 'דקות' : 'min'}` : isHe ? stop.duration_text_he : stop.duration_text_en
   const isExtension = stop.role === 'extension'
 
   return (
@@ -506,12 +545,19 @@ function StopCard({ stop, index, lang, total, timeLabel, walkToNext }) {
             {isHe ? 'פתח במפות ←' : '→ Open in Maps'}
           </a>
         ) : null}
+        {location && <>
+          <VenueFoodDetails loc={location} lang={lang} compact />
+          {onOpenLocation && <button onClick={() => onOpenLocation(location)} style={{ border: 0, background: 'none', padding: '6px 0', color: ACCENT, cursor: 'pointer', font: 'inherit', fontSize: 12 }}>{isHe ? 'פרטים, שעות וכשרות ←' : 'Details, hours & kashrut →'}</button>}
+        </>}
+        {stop.hours === 'fits_regular_hours' && <div style={{ fontSize: 11, color: MUTED }}>{isHe ? 'מתאים לשעות הרגילות שפורסמו — יש לאשר ביום הביקור' : 'Fits published regular hours — confirm for your date'}</div>}
 
         {/* Walking connector to the next stop */}
         {!isLast && walkToNext != null ? (
           <div style={{ marginTop: 10, marginBottom: 4, fontSize: 11.5, color: '#A99A85', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span aria-hidden>🚶</span>
-            {isHe ? `~${walkToNext} דק׳ הליכה לתחנה הבאה` : `~${walkToNext} min walk to the next stop`}
+            <span aria-hidden>{travelMode === 'driving' ? '🚗' : '🚶'}</span>
+            {travelMode === 'driving'
+              ? (isHe ? `כ־${walkToNext} דקות נסיעה וחניה` : `~${walkToNext} min for driving & parking`)
+              : (isHe ? `כ־${walkToNext} דקות הליכה — בדקו מסלול במפה` : `~${walkToNext} min walk — check the route in Maps`)}
           </div>
         ) : !isLast ? (
           <div style={{ height: 8 }} />

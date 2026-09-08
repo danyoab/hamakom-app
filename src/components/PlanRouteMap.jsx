@@ -1,135 +1,74 @@
-import { useEffect } from 'react'
-import { MapContainer, Marker, Polyline, TileLayer, useMap } from 'react-leaflet'
+import { useEffect, useMemo, useState } from 'react'
+import { MapContainer, Marker, Polyline, Popup, TileLayer, ZoomControl, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { CITY_COORDS } from '../lib/constants'
-import { getDistanceKm, formatWalkTime } from '../lib/distance'
+import { getPlanMapData, getPlanNavigationUrl } from '../lib/planMap.js'
 
-const ACCENT = '#C9A84C'
-const BG = '#F7F2E8'
-
-function stopIcon(index, isFirst) {
+function stopIcon(number) {
   return L.divIcon({
-    html: `<div style="
-      background: ${isFirst ? ACCENT : '#241E16'};
-      color: ${BG};
-      border: 2px solid ${isFirst ? '#E0BE58' : '#8A7F6C'};
-      border-radius: 50%;
-      width: 32px; height: 32px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 14px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.7);
-    ">${index}</div>`,
-    className: '',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
+    html: `<div style="background:${number === 1 ? '#9A7A28' : '#241E16'};color:#fff;border:2px solid #fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 2px 8px #0005">${number}</div>`,
+    className: '', iconSize: [32, 32], iconAnchor: [16, 16],
   })
 }
 
-function getCoords(location) {
-  if (location.lat && location.lng) return [location.lat, location.lng]
-  const city = location.city
-  return CITY_COORDS[city] || null
-}
-
-function FitBounds({ positions }) {
+function UpdateViewport({ data }) {
   const map = useMap()
   useEffect(() => {
-    if (positions.length >= 2) {
-      const bounds = L.latLngBounds(positions)
-      map.fitBounds(bounds, { padding: [48, 48] })
-    } else if (positions.length === 1) {
-      map.setView(positions[0], 14)
+    const update = () => {
+      map.invalidateSize()
+      if (data.markers.length > 1) map.fitBounds(data.markers.map(m => m.position), { padding: [42, 42], maxZoom: 15 })
+      else map.setView(data.center, data.zoom)
     }
-  }, [map, positions])
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(map.getContainer())
+    return () => observer.disconnect()
+  }, [map, data])
   return null
 }
 
-function InvalidateSize() {
-  const map = useMap()
-  useEffect(() => {
-    const t = setTimeout(() => map.invalidateSize(), 100)
-    return () => clearTimeout(t)
-  }, [map])
-  return null
-}
-
-
-export default function PlanRouteMap({ stops, lang }) {
-  const coords = stops.map(getCoords).filter(Boolean)
-  const hasCoords = coords.length === stops.length && coords.length >= 2
-
-  const dist = hasCoords
-    ? getDistanceKm(coords[0][0], coords[0][1], coords[1][0], coords[1][1])
-    : null
-
-  const distLabel = dist !== null
-    ? `${dist < 1 ? `${Math.round(dist * 1000)}m` : `${dist.toFixed(1)}km`} · ${formatWalkTime(dist)}`
-    : null
-
-  const isHe = lang === 'he'
-
-  if (!coords.length) return null
-
+export default function PlanRouteMap({ stops = [], lang, planCity, travelMode = 'walking', onOpenMaps }) {
+  const data = useMemo(() => getPlanMapData(stops, planCity), [stops, planCity])
+  const [tileError, setTileError] = useState(false)
+  const he = lang === 'he'
+  const cityName = he ? stops[0]?.city_he || data.city : data.city
+  const navUrl = getPlanNavigationUrl(stops, travelMode)
+  const title = data.complete
+    ? (he ? stops.length > 1 ? 'המסלול על המפה' : 'המקום על המפה' : stops.length > 1 ? 'Your route on the map' : 'Your place on the map')
+    : data.markers.length
+      ? (he ? 'המיקומים הידועים על המפה' : 'Known locations on the map')
+      : data.areaKnown ? (he ? `מפת אזור ${cityName}` : `${cityName} area map`) : (he ? 'מפת האזור' : 'Area map')
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <MapContainer
-        center={coords[0] || [31.8, 35.0]}
-        zoom={14}
-        style={{ width: '100%', height: '100%' }}
-        zoomControl={false}
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution="© OpenStreetMap"
-        />
-        <InvalidateSize />
-        <FitBounds positions={coords} />
-
-        {coords.map((pos, i) => (
-          <Marker key={i} position={pos} icon={stopIcon(i + 1, i === 0)} />
-        ))}
-
-        {coords.length >= 2 ? (
-          <Polyline
-            positions={coords}
-            pathOptions={{ color: ACCENT, weight: 3, dashArray: '8 6', opacity: 0.85 }}
-          />
-        ) : null}
-      </MapContainer>
-
-      {/* Distance badge */}
-      {distLabel ? (
-        <div style={{
-          position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(255,253,247,0.94)', border: '1px solid #EBE2D0',
-          borderRadius: 999, padding: '5px 14px', fontSize: 12, color: '#241E16',
-          zIndex: 1000, whiteSpace: 'nowrap', backdropFilter: 'blur(4px)',
-          fontWeight: 500,
-        }}>
-          {distLabel}
-        </div>
-      ) : null}
-
-      {/* Stop labels */}
-      <div style={{
-        position: 'absolute', top: 10, left: 10, right: 10,
-        display: 'flex', gap: 6, zIndex: 1000, flexWrap: 'wrap',
-      }}>
-        {stops.map((stop, i) => {
-          const name = isHe ? stop.name_he || stop.name : stop.name
-          return (
-            <div key={stop.id} style={{
-              background: 'rgba(255,253,247,0.94)', border: `1px solid ${i === 0 ? ACCENT : '#EBE2D0'}`,
-              borderRadius: 999, padding: '4px 10px', fontSize: 11, color: i === 0 ? ACCENT : '#241E16',
-              backdropFilter: 'blur(4px)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5,
-            }}>
-              <span style={{ width: 14, height: 14, borderRadius: '50%', background: i === 0 ? ACCENT : '#241E16', color: BG, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800 }}>{i + 1}</span>
-              {name}
-            </div>
-          )
-        })}
+    <section aria-label={title} dir={he ? 'rtl' : 'ltr'} style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: '#fff' }}>
+      <div style={{ padding: '12px 14px', borderBottom: '1px solid #EBE2D0' }}>
+        <h2 style={{ font: 'inherit', fontSize: 14, fontWeight: 700, margin: 0, color: '#241E16' }}>{title}</h2>
+        {!data.complete && <p style={{ fontSize: 12, lineHeight: 1.45, margin: '4px 0 0', color: '#6E6450' }}>
+          {he ? 'מיקום מדויק חסר בחלק מהפרטים. פתחו במפות כדי לבדוק את המקום והכניסה.' : 'Exact pins are missing from our records. Open in Maps to check the venue and entrance.'}
+        </p>}
       </div>
-    </div>
+      <div style={{ position: 'relative', flex: 1, minHeight: 140, isolation: 'isolate' }}>
+        <MapContainer center={data.center} zoom={data.zoom} scrollWheelZoom={false} zoomControl={false} style={{ width: '100%', height: '100%' }}>
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            eventHandlers={{ tileerror: () => setTileError(true) }} />
+          <ZoomControl position="bottomright" />
+          <UpdateViewport data={data} />
+          {data.markers.map(({ stop, position, number }) => {
+            const name = he ? stop.name_he || stop.name_en || stop.name : stop.name_en || stop.name
+            return <Marker key={`${number}-${position.join(',')}`} position={position} icon={stopIcon(number)} alt={`${number}. ${name}`}>
+              <Popup><strong>{number}. {name}</strong><br /><a href={getPlanNavigationUrl([stop])} target="_blank" rel="noopener noreferrer" onClick={onOpenMaps}>{he ? 'פתיחה במפות' : 'Open in Maps'}</a></Popup>
+            </Marker>
+          })}
+          {data.route.length > 1 && <Polyline positions={data.route} pathOptions={{ color: '#9A7A28', weight: 3, dashArray: '8 6', opacity: 0.85 }} />}
+        </MapContainer>
+        {tileError && <div role="status" style={{ position: 'absolute', top: 8, left: 8, right: 8, zIndex: 1000, padding: 8, borderRadius: 8, background: '#fff', color: '#6E6450', fontSize: 12 }}>{he ? 'המפה לא נטענה במלואה. אפשר לפתוח במפות.' : 'Some map tiles could not load. You can still open in Maps.'}</div>}
+      </div>
+      <div style={{ padding: '10px 14px', borderTop: '1px solid #EBE2D0', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        {data.distanceKm != null && <span style={{ fontSize: 11, color: '#6E6450' }}>{data.distanceKm.toFixed(1)} km · {he ? 'קו אווירי' : 'Straight line'}</span>}
+        {navUrl && <a href={navUrl} target="_blank" rel="noopener noreferrer" onClick={onOpenMaps} style={{ color: '#725A1E', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+          {he ? stops.length > 1 ? 'ניווט לכל המסלול ↗' : 'פתיחת המקום במפות ↗' : stops.length > 1 ? 'Navigate the full route ↗' : 'Open this place in Maps ↗'}
+        </a>}
+        {data.route.length > 1 && <span style={{ fontSize: 11, color: '#6E6450' }}>{he ? travelMode === 'driving' ? 'ברכב' : 'ברגל' : travelMode === 'driving' ? 'Driving' : 'Walking'}</span>}
+      </div>
+    </section>
   )
 }

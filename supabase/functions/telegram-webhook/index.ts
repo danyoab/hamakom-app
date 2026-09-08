@@ -27,16 +27,13 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url)
 
-  // One-time (idempotent) registration step, triggered by a plain GET.
-  // Gated by its own key (TELEGRAM_SETUP_KEY) rather than WEBHOOK_SECRET,
-  // since secrets are write-only and the caller triggering setup needs a
-  // value it can actually know ahead of time.
+  // One-time registration. The high-entropy secret is provisioned separately
+  // and never committed. Use the public HTTPS URL, not the gateway's internal URL.
   if (req.method === 'GET') {
-    const setupKey = Deno.env.get('TELEGRAM_SETUP_KEY')
-    if (!setupKey || url.searchParams.get('setup') !== setupKey) {
+    if (url.searchParams.get('setup') !== webhookSecret) {
       return new Response('Unauthorized', { status: 401 })
     }
-    const selfUrl = `${url.origin}${url.pathname}`
+    const selfUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/telegram-webhook`
     const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { curationCompleteness, isRecommendationReady } from '../lib/curation'
+import { DIETARY_OPTIONS, safeExternalUrl } from '../lib/venuePreferences.js'
 
 const VIBE_TAGS = [
   'romantic', 'cozy', 'intimate', 'lively', 'late-night',
@@ -15,6 +16,7 @@ const CURATED_FIELDS = [
   'romantic_score', 'conversation_score', 'energy_score', 'quietness_score',
   'activity_vs_food_score', 'group_vs_intimate_score',
   'duration_min', 'duration_max', 'notes_internal',
+  'menu_url', 'menu_scope', 'menu_checked_at', 'dietary_options', 'dietary_source_url', 'dietary_scope', 'dietary_checked_at', 'food_type',
 ]
 
 const SCORE_FIELDS = [
@@ -184,8 +186,13 @@ export default function CurateCard({ loc, inputStyle, btnStyle, ghostBtnStyle, o
     duration_min:            loc.duration_min ?? null,
     duration_max:            loc.duration_max ?? null,
     notes_internal:          loc.notes_internal || '',
+    menu_url: loc.menu_url || '', menu_scope: loc.menu_scope || 'branch', menu_checked_at: loc.menu_checked_at?.slice(0, 10) || null,
+    dietary_options: loc.dietary_options || [], dietary_source_url: loc.dietary_source_url || '',
+    dietary_scope: loc.dietary_scope || 'branch', dietary_checked_at: loc.dietary_checked_at?.slice(0, 10) || null,
+    food_type: loc.food_type || null,
   }))
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const update = (k, v) => setDraft((prev) => ({ ...prev, [k]: v }))
   const toggle = (k, value) => setDraft((prev) => {
@@ -215,12 +222,16 @@ export default function CurateCard({ loc, inputStyle, btnStyle, ghostBtnStyle, o
   }, [draft, loc])
 
   async function handleSave() {
+    setSaveError('')
+    if (draft.menu_url && !safeExternalUrl(draft.menu_url)) return setSaveError('Use an http or https menu URL.')
+    if (draft.dietary_options.length && (!safeExternalUrl(draft.dietary_source_url) || !draft.dietary_checked_at)) return setSaveError('Dietary options need a source URL and checked date.')
     if (!changedKeys.length) return onSkip(loc.id)
     setSaving(true)
     const patch = {}
     for (const k of changedKeys) patch[k] = draft[k]
-    await onSave(loc.id, patch, changedKeys)
-    setSaving(false)
+    try { await onSave(loc.id, patch, changedKeys) }
+    catch (err) { setSaveError(err.message || 'Save failed. Your edits are still here.') }
+    finally { setSaving(false) }
   }
 
   return (
@@ -346,6 +357,21 @@ export default function CurateCard({ loc, inputStyle, btnStyle, ghostBtnStyle, o
           </label>
         </div>
 
+        <fieldset style={{ border: '1px solid #374151', borderRadius: 10, padding: 12, display: 'grid', gap: 10 }}>
+          <legend style={{ color: '#C9A84C', fontSize: 12 }}>Menu & dietary evidence</legend>
+          <p style={{ color: '#9CA3AF', fontSize: 12, margin: 0 }}>Only record published options. A chain menu is not a branch guarantee. Do not label anything allergy-safe.</p>
+          <label style={{ color: '#E8DCC8', fontSize: 12 }}>Menu URL<input value={draft.menu_url} onChange={e => update('menu_url', e.target.value)} style={inputStyle} /></label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{DIETARY_OPTIONS.map(o => <Chip key={o.value} active={draft.dietary_options.includes(o.value)} onClick={() => toggle('dietary_options', o.value)}>{o.en}</Chip>)}</div>
+          <label style={{ color: '#E8DCC8', fontSize: 12 }}>Dietary source URL<input value={draft.dietary_source_url} onChange={e => update('dietary_source_url', e.target.value)} style={inputStyle} /></label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {['menu', 'dietary'].map(prefix => <div key={prefix} style={{ display: 'grid', gap: 6 }}>
+              <label style={{ color: '#E8DCC8', fontSize: 12 }}>{prefix} checked<input type="date" value={draft[`${prefix}_checked_at`] || ''} onChange={e => update(`${prefix}_checked_at`, e.target.value || null)} style={inputStyle} /></label>
+              <label style={{ color: '#E8DCC8', fontSize: 12 }}>{prefix} scope<select value={draft[`${prefix}_scope`]} onChange={e => update(`${prefix}_scope`, e.target.value)} style={inputStyle}><option value="branch">This branch</option><option value="chain">Chain menu</option></select></label>
+            </div>)}
+          </div>
+          <label style={{ color: '#E8DCC8', fontSize: 12 }}>Food stop type<select value={draft.food_type || ''} onChange={e => update('food_type', e.target.value || null)} style={inputStyle}><option value="">Automatic</option>{['restaurant', 'cafe', 'dessert', 'bar', 'winery'].map(v => <option key={v}>{v}</option>)}</select></label>
+        </fieldset>
+        {saveError && <div role="alert" style={{ color: '#FCA5A5', fontSize: 12 }}>{saveError}</div>}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', borderTop: '1px solid #2A2F3E', paddingTop: 12 }}>
           <button onClick={handleSave} disabled={saving} style={btnStyle()}>{saving ? 'Saving…' : `Save & Next  (${changedKeys.length} changed)`}</button>
           <button onClick={() => onSkip(loc.id)} style={ghostBtnStyle}>Skip</button>

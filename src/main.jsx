@@ -13,6 +13,9 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 }
 
 registerSW({ immediate: true })
+// Retire the previous blanket API cache, which could retain authenticated
+// responses. Only the explicitly selected public catalog is cached now.
+if ('caches' in window) void caches.delete('supabase-api').catch(() => {})
 
 class ErrorBoundary extends Component {
   state = { error: null }

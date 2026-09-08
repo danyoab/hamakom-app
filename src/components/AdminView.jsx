@@ -310,9 +310,8 @@ export default function AdminView({
     // are usually the most predictive to curate next), then newest first.
     const { data, error } = await supabase
       .from('locations')
-      .select('id, name, city, category, image_url, description, price, confidence_score, google_rating, business_status, manual_edits, last_curated_at, curated_by, vibe_tags, indoor_outdoor, best_time, weather_fit, romantic_score, conversation_score, energy_score, quietness_score, activity_vs_food_score, group_vs_intimate_score, duration_min, duration_max, notes_internal')
+      .select('*')
       .eq('status', 'approved')
-      .or('vibe_tags.is.null,vibe_tags.eq.{}')
       .order('last_curated_at', { ascending: true, nullsFirst: true })
       .order('confidence_score', { ascending: true })
       .order('id', { ascending: false })
@@ -346,7 +345,7 @@ export default function AdminView({
   }, [adminTab])
 
   async function handleCurateSave(id, patch, changedKeys) {
-    if (!supabase) return
+    if (!supabase) throw new Error('The database is not configured. Your changes have not been saved.')
     // Find the existing row to merge manual_edits.fields
     const row = curateQueue.find(r => r.id === id)
     const prevLocked = new Set(row?.manual_edits?.fields || [])
@@ -362,7 +361,7 @@ export default function AdminView({
       confidence_score: Math.min(100, (row?.confidence_score ?? 0) + 5 * changedKeys.length),
     }
     const { error } = await supabase.from('locations').update(finalPatch).eq('id', id)
-    if (error) return showToast(error.message, 'error')
+    if (error) throw new Error(error.message)
     setCurateQueue((q) => q.filter(r => r.id !== id))
     showToast(`Saved ${row?.name} (${changedKeys.length} fields)`)
   }

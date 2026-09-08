@@ -10,13 +10,13 @@ const SECTIONS_EN = [
     title: 'What We Collect',
     body: `When you use HaMakom we may collect:
 • Your email address, when you sign in via email link or Google OAuth.
-• Anonymous session identifiers, stored in your browser's local storage.
-• Quiz answers (date stage, city preference, focus, timing) — only to generate recommendations.
+• Random session identifiers, stored in your browser's local storage.
+• Quiz answers and optional preferences (date stage, city, timing, budget and food requirements) to generate recommendations. Signed-in answers may be saved to your account.
 • Which plans and locations you save, view, or interact with.
 • Voluntary feedback you choose to submit (ratings, whether you went on a date).
 • Location suggestions you submit through the "Suggest a Place" form.
 
-We do not collect passwords, payment information, phone location data, or any sensitive personal information beyond the above.`,
+Account authentication is handled by Supabase. The map uses your device location only when you request nearby places.`,
   },
   {
     title: 'How We Use Your Data',
@@ -31,15 +31,17 @@ We do not sell, rent, or share your personal data with third parties for marketi
   {
     title: 'Data Storage & Third Parties',
     body: `HaMakom is built on the following infrastructure:
-• Supabase (supabase.com) — database and authentication. Data is stored on servers in the EU. Supabase is GDPR-compliant.
+• Supabase (supabase.com) — database and authentication. Our database project is hosted in Seoul, South Korea.
 • Vercel (vercel.com) — hosting and content delivery. CDN nodes are globally distributed.
-• Browser localStorage — non-sensitive preferences (language, saved items) are stored locally on your device and are not transmitted to our servers unless you sign in.
+• Browser localStorage — saved items and preferences are stored on your device. Signed-in saves synchronize to your account; usage events require analytics consent.
+• OpenStreetMap — supplies map tiles. Loading a map makes requests to its tile servers. Google Maps and venue menus open external sites when you follow their links.
+• Sentry — technical error diagnostics may be sent when error monitoring is configured.
 
-We do not use advertising networks, social trackers, or third-party analytics SDKs.`,
+Optional usage analytics are stored in our Supabase database. We do not record browsing sessions.`,
   },
   {
     title: 'Analytics',
-    body: `With your consent, we record anonymous usage events (e.g. "quiz started", "plan saved") to understand how the app is being used. These events are tied to a random session ID — not to your email address unless you are signed in. You can withdraw consent at any time in your Profile settings. Withdrawing consent stops future event recording and removes your session ID from local storage.`,
+    body: `With your consent, we record usage events (e.g. "quiz started", "plan saved") to understand how the app is being used. Events use a random session ID and may be linked to your account when you are signed in. You can withdraw consent at any time in your Profile settings. Withdrawing consent stops future event recording and removes your session ID from local storage.`,
   },
   {
     title: 'Your Rights',
@@ -66,15 +68,15 @@ To exercise any of these rights, contact us at: privacy@hamakom.app`,
   },
   {
     title: 'App Store Data Safety (Google Play / Apple)',
-    body: `Summary for store listings — last reviewed July 2026:
+    body: `Summary for store listings — last reviewed September 2026:
 
 Data collected (optional unless noted):
 • Email address — account sign-in (optional; app works without an account for browsing).
-• App activity — quiz answers, saved plans/places, anonymous usage events (with consent).
+• App activity — quiz answers, saved plans/places, usage events (with consent).
 • Approximate location — only when you tap "Near me" on the map; never collected in the background.
 
 Data NOT collected:
-• Precise background location, contacts, photos, financial info, health data, or government IDs.
+• Precise background location, contacts, photos, financial info, or government IDs.
 
 Data sharing: We do not sell personal data. Infrastructure processors (Supabase, Vercel) store/host data under contract.
 
@@ -100,7 +102,7 @@ const SECTIONS_HE = [
     body: `כאשר אתם משתמשים ב-HaMakom אנחנו עשויים לאסוף:
 • כתובת האימייל שלכם, כאשר אתם נכנסים דרך קישור אימייל או Google.
 • מזהי סשן אנונימיים, השמורים ב-local storage של הדפדפן שלכם.
-• תשובות לשאלון (שלב הדייט, עיר מועדפת, מיקוד, תזמון) — רק לצורך יצירת המלצות.
+• תשובות לשאלון והעדפות לבחירתכם (שלב הדייט, עיר, תזמון, תקציב וצרכים תזונתיים) לצורך המלצות. תשובות של משתמשים מחוברים עשויות להישמר בחשבון.
 • אילו תוכניות ומקומות שמרתם, צפיתם בהם או אינטרקציה עשיתם.
 • פידבק שבחרתם לשלוח (דירוג, האם הלכתם לדייט).
 • הצעות מקומות ששלחתם דרך טופס "הצע מקום".`,
@@ -118,15 +120,17 @@ const SECTIONS_HE = [
   {
     title: 'אחסון נתונים וצדדים שלישיים',
     body: `HaMakom נבנה על התשתית הבאה:
-• Supabase — מסד נתונים ואימות. הנתונים מאוחסנים בשרתים באיחוד האירופי.
+• Supabase — מסד נתונים ואימות. פרויקט מסד הנתונים שלנו מאוחסן בסיאול, דרום קוריאה.
 • Vercel — אחסון ואספקת תוכן. צמתי CDN מופצים גלובלית.
-• localStorage בדפדפן — העדפות לא-רגישות (שפה, פריטים שמורים) מאוחסנות מקומית במכשיר שלכם.
+• localStorage בדפדפן — פריטים שמורים והעדפות נשמרים במכשיר. שמירות של משתמשים מחוברים מסונכרנות לחשבון; אירועי שימוש דורשים הסכמה לאנליטיקה.
+• OpenStreetMap — מספקת אריחי מפה. טעינת מפה שולחת בקשות לשרתי המפות. קישורים ל-Google Maps ולתפריטים פותחים אתרים חיצוניים.
+• Sentry — מידע טכני על תקלות עשוי להישלח כאשר ניטור תקלות מוגדר.
 
-אנחנו לא משתמשים ברשתות פרסום, עוקבים חברתיים, או SDK ניתוח צד שלישי.`,
+נתוני השימוש האופציונליים נשמרים במסד הנתונים שלנו ב-Supabase. אנחנו לא מקליטים סשנים של גלישה.`,
   },
   {
     title: 'אנליטיקה',
-    body: `בהסכמתכם, אנחנו מתעדים אירועי שימוש אנונימיים (למשל "שאלון התחיל", "תוכנית נשמרה") כדי להבין כיצד האפליקציה משמשת. תוכלו לבטל את ההסכמה בכל עת בהגדרות הפרופיל שלכם.`,
+    body: `בהסכמתכם, אנחנו מתעדים אירועי שימוש (למשל "שאלון התחיל", "תוכנית נשמרה") כדי להבין כיצד האפליקציה משמשת. תוכלו לבטל את ההסכמה בכל עת בהגדרות הפרופיל שלכם.`,
   },
   {
     title: 'הזכויות שלכם',
@@ -140,15 +144,15 @@ const SECTIONS_HE = [
   },
   {
     title: 'בטיחות נתונים לחנויות האפליקציות',
-    body: `סיכום לרישום ב-Google Play / App Store — עודכן יולי 2026:
+    body: `סיכום לרישום ב-Google Play / App Store — עודכן ספטמבר 2026:
 
 נתונים שנאספים (רובם אופציונליים):
 • אימייל — כניסה לחשבון (אופציונלי; האפליקציה עובדת גם בלי חשבון).
-• פעילות באפליקציה — תשובות שאלון, תוכניות/מקומות שמורים, אירועי שימוש אנונימיים (בהסכמה).
+• פעילות באפליקציה — תשובות שאלון, תוכניות/מקומות שמורים, אירועי שימוש (בהסכמה).
 • מיקום משוער — רק כשלוחצים "מקומות לידי" במפה; לא נאסף ברקע.
 
 לא נאסף:
-• מיקום מדויק ברקע, אנשי קשר, תמונות, פרטי תשלום, נתוני בריאות או מזהים ממשלתיים.
+• מיקום מדויק ברקע, אנשי קשר, תמונות, פרטי תשלום או מזהים ממשלתיים.
 
 שיתוף: לא מוכרים נתונים אישיים. Supabase ו-Vercel מעבדים נתונים תחת חוזה.
 
@@ -184,7 +188,7 @@ export default function PrivacyPage({ lang, font, onBack }) {
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 20px 60px' }}>
         <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 6px' }}>{isHe ? 'מדיניות פרטיות' : 'Privacy Policy'}</h1>
-        <p style={{ color: APP_MUTED, fontSize: 13, margin: '0 0 36px' }}>{isHe ? 'עודכן לאחרונה: מאי 2026' : 'Last updated: May 2026'}</p>
+        <p style={{ color: APP_MUTED, fontSize: 13, margin: '0 0 36px' }}>{isHe ? 'עודכן לאחרונה: ספטמבר 2026' : 'Last updated: September 2026'}</p>
 
         <p style={{ color: '#6E6450', fontSize: 15, lineHeight: 1.7, margin: '0 0 32px' }}>
           {isHe

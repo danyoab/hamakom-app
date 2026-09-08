@@ -136,6 +136,9 @@ export function buildPlanIdentity(answers) {
 // ── Fit summary ───────────────────────────────────────────────────────────────
 
 export function getPlanFitSummary(plan, answers, lang) {
+  if (plan?._singleVenue) return lang === 'he'
+    ? 'רעיון פשוט לדייט במקום אחד, בעיר שבחרתם. משך הביקור הוא המלצה ואפשר להתאים אותו לכם.'
+    : 'A simple one-place date in your chosen area. The suggested visit length is flexible.'
   const isHe = lang === 'he'
 
   const lengthText = {

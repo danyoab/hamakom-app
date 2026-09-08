@@ -11,6 +11,8 @@
 // ── City normalization (H4 / T6) ─────────────────────────────────────────────
 // Spelling variants collapse to one canonical city so matching can't leak across
 // near-duplicate names (e.g. the real "Petach Tikva" vs "Petah Tikva" split).
+import { CITY_COORDS } from './constants.js'
+
 const CITY_ALIASES = {
   'petah tikva': 'Petach Tikva',
   'petah tikvah': 'Petach Tikva',
@@ -25,6 +27,16 @@ const CITY_ALIASES = {
   'tel aviv yafo': 'Tel Aviv',
   'beit shemesh': 'Beit Shemesh',
   'bet shemesh': 'Beit Shemesh',
+  'beit-shemesh': 'Beit Shemesh',
+  'ramat beit shemesh': 'Beit Shemesh',
+  'ramat bet shemesh': 'Beit Shemesh',
+  'בית שמש': 'Beit Shemesh',
+  'רמת בית שמש': 'Beit Shemesh',
+  'ירושלים': 'Jerusalem',
+  'תל אביב': 'Tel Aviv',
+  'פתח תקווה': 'Petach Tikva',
+  'מודיעין': "Modi'in",
+  'רעננה': "Ra'anana",
   'zikhron yaakov': 'Zichron Yaakov',
   "zichron ya'akov": 'Zichron Yaakov',
 }
@@ -32,7 +44,7 @@ const CITY_ALIASES = {
 export function canonicalCity(city) {
   if (!city) return city
   const key = String(city).trim().toLowerCase().replace(/\s+/g, ' ')
-  return CITY_ALIASES[key] || String(city).trim()
+  return CITY_ALIASES[key] || Object.keys(CITY_COORDS).find(c => c.toLowerCase() === key) || String(city).trim()
 }
 
 export function sameCity(a, b) {
@@ -62,7 +74,12 @@ export function isOperational(loc, { now = Date.now(), freshnessDays = null } = 
 // ── Real-venue / no-placeholder gate (H1 / H5 — T5, T14) ─────────────────────
 // A plannable venue row must have a real id and coordinates.
 export function isRealVenueRow(loc) {
-  return Boolean(loc && (loc.id != null) && loc.lat != null && loc.lng != null)
+  return Boolean(loc && loc.id != null && loc.name && loc.category && hasVenueCoordinates(loc))
+}
+
+export function hasVenueCoordinates(loc) {
+  return Boolean(loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)
+    && Math.abs(loc.lat) <= 90 && Math.abs(loc.lng) <= 180 && (loc.lat !== 0 || loc.lng !== 0))
 }
 
 // A rendered plan stop must resolve to a real DB venue: it carries a source
@@ -71,7 +88,7 @@ export function isRealStop(stop) {
   if (!stop) return false
   const id = stop.source_location_id ?? stop._locationId ?? stop.location_id
   if (id == null) return false
-  return stop.lat != null && stop.lng != null
+  return hasVenueCoordinates(stop)
 }
 
 // A plan is real only if every stop resolves to a real venue.
@@ -106,13 +123,16 @@ export function foodClassOf(loc) {
   if (!isFoodCat) {
     return { is_food: false, food_type: 'none', meal_weight: 'none', can_be_meal_anchor: false, can_follow_dinner: false }
   }
+  if (loc.food_type === 'restaurant') return mk('restaurant', 'heavy', true, false)
+  if (loc.food_type === 'cafe') return mk('cafe', 'medium', false, false)
+  if (['dessert', 'bar', 'winery'].includes(loc.food_type)) return mk(loc.food_type, 'light', false, true)
   // Non-restaurant food categories are light by default.
   if (/winer/i.test(cat)) return mk('winery', 'light', false, true)
   if (/hotel|lounge/i.test(cat)) return mk('bar', 'light', false, true)
   // Cafés & Restaurants: split by name signal.
   if (DESSERT_RE.test(name)) return mk('dessert', 'light', false, true)
   if (BAR_RE.test(name))     return mk('bar', 'light', false, true)
-  if (CAFE_RE.test(name))    return mk('cafe', 'medium', false, true)
+  if (CAFE_RE.test(name))    return mk('cafe', 'medium', false, false)
   // Default: a sit-down restaurant = the one allowed heavy meal anchor.
   return mk('restaurant', 'heavy', true, false)
 }
@@ -148,5 +168,5 @@ export function violatesFoodPairing(selectedStops, candidate, prevStop) {
 // Applies the venue-level hard gates (operational + real venue) before any
 // scoring or composition happens.
 export function plannableLocations(locations, opts = {}) {
-  return (locations || []).filter((l) => isRealVenueRow(l) && isOperational(l, opts))
+  return (locations || []).filter((l) => l.status === 'approved' && l.city && l.city !== 'Various' && isRealVenueRow(l) && isOperational(l, opts))
 }

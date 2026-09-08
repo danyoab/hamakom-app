@@ -1,0 +1,223 @@
+{
+  "checkedAt": "2026-09-08T18:34:47.911Z",
+  "project": "kyenbpkgxnjrknebbiyr.supabase.co",
+  "checks": [
+    {
+      "name": "Anonymous public catalog",
+      "pass": true
+    },
+    {
+      "name": "Public fields exclude internal data",
+      "pass": true
+    },
+    {
+      "name": "Anonymous base table is protected",
+      "pass": true
+    },
+    {
+      "name": "Auth service and Google provider",
+      "pass": true
+    },
+    {
+      "name": "Authenticated sessions",
+      "pass": true
+    },
+    {
+      "name": "partner_inquiries: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "partner_inquiries: private from new account",
+      "pass": true
+    },
+    {
+      "name": "problem_reports: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "problem_reports: private from new account",
+      "pass": true
+    },
+    {
+      "name": "pending_submissions: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "pending_submissions: private from new account",
+      "pass": true
+    },
+    {
+      "name": "user_feedback: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "user_feedback: private from new account",
+      "pass": true
+    },
+    {
+      "name": "user_preferences: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "user_preferences: private from new account",
+      "pass": true
+    },
+    {
+      "name": "user_quiz_results: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "user_quiz_results: private from new account",
+      "pass": true
+    },
+    {
+      "name": "user_subscriptions: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "user_subscriptions: private from new account",
+      "pass": true
+    },
+    {
+      "name": "saved_plans: own record persisted",
+      "pass": true
+    },
+    {
+      "name": "saved_plans: other account cannot read",
+      "pass": true
+    },
+    {
+      "name": "saved_plans: anonymous cannot read",
+      "pass": true
+    },
+    {
+      "name": "saved_plans: other account cannot write",
+      "pass": true
+    },
+    {
+      "name": "saved_places: own record persisted",
+      "pass": true
+    },
+    {
+      "name": "saved_places: other account cannot read",
+      "pass": true
+    },
+    {
+      "name": "saved_places: anonymous cannot read",
+      "pass": true
+    },
+    {
+      "name": "saved_places: other account cannot write",
+      "pass": true
+    },
+    {
+      "name": "Saved plan restores on another session",
+      "pass": true
+    },
+    {
+      "name": "Ordinary account cannot read base location records",
+      "pass": true
+    },
+    {
+      "name": "analytics_events: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "analytics_events: private from ordinary account",
+      "pass": true
+    },
+    {
+      "name": "recommendation_impressions: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "recommendation_impressions: private from ordinary account",
+      "pass": true
+    },
+    {
+      "name": "recommendation_outcomes: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "recommendation_outcomes: private from ordinary account",
+      "pass": true
+    },
+    {
+      "name": "analytics_summary: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "analytics_summary: private from ordinary account",
+      "pass": true
+    },
+    {
+      "name": "plan_popularity: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "plan_popularity: private from ordinary account",
+      "pass": true
+    },
+    {
+      "name": "location_popularity: private from anonymous",
+      "pass": true
+    },
+    {
+      "name": "location_popularity: private from ordinary account",
+      "pass": true
+    },
+    {
+      "name": "Outcome rejects another session",
+      "pass": true
+    },
+    {
+      "name": "Outcome rejects another account",
+      "pass": true
+    },
+    {
+      "name": "Outcome accepts its owner",
+      "pass": true
+    },
+    {
+      "name": "Outcome partial updates preserve earlier fields",
+      "pass": true
+    },
+    {
+      "name": "Outcome rejects invalid rating",
+      "pass": true
+    },
+    {
+      "name": "Account deletion endpoint",
+      "pass": true
+    },
+    {
+      "name": "Deleted user no longer exists",
+      "pass": true
+    },
+    {
+      "name": "saved_plans: deletion cascades",
+      "pass": true
+    },
+    {
+      "name": "saved_places: deletion cascades",
+      "pass": true
+    },
+    {
+      "name": "analytics_events: deletion cascades",
+      "pass": true
+    },
+    {
+      "name": "recommendation_impressions: deletion cascades",
+      "pass": true
+    },
+    {
+      "name": "Recommendation outcome deletion cascades",
+      "pass": true
+    },
+    {
+      "name": "Temporary user cleanup",
+      "pass": true
+    }
+  ],
+  "passed": true
+}

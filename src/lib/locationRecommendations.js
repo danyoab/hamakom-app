@@ -1,4 +1,8 @@
 import { CITY_COORDS } from './constants.js'
+import { sameCity } from './planGates.js'
+import { isDiscoverable } from './venueCatalog.js'
+import { matchesVenuePreferences } from './venuePreferences.js'
+import { validatePlanLocations } from './planValidation.js'
 
 function normalizeCategory(category = '') {
   if (category.includes('Park')) return 'outdoors'
@@ -126,8 +130,7 @@ const HARD_FILTERS = [
   function rejectClosed(loc) {
     if (loc.business_status === 'CLOSED_PERMANENTLY') return 'closed_permanently'
     if (loc.business_status === 'CLOSED_TEMPORARILY') return 'closed_temporarily'
-    if (loc.business_status == null) return 'status_unknown'
-    if (loc.business_status !== 'OPERATIONAL') return 'not_operational'
+    if (!isDiscoverable(loc)) return 'not_published_venue'
     return null
   },
 ]
@@ -269,7 +272,7 @@ export function scoreLocation(location, answers, behavior = {}) {
   const behaviorProfile = behavior.profile || buildPreferenceProfile(behavior)
 
   if (answers.city && answers.city !== 'flexible') {
-    if (location.city === answers.city) {
+    if (sameCity(location.city, answers.city)) {
       score += 8
     } else {
       // Cross-city is a real penalty now, not just neutral. Without this,
@@ -432,13 +435,15 @@ export function getRecommendedLocations(locations, answers, options = {}) {
   const excluded = new Set((options.excludeIds || []).map(String))
   const behavior = {
     ...options,
-    profile: buildPreferenceProfile(options),
+    profile: buildPreferenceProfile({ ...options, locations }),
     feedbackProfile: buildFeedbackProfile(options),
   }
 
   // Layer 1: hard filters. Closed-permanently rows are dropped before scoring
   // so they cannot leak into the output even if they outrank.
-  const { kept } = applyHardFilters(locations.filter(l => !excluded.has(String(l.id))))
+  const { kept } = applyHardFilters(locations.filter(l => !excluded.has(String(l.id))
+    && (!answers.city || answers.city === 'flexible' || sameCity(l.city, answers.city))
+    && matchesVenuePreferences(l, answers) && validatePlanLocations([l], answers).valid))
 
   const scored = kept.map((location) => {
     const explained = explainLocation(location, answers, behavior)

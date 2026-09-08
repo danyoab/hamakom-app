@@ -4,26 +4,12 @@
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { loadBuildCatalog } from './build-catalog.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SITE = 'https://hamakom.app'
 
-const url = (process.env.VITE_SUPABASE_URL || '').trim()
-const key = (process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim()
-
-let locations
-if (url && key) {
-  const res = await fetch(`${url}/rest/v1/locations?select=id,slug,last_enriched_at&status=eq.approved&order=id`, {
-    headers: { apikey: key, Authorization: `Bearer ${key}` },
-  })
-  if (!res.ok) throw new Error(`Supabase fetch failed: ${res.status}`)
-  locations = await res.json()
-  console.log(`Fetched ${locations.length} approved locations from Supabase`)
-} else {
-  const { SEED_LOCATIONS } = await import(`file://${join(ROOT, 'src/data/locations.js').replace(/\\/g, '/')}`)
-  locations = SEED_LOCATIONS.filter((l) => l.status === 'approved')
-  console.log(`Supabase env missing — using ${locations.length} seed locations`)
-}
+const locations = await loadBuildCatalog()
 
 const staticUrls = [
   { loc: `${SITE}/`, changefreq: 'weekly', priority: '1.0' },

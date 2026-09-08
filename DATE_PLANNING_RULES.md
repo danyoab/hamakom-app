@@ -1,4 +1,6 @@
-# HaMakom — Date Planning Rules (Source of Truth)
+# HaMakom — Historical Date Planning Rules
+
+> Superseded on 8 September 2026 by [PLANNING_CONTRACT.md](PLANNING_CONTRACT.md). The document below records the previous baseline; its shipped/planned labels are historical. See [the current audit](reports/SYSTEM_AUDIT_2026-09-08.md) for implementation and rollout status.
 
 > This is the **planning spec** the deterministic engine must obey. It is not an AI agent.
 > The current JavaScript planner stays; these rules make it safer and more trustworthy.

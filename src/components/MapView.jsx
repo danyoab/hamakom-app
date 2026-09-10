@@ -8,7 +8,7 @@ import { getUserPosition } from '../lib/geolocation'
 
 function cityIcon(count, active) {
   return L.divIcon({
-    html: `<div style="background:${active ? '#C9A84C' : '#FFFFFF'};color:#241E16;border:2px solid ${active ? '#C9A84C' : '#D8CCB2'};border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;box-shadow:0 3px 9px rgba(40,30,12,0.35);">${count}</div>`,
+    html: `<div style="background:${active ? 'var(--ui-accent)' : 'var(--ui-surface)'};color:${active ? '#fff' : 'var(--ui-text)'};border:2px solid ${active ? 'var(--ui-accent)' : 'var(--ui-border)'};border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;box-shadow:0 3px 9px rgba(0,0,0,0.35);">${count}</div>`,
     className: '',
     iconSize: [36, 36],
     iconAnchor: [18, 18],
@@ -128,7 +128,7 @@ export default function MapView({
         right: 0,
         bottom: 0,
         height: panelHeight,
-        background: '#FFFFFF',
+        background: 'var(--ui-surface)',
         borderTop: '2px solid #EBE2D0',
         display: 'flex',
         flexDirection: 'column',
@@ -141,7 +141,7 @@ export default function MapView({
         right: 0,
         bottom: bottomOffset,
         height: panelHeight,
-        background: '#FFFFFF',
+        background: 'var(--ui-surface)',
         borderTop: '2px solid #EBE2D0',
         display: 'flex',
         flexDirection: 'column',
@@ -154,7 +154,7 @@ export default function MapView({
       dir={tx.dir}
       style={{
         fontFamily: font,
-        color: '#241E16',
+        color: 'var(--ui-text)',
         ...(embedded ? { position: 'relative', width: '100%', height: '100%', minHeight: 0 } : {}),
       }}
     >
@@ -166,7 +166,7 @@ export default function MapView({
             left: 0,
             right: 0,
             height: 56,
-            background: '#FFFFFF',
+            background: 'var(--ui-surface)',
             borderBottom: '1px solid #EBE2D0',
             padding: '0 20px',
             display: 'flex',
@@ -177,12 +177,12 @@ export default function MapView({
         >
           <button
             onClick={onBack}
-            style={{ background: 'none', border: 'none', color: '#9A7A28', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}
+            style={{ background: 'none', border: 'none', color: 'var(--ui-accent)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}
           >
             {tx.back}
           </button>
           <span style={{ fontSize: 15, fontWeight: 500 }}>{tx.map}</span>
-          <span style={{ fontSize: 11, color: '#A99A85', marginLeft: 'auto' }}>
+          <span style={{ fontSize: 11, color: 'var(--ui-muted)', marginLeft: 'auto' }}>
             {locations.length} {tx.locations}
           </span>
         </div>
@@ -215,16 +215,16 @@ export default function MapView({
             bottom: 16,
             [lang === 'he' ? 'left' : 'right']: 16,
             zIndex: 2001,
-            background: '#FFFFFF',
+            background: 'var(--ui-surface)',
             border: '1px solid #D8CCB2',
             borderRadius: 999,
             padding: '8px 14px',
             fontSize: 12,
             fontWeight: 700,
-            color: '#9A7A28',
+            color: 'var(--ui-accent)',
             cursor: locLoading ? 'wait' : 'pointer',
             fontFamily: 'inherit',
-            boxShadow: '0 6px 18px rgba(40,30,12,0.18)',
+            boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
           }}
         >
           {locLoading
@@ -246,7 +246,7 @@ export default function MapView({
               borderRadius: 10,
               padding: '8px 12px',
               fontSize: 12,
-              color: '#6E6450',
+              color: 'var(--ui-muted)',
               textAlign: 'center',
             }}
           >
@@ -260,14 +260,14 @@ export default function MapView({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px 8px', flexShrink: 0 }}>
             <span style={{ fontSize: 15, fontWeight: 500 }}>
               {selectedCity}
-              <span style={{ fontSize: 11, color: '#A99A85', marginInlineStart: 8 }}>
+              <span style={{ fontSize: 11, color: 'var(--ui-muted)', marginInlineStart: 8 }}>
                 {panelLocations.length} {lang === 'he' ? 'מקומות' : `place${panelLocations.length !== 1 ? 's' : ''}`}
               </span>
             </span>
             <button
               onClick={() => setSelectedCity(null)}
               aria-label={lang === 'he' ? 'סגירה' : 'Close city list'}
-              style={{ background: 'none', border: 'none', color: '#8A7F6C', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: '0 4px' }}
+              style={{ background: 'none', border: 'none', color: 'var(--ui-muted)', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: '0 4px' }}
             >
               ×
             </button>
@@ -302,13 +302,13 @@ export default function MapView({
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                     <span style={{ fontSize: 13 }}>{CATEGORY_EMOJI[location.category]}</span>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: '#241E16' }}>{name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ui-text)' }}>{name}</span>
                     {location.kashrus ? (
                       <span style={{ fontSize: 10, color: '#4ADE80', marginInlineStart: 'auto' }}>✓ {location.kashrus}</span>
                     ) : null}
                   </div>
                   {desc ? (
-                    <div style={{ fontSize: 11, color: '#8A7F6C', fontStyle: 'italic', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: 11, color: 'var(--ui-muted)', fontStyle: 'italic', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                       {desc}
                     </div>
                   ) : null}

@@ -1,3 +1,4 @@
+import './product.css'
 import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
@@ -25,10 +26,10 @@ class ErrorBoundary extends Component {
   }
   render() {
     if (this.state.error) return (
-      <div style={{ background: '#F7F2E8', color: '#241E16', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Heebo', system-ui, sans-serif", padding: 40 }}>
+      <div style={{ background: 'var(--ui-bg)', color: 'var(--ui-text)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "var(--ui-font)", padding: 40 }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 16 }}>המקום</div>
-          <p style={{ color: '#6E6450' }}>Something went wrong. Please refresh the page.</p>
+          <p style={{ color: 'var(--ui-muted)' }}>Something went wrong. Please refresh the page.</p>
         </div>
       </div>
     )

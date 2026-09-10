@@ -1,3 +1,5 @@
+import Icon from './components/Icon.jsx'
+import Sheet from './components/Sheet.jsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { t } from './lib/translations'
 import { useLocations } from './hooks/useLocations'
@@ -65,20 +67,18 @@ const AdminView = lazy(() => import('./components/AdminView'))
 const MapView = lazy(() => import('./components/MapView'))
 
 const PRIMARY_TABS = ['home', 'explore', 'saved', 'profile']
-// Cream "editorial" palette (matches the HaMakom redesign prototype).
-const APP_BG = '#F7F2E8'      // app background
-const APP_PANEL = '#FFFFFF'   // cards / surfaces
-const APP_BORDER = '#EBE2D0'  // hairline borders
-const APP_TEXT = '#241E16'    // primary ink
-const APP_ACCENT = '#9A7A28'  // gold for eyebrows / links (readable on cream)
-const APP_MUTED = '#8A7F6C'   // muted text
-const APP_SOFT = '#6E6450'    // body copy
-const APP_INK = '#241E16'     // dark pill / primary button background
+// Shared product tokens keep legacy surfaces aligned with the main screens.
+const APP_BG = 'var(--ui-bg)'      // app background
+const APP_PANEL = 'var(--ui-surface)'   // cards / surfaces
+const APP_BORDER = 'var(--ui-border)'  // hairline borders
+const APP_TEXT = 'var(--ui-text)'    // primary ink
+const APP_ACCENT = 'var(--ui-accent)'  // links and interactive accents
+const APP_MUTED = 'var(--ui-muted)'   // muted text
+const APP_SOFT = 'var(--ui-muted)'    // body copy
+const APP_INK = 'var(--ui-text)'     // dark pill / primary button background
 
-// Per-glyph fallback covers both languages from one stack:
-// Hanken Grotesk (Latin) + Heebo (Hebrew) for UI, Spectral (Latin) +
-// Frank Ruhl Libre (Hebrew) for headlines.
-const SERIF = "'Spectral','Frank Ruhl Libre',Georgia,serif"
+// System typography with Hebrew fallback.
+const SERIF = "var(--ui-font)"
 const NAV_HEIGHT = 82
 const INITIAL_FILTERS = {
   cityFilter: 'All Cities',
@@ -89,16 +89,7 @@ const INITIAL_FILTERS = {
   dietary: [], kosher: 'any', budget: 'any', menuOnly: false,
 }
 
-function areFiltersDefault(filters) {
-  return (
-    filters.cityFilter === INITIAL_FILTERS.cityFilter &&
-    filters.categoryFilter === INITIAL_FILTERS.categoryFilter &&
-    filters.occasionFilter === INITIAL_FILTERS.occasionFilter &&
-    filters.priceFilter === INITIAL_FILTERS.priceFilter &&
-    filters.dateFilter === INITIAL_FILTERS.dateFilter && !(filters.dietary || []).length && !filters.menuOnly &&
-    (!filters.kosher || filters.kosher === 'any') && (!filters.budget || filters.budget === 'any')
-  )
-}
+function areFiltersDefault(filters) { return Object.keys(INITIAL_FILTERS).every(key => JSON.stringify(filters[key]) === JSON.stringify(INITIAL_FILTERS[key])) }
 
 function getTonightPlan(plans) {
   const weighted = plans.flatMap((plan) => Array.from({ length: plan.tonight_pick_weight || 1 }, () => plan))
@@ -181,7 +172,7 @@ export default function App() {
   const [businessLeadContext, setBusinessLeadContext] = useState({ source: 'direct_url', location: null })
 
   const tx = t[lang]
-  const font = "'Hanken Grotesk','Heebo',system-ui,-apple-system,sans-serif"
+  const font = "var(--ui-font)"
 
   const { locations, loading, error: locError } = useLocations()
 
@@ -1087,7 +1078,7 @@ export default function App() {
 
   if (overlay === 'admin') {
     return (
-      <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F7F2E8' }} />}>
+      <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--ui-bg)' }} />}>
       <AdminView
         lang={lang}
         font={font}
@@ -1162,11 +1153,11 @@ export default function App() {
     const hasPreferences = planPreferenceLabels(quizAnswers, lang).length > 0
     const preferencePanel = <div style={{ width: '100%', maxWidth: 460, marginTop: 18 }}><PlanPreferences answers={quizAnswers} lang={lang} onApply={applyPlanPreferences} /></div>
 
-    const chipStyle = { background: '#FFFFFF', color: '#241E16', border: '1px solid #E6DCC8', borderRadius: 999, padding: '9px 16px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }
+    const chipStyle = { background: 'var(--ui-surface)', color: 'var(--ui-text)', border: '1px solid #E6DCC8', borderRadius: 999, padding: '9px 16px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }
 
     const recoveryBlock = hasRecovery ? (
         <div style={{ marginTop: 22, width: '100%', maxWidth: 460 }}>
-          <div style={{ fontSize: 12.5, letterSpacing: 0.5, textTransform: 'uppercase', color: '#8A7F6C', fontWeight: 700, marginBottom: 10 }}>
+          <div style={{ fontSize: 12.5, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--ui-muted)', fontWeight: 700, marginBottom: 10 }}>
             {isHe ? 'אפשרויות שכן עובדות' : 'Options that do work'}
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -1194,30 +1185,30 @@ export default function App() {
       const blurb = isHe ? singleSpot.description_he || singleSpot.description : singleSpot.description
       const saved = savedPlaceIds.includes(singleSpot.id)
       return (
-        <div style={{ minHeight: '100dvh', background: '#F7F2E8', color: '#241E16', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 20px', textAlign: 'center' }}>
+        <div style={{ minHeight: '100dvh', background: 'var(--ui-bg)', color: 'var(--ui-text)', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 20px', textAlign: 'center' }}>
           {/* Honest banner: this is one stop, not a route. */}
           <div style={{ background: '#FBF4DF', border: '1px solid #E7D9A8', color: '#7A5E12', borderRadius: 12, padding: '11px 16px', fontSize: 13, lineHeight: 1.5, maxWidth: 460, marginBottom: 18 }}>
             {isHe
               ? 'אין מספיק עצירות קרובות למסלול מלא, אבל זו אופציה חזקה לדייט פשוט.'
               : 'Not enough nearby stops for a full route, but this is a strong simple date option.'}
           </div>
-          <div style={{ background: '#FFFFFF', border: '1px solid #EBE2D0', borderRadius: 18, padding: '22px 22px 20px', width: '100%', maxWidth: 460, textAlign: isHe ? 'right' : 'left' }}>
-            <div style={{ fontSize: 12.5, letterSpacing: 0.5, textTransform: 'uppercase', color: '#9A7A28', fontWeight: 700, marginBottom: 8 }}>
+          <div style={{ background: 'var(--ui-surface)', border: '1px solid #EBE2D0', borderRadius: 18, padding: '22px 22px 20px', width: '100%', maxWidth: 460, textAlign: isHe ? 'right' : 'left' }}>
+            <div style={{ fontSize: 12.5, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--ui-accent)', fontWeight: 700, marginBottom: 8 }}>
               {isHe ? kind.he : kind.en}
             </div>
             <h1 style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 600, margin: '0 0 6px', lineHeight: 1.2 }}>{name}</h1>
-            {placeCity ? <div style={{ fontSize: 14, color: '#8A7F6C', marginBottom: blurb ? 12 : 0 }}>{placeCity}</div> : null}
-            {blurb ? <p style={{ fontSize: 14, color: '#6E6450', lineHeight: 1.55, margin: 0 }}>{blurb}</p> : null}
+            {placeCity ? <div style={{ fontSize: 14, color: 'var(--ui-muted)', marginBottom: blurb ? 12 : 0 }}>{placeCity}</div> : null}
+            {blurb ? <p style={{ fontSize: 14, color: 'var(--ui-muted)', lineHeight: 1.55, margin: 0 }}>{blurb}</p> : null}
             <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
               <button
                 onClick={() => openLocationFromResults(singleSpot)}
-                style={{ background: '#241E16', color: '#F4ECD8', border: 'none', borderRadius: 12, padding: '11px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flex: 1 }}
+                style={{ background: 'var(--ui-text)', color: '#ffffff', border: 'none', borderRadius: 12, padding: '11px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flex: 1 }}
               >
                 {isHe ? 'לפרטים ולמפה' : 'See details & map'}
               </button>
               <button
                 onClick={() => handleToggleSavePlace(singleSpot, { returnOverlay: 'quiz-results' })}
-                style={{ background: 'transparent', color: '#241E16', border: '1px solid #E6DCC8', borderRadius: 12, padding: '11px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ background: 'transparent', color: 'var(--ui-text)', border: '1px solid #E6DCC8', borderRadius: 12, padding: '11px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 {saved ? (isHe ? '✓ נשמר' : '✓ Saved') : (isHe ? 'שמירה' : 'Save')}
               </button>
@@ -1242,7 +1233,7 @@ export default function App() {
 
     // (B) No full plan and no single strong venue → honest fallback + proven recovery.
     return (
-      <div style={{ minHeight: '100dvh', background: '#F7F2E8', color: '#241E16', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', textAlign: 'center' }}>
+      <div style={{ minHeight: '100dvh', background: 'var(--ui-bg)', color: 'var(--ui-text)', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', textAlign: 'center' }}>
         <div style={{ fontSize: 36, marginBottom: 12 }}>🌒</div>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 12px', maxWidth: 420, lineHeight: 1.25 }}>
           {hasPreferences
@@ -1251,7 +1242,7 @@ export default function App() {
             ? cityLabel ? `אין לנו עדיין מספיק אופציות חזקות ב${cityLabel}` : 'אין לנו עדיין מספיק אופציות חזקות לדייט הזה'
             : cityLabel ? `Not enough strong options in ${cityLabel} yet` : 'Not enough strong options for this date yet'}
         </h1>
-        <p style={{ fontSize: 14, color: '#8A7F6C', maxWidth: 420, lineHeight: 1.55, margin: '0 0 4px' }}>
+        <p style={{ fontSize: 14, color: 'var(--ui-muted)', maxWidth: 420, lineHeight: 1.55, margin: '0 0 4px' }}>
           {isHe
             ? 'אפשר לעדכן את ההעדפות כאן או לעיין במקומות באזור.'
             : 'Adjust your preferences below or browse places in the area.'}
@@ -1261,13 +1252,13 @@ export default function App() {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginTop: 22 }}>
           <button
             onClick={() => setOverlay('quiz')}
-            style={{ background: '#241E16', color: '#F4ECD8', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+            style={{ background: 'var(--ui-text)', color: '#ffffff', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
           >
             {isHe ? 'נסו שוב' : 'Try different answers'}
           </button>
           <button
             onClick={() => { setOverlay(null); setTab('explore'); setExploreExpanded(true) }}
-            style={{ background: 'transparent', color: '#241E16', border: '1px solid #EBE2D0', borderRadius: 10, padding: '10px 18px', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
+            style={{ background: 'transparent', color: 'var(--ui-text)', border: '1px solid #EBE2D0', borderRadius: 10, padding: '10px 18px', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
           >
             {isHe ? 'עיינו במקומות' : 'Browse all locations'}
           </button>
@@ -1602,365 +1593,41 @@ export default function App() {
 }
 
 function AppHeader({ lang, onToggleLang }) {
-  return (
-    <div
-      style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 500,
-        background: APP_BG,
-        borderBottom: `1px solid ${APP_BORDER}`,
-        paddingTop: 'calc(12px + var(--hm-sat, 0px))',
-        paddingBottom: 12,
-        paddingLeft: 'calc(16px + var(--hm-sal, 0px))',
-        paddingRight: 'calc(16px + var(--hm-sar, 0px))',
-      }}
-    >
-      <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <img
-            src="/logo-icon.svg"
-            alt="HaMakom"
-            style={{ width: 28, height: 28, objectFit: 'contain', display: 'block', flexShrink: 0 }}
-          />
-          <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 600, color: APP_TEXT, letterSpacing: '-0.01em' }}>
-            HaMakom
-          </span>
-          <span style={{ fontSize: 13, color: APP_ACCENT, marginInlineStart: 2 }}>המקום</span>
-        </div>
-
-        <button
-          onClick={onToggleLang}
-          style={{
-            background: 'transparent',
-            border: `1px solid ${APP_BORDER}`,
-            borderRadius: 8,
-            padding: '6px 12px',
-            cursor: 'pointer',
-            color: APP_ACCENT,
-            fontSize: 12,
-            fontWeight: 700,
-            fontFamily: 'inherit',
-            flexShrink: 0,
-          }}
-        >
-          {lang === 'en' ? 'עבר' : 'EN'}
-        </button>
-      </div>
-    </div>
-  )
+  return <header className="ui-app-header"><div><a className="ui-wordmark" href="/" aria-label="HaMakom home"><img src="/logo-icon.svg" alt="" />HaMakom<span>המקום</span></a><button className="ui-language" onClick={onToggleLang}>{lang === 'en' ? 'עברית' : 'English'}</button></div></header>
 }
 
-function HomePage({
-  lang,
-  tx,
-  tonightPlan,
-  loading,
-  error,
-  onStartQuiz,
-  onSurpriseMe,
-  onOpenTonightPlan,
-  onOpenBusinesses,
-  onBusinessCtaViewed,
-}) {
-  const isHe = lang === 'he'
+function HomePage({ lang, tonightPlan, loading, error, onStartQuiz, onSurpriseMe, onOpenTonightPlan, onOpenBusinesses, onBusinessCtaViewed }) {
+  const he = lang === 'he'
   const businessViewed = useRef(false)
-  useEffect(() => {
-    if (businessViewed.current) return
-    businessViewed.current = true
-    onBusinessCtaViewed?.()
-  }, [onBusinessCtaViewed])
-  return (
-    <div style={{ position: 'relative' }}>
-      {/* Ambient gold glow behind the hero — adds depth without clutter */}
-      <div
-        className="hm-glow"
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: -150,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 'min(460px, 100vw)',
-          height: 460,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(201,168,76,0.20), rgba(201,168,76,0) 68%)',
-          pointerEvents: 'none',
-          zIndex: 0,
-        }}
-      />
-
-      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gap: 18 }}>
-
-        {/* Hero — open section, no panel box */}
-        <section style={{ padding: '4px 0 0' }}>
-          <div className="hm-reveal" style={{ animationDelay: '0.02s', fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: APP_ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>
-            {tx.planHeroEyebrow}
-          </div>
-          <h1 className="hm-reveal" style={{ animationDelay: '0.09s', fontFamily: SERIF, margin: '0 0 10px', fontSize: 'clamp(30px, 8vw, 40px)', lineHeight: 1.08, fontWeight: 600, letterSpacing: '-0.01em' }}>
-            {tx.planHeroTitle}
-          </h1>
-          <p className="hm-reveal" style={{ animationDelay: '0.17s', margin: '0 0 16px', color: APP_SOFT, fontSize: 15.5, lineHeight: 1.6, maxWidth: '32ch' }}>{tx.planHeroText}</p>
-
-          {/* Trust line — single subtle row, no chip boxes */}
-          <div className="hm-reveal" style={{ animationDelay: '0.23s', fontSize: 13, color: '#9A8F7C', marginBottom: 16 }}>
-            {isHe
-              ? 'שאלון קצר · תפריטים כשזמינים · פרטי כשרות בשקיפות'
-              : 'A quick quiz · Menus where available · Clear kashrut details'}
-          </div>
-
-          <div className="hm-reveal" style={{ animationDelay: '0.29s' }}>
-            <button onClick={onStartQuiz} className="hm-cta" style={{ ...primaryButtonStyle, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
-              {tx.planHeroAction} <span className="hm-arrow" style={{ color: '#E0BE58' }}>{isHe ? '←' : '→'}</span>
-            </button>
-          </div>
-          <div className="hm-reveal" style={{ animationDelay: '0.35s', textAlign: 'center', margin: '10px 0 2px' }}>
-            <span style={{ fontSize: 13.5, color: '#9A8F7C' }}>
-              {isHe ? 'שתי בחירות קצרות · עוד התאמות בתוצאות' : '2 quick choices · Fine-tune your results anytime'}
-            </span>
-          </div>
-          <div className="hm-reveal" style={{ animationDelay: '0.4s', textAlign: 'center' }}>
-            <button onClick={onSurpriseMe} className="hm-link" style={{ ...textLinkButtonStyle, fontSize: 13 }}>
-              {isHe ? '🎲 הפתיעו אותי הלילה' : '🎲 Surprise me tonight'}
-            </button>
-          </div>
-        </section>
-
-        {/* Tonight's Pick — standalone card, no outer panel wrapper */}
-        <section className="hm-reveal" style={{ animationDelay: '0.48s' }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 8 }}>
-            {tx.tonightsPick}
-          </div>
-          <TonightPlanCard lang={lang} tx={tx} plan={tonightPlan} onOpenPlan={onOpenTonightPlan} onStartQuiz={onStartQuiz} />
-        </section>
-
-        {/* Why HaMakom — the concrete benefits, right where new users decide */}
-        <section className="hm-reveal" style={{ animationDelay: '0.5s' }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 8 }}>
-            {isHe ? 'למה המקום' : 'Why HaMakom'}
-          </div>
-          <div style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 22, padding: '6px 16px' }}>
-            {[
-              ['🕍', isHe ? 'כשרות בשקיפות' : 'Transparent kashrut details', isHe ? 'רשות הכשרות ותאריך הבדיקה מוצגים כשאומתו — בלי ניחושים.' : 'Authority and verification date are shown when confirmed — never guessed.'],
-              ['🗺️', isHe ? 'דייט בקצב שלכם' : 'A date at your pace', isHe ? 'מקום אחד טוב או מסלול קצר, לפי המידע הזמין וההעדפות שלכם.' : 'One good place or a short route, based on your preferences and the available venue information.'],
-              ['✓', isHe ? 'מידע ברור' : 'Know before you go', isHe ? 'תפריטים ומקורות מידע כשיש; פרטים לא מאומתים מסומנים בבירור.' : 'Menus and sources where available, with unconfirmed details clearly marked.'],
-            ].map(([icon, title, text], i) => (
-              <div key={title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 0', borderTop: i === 0 ? 'none' : `1px solid ${APP_BORDER}` }}>
-                <span aria-hidden style={{ fontSize: 17, lineHeight: 1.3, flexShrink: 0 }}>{icon}</span>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: APP_TEXT, marginBottom: 2 }}>{title}</div>
-                  <div style={{ fontSize: 13, color: APP_SOFT, lineHeight: 1.5 }}>{text}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Connection feedback only — discovery lives in the Browse tab */}
-        <div style={{ textAlign: 'center', padding: '2px 0 4px' }}>
-          <button type="button" onClick={onOpenBusinesses} style={{ background: 'none', border: 'none', color: '#8A7F6C', fontFamily: 'inherit', fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-            {isHe ? 'לבעלי מקומות: שותפות עם המקום ←' : 'For venues: Partner with HaMakom →'}
-          </button>
-        </div>
-
-        {error ? (
-          <div style={{ background: '#FBEDEA', border: '1px solid #E3BBAE', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#9C3F2C' }}>
-            {isHe ? 'לא ניתן לרענן כרגע. מוצג הקטלוג השמור — בדקו פרטים עם המקום.' : 'Unable to refresh right now. Showing the saved catalog — confirm details with the venue.'}
-          </div>
-        ) : null}
-        {loading ? <div style={{ color: APP_MUTED, fontSize: 13 }}>{tx.loading}</div> : null}
-
-      </div>
-    </div>
-  )
+  useEffect(() => { if (!businessViewed.current) { businessViewed.current = true; onBusinessCtaViewed?.() } }, [onBusinessCtaViewed])
+  return <div className="ui-home">
+    <section className="ui-home-hero">
+      <div className="ui-home-copy"><p className="ui-eyebrow">{he ? 'מקום טוב להתחיל' : 'Good places. Better company.'}</p><h1>{he ? <>פחות לתכנן.<br /><span>יותר להיות יחד.</span></> : <>Less planning.<br /><span>More connection.</span></>}</h1><p className="ui-home-intro">{he ? 'מצאו מקום שמתאים לשניכם. אנחנו נדאג לרעיונות, אתם תביאו את השיחה.' : 'Find somewhere that feels right for both of you. We’ll bring the ideas. You bring the conversation.'}</p><button className="ui-button ui-button-primary ui-home-cta" onClick={onStartQuiz}>{he ? 'בואו נמצא את הדייט שלכם' : 'Find your date'}<Icon name="arrow" className="ui-direction" size={18} /></button><p className="ui-footnote">{he ? 'שתי בחירות. בלי צורך בחשבון.' : 'Two choices. No account needed.'}</p></div>
+      <div className="ui-home-photo"><img src="/city-images/jerusalem.jpg" alt={he ? 'ירושלים' : 'Jerusalem'} fetchPriority="high" /><div><Icon name="pin" size={16} />{he ? 'ירושלים, ישראל' : 'Jerusalem, Israel'}</div></div>
+    </section>
+    <section className="ui-home-discover"><div className="ui-section-heading"><h2>{he ? 'קצת השראה' : 'A little inspiration'}</h2><button className="ui-text-button" onClick={onSurpriseMe}><Icon name="sparkle" size={17} />{he ? 'הפתיעו אותי' : 'Surprise me'}</button></div><TonightPlanCard lang={lang} plan={tonightPlan} onOpenPlan={onOpenTonightPlan} /></section>
+    <section className="ui-home-benefits">{[
+      ['map', he ? 'קרוב ונוח' : 'Close. Considered.', he ? 'מקום אחד או מסלול קצר שמתאים לקצב שלכם.' : 'One good place or a short route, at your pace.'],
+      ['menu', he ? 'אוכל שמתאים לכם' : 'Your kind of place.', he ? 'תפריטים וצרכים תזונתיים כשיש מקור מידע.' : 'Menu links and food preferences, where sourced.'],
+      ['share', he ? 'מוכנים לשיתוף' : 'Ready for two.', he ? 'שמרו רעיון ושלחו אותו בקישור אחד.' : 'Save an idea. Send the whole plan in one link.'],
+    ].map(([icon,title,body]) => <div key={icon}><Icon name={icon} size={24} /><h3>{title}</h3><p>{body}</p></div>)}</section>
+    {error && <p className="ui-plan-note" role="status">{he ? 'מוצג הקטלוג השמור. לא ניתן לרענן כרגע; בדקו פרטים עם המקום.' : 'Showing the saved catalog. We couldn’t refresh just now; confirm details with the venue.'}</p>}
+    {loading && <p className="ui-footnote" role="status">{he ? 'מרעננים מקומות…' : 'Refreshing places…'}</p>}
+    <footer className="ui-home-footer"><span>HaMakom · {he ? 'מקום לשניכם' : 'Somewhere for two'}</span><button className="ui-text-button" onClick={onOpenBusinesses}>{he ? 'לבעלי מקומות' : 'For venues'}<Icon name="arrow" size={16} className="ui-direction" /></button></footer>
+  </div>
 }
 
-function ExplorePage({
-  lang,
-  tx,
-  font,
-  locations,
-  filteredLocations,
-  curatedSections,
-  loading,
-  exploreMode,
-  setExploreMode,
-  exploreExpanded,
-  setExploreExpanded,
-  browseSearch,
-  setBrowseSearch,
-  browseFilters,
-  setBrowseFilters,
-  onOpenDetail,
-  onOpenBusinesses,
-  onBusinessCtaViewed,
-  savedPlaceIds,
-  onToggleSavePlace,
-  bottomOffset,
-}) {
-  const showCurated = !browseSearch && !exploreExpanded && areFiltersDefault(browseFilters)
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: '1 1 0', minHeight: 0, width: '100%' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 10,
-          flexWrap: 'wrap',
-          flexShrink: 0,
-          padding: '2px 0',
-        }}
-      >
-        <div style={{ minWidth: 0, flex: '1 1 160px' }}>
-          <div style={{ fontSize: 'clamp(16px, 4.2vw, 19px)', fontWeight: 600, lineHeight: 1.35 }}>{tx.exploreChooserTitle}</div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-          <button onClick={() => setExploreMode('list')} style={exploreMode === 'list' ? primaryCompactButtonStyle : compactButtonStyle}>
-            {tx.listView}
-          </button>
-          <button onClick={() => setExploreMode('map')} style={exploreMode === 'map' ? primaryCompactButtonStyle : compactButtonStyle}>
-            {tx.map}
-          </button>
-        </div>
-      </div>
-
-      {exploreMode === 'map' ? (
-        <div
-          style={{
-            flex: '1 1 0',
-            minHeight: 0,
-            position: 'relative',
-            borderRadius: 16,
-            overflow: 'hidden',
-            border: `1px solid ${APP_BORDER}`,
-            background: '#EDE7D9',
-          }}
-        >
-          <Suspense fallback={<div style={{ flex: 1, background: '#EDE7D9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A99A85', fontSize: 13 }}>Loading map…</div>}>
-            <MapView
-              locations={filteredLocations}
-              lang={lang}
-              tx={tx}
-              font={font}
-              onOpenDetail={onOpenDetail}
-              showHeader={false}
-              embedded
-              bottomOffset={bottomOffset}
-            />
-          </Suspense>
-        </div>
-      ) : (
-        <section
-          style={{
-            flex: '1 1 0',
-            minHeight: 0,
-            overflowY: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            padding: '4px 0 16px',
-          }}
-        >
-          <div style={{ display: 'grid', gap: 12 }}>
-            <input
-              value={browseSearch}
-              aria-label={tx.searchPlaceholder}
-              onChange={(event) => {
-                setBrowseSearch(event.target.value)
-                if (event.target.value) setExploreExpanded(true)
-              }}
-              placeholder={tx.searchPlaceholder}
-              style={{
-                width: '100%',
-                background: '#FBF7EE',
-                border: `1px solid ${APP_BORDER}`,
-                borderRadius: 12,
-                padding: '12px 14px',
-                color: APP_TEXT,
-                fontSize: 14,
-                fontFamily: 'inherit',
-                outline: 'none',
-                boxSizing: 'border-box',
-                textAlign: tx.dir === 'rtl' ? 'right' : 'left',
-              }}
-            />
-
-            <FilterBar
-              tx={tx}
-              locations={locations}
-              filters={browseFilters}
-              setFilters={(updater) => {
-                setExploreExpanded(true)
-                setBrowseFilters(updater)
-              }}
-            />
-
-            <details style={{ background: '#fff', border: `1px solid ${APP_BORDER}`, borderRadius: 14, padding: 14 }}>
-              <summary style={{ cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>{lang === 'he' ? 'תזונה, כשרות ותפריטים' : 'Dietary needs, kashrut & menus'}{browseFilters.dietary?.length ? ` (${browseFilters.dietary.length})` : ''}</summary>
-              <div style={{ marginTop: 16 }}><VenuePreferences lang={lang} value={browseFilters} onChange={next => { setBrowseFilters(next); setExploreExpanded(true) }} /></div>
-            </details>
-            <div aria-live="polite" style={{ fontSize: 12, color: APP_SOFT }}>{lang === 'he' ? (filteredLocations.length === 1 ? 'מקום מתאים אחד' : `${filteredLocations.length} מקומות מתאימים`) : `${filteredLocations.length} matching ${filteredLocations.length === 1 ? 'place' : 'places'}`}</div>
-
-            {loading && !locations.length ? (
-              <SkeletonCardGrid count={6} label={tx.loading} />
-            ) : showCurated ? (
-              <div style={{ display: 'grid', gap: 14 }}>
-                {curatedSections.map((section) => (
-                  <section key={section.id} style={{ display: 'grid', gap: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>{section.title}</div>
-                      <div style={{ fontSize: 13, color: APP_SOFT, lineHeight: 1.5 }}>{section.text}</div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
-                      {section.items.map((location) => (
-                        <Card
-                          key={`${section.id}-${location.id}`}
-                          loc={location}
-                          lang={lang}
-                          tx={tx}
-                          saved={savedPlaceIds.includes(location.id)}
-                          onToggleSave={() => onToggleSavePlace(location, { returnOverlay: null })}
-                          onClick={() => onOpenDetail(location)}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ))}
-
-                <button onClick={() => setExploreExpanded(true)} style={textLinkButtonStyle}>
-                  {lang === 'he' ? 'עדיין לא בטוחים? פתחו את כל החלופות' : 'Still unsure? Open the full alternative list'}
-                </button>
-              </div>
-            ) : filteredLocations.length === 0 ? (
-              <EmptyState icon="⌕" title={lang === 'he' ? 'לא נמצאו מקומות' : 'No places found'} text={tx.noResults} />
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
-                {filteredLocations.map((location) => (
-                  <Card
-                    key={location.id}
-                    loc={location}
-                    lang={lang}
-                    tx={tx}
-                    saved={savedPlaceIds.includes(location.id)}
-                    onToggleSave={() => onToggleSavePlace(location, { returnOverlay: null })}
-                    onClick={() => onOpenDetail(location)}
-                  />
-                ))}
-              </div>
-            )}
-
-            <BusinessCta
-              lang={lang}
-              source="browse_banner"
-              onView={onBusinessCtaViewed}
-              onOpen={onOpenBusinesses}
-            />
-          </div>
-        </section>
-      )}
-    </div>
-  )
+function ExplorePage({ lang, tx, font, locations, filteredLocations, loading, exploreMode, setExploreMode, browseSearch, setBrowseSearch, browseFilters, setBrowseFilters, onOpenDetail, onOpenBusinesses, onBusinessCtaViewed, savedPlaceIds, onToggleSavePlace, bottomOffset }) {
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const he = lang === 'he'
+  return <div className="ui-explore">
+    <div className="ui-section-heading ui-page-heading"><div><h1>{he ? 'מקומות' : 'Explore'}</h1><p className="ui-subtitle">{he ? 'המקום הנכון, בדרך שלכם.' : 'Find your kind of somewhere.'}</p></div><div className="ui-segmented"><button aria-pressed={exploreMode === 'list'} onClick={() => setExploreMode('list')}>{he ? 'רשימה' : 'List'}</button><button aria-pressed={exploreMode === 'map'} onClick={() => setExploreMode('map')}>{he ? 'מפה' : 'Map'}</button></div></div>
+    <div className="ui-search"><Icon name="search" /><input value={browseSearch} onChange={e => setBrowseSearch(e.target.value)} placeholder={he ? 'חפשו מקום או עיר' : 'Search places or cities'} aria-label={he ? 'חיפוש מקומות' : 'Search places'} />{browseSearch && <button className="ui-icon-button" aria-label={he ? 'ניקוי החיפוש' : 'Clear search'} onClick={() => setBrowseSearch('')}><Icon name="close" size={16} /></button>}</div>
+    <div className="ui-explore-filters"><FilterBar tx={tx} locations={locations} filters={browseFilters} setFilters={setBrowseFilters} /><button className="ui-button ui-button-subtle" onClick={() => setFiltersOpen(true)} aria-haspopup="dialog"><Icon name="tune" size={18} />{he ? 'סינון' : 'Filters'}</button></div>
+    <p className="ui-footnote" aria-live="polite">{filteredLocations.length} {he ? 'מקומות' : 'places'}</p>
+    <Sheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title={he ? 'המקומות שלכם' : 'Find your fit'} lang={lang}><VenuePreferences lang={lang} value={browseFilters} onChange={setBrowseFilters} /><div className="ui-sheet-actions"><button className="ui-button ui-button-primary" onClick={() => setFiltersOpen(false)}>{he ? `הצגת ${filteredLocations.length} מקומות` : `Show ${filteredLocations.length} places`}</button><button className="ui-text-button" onClick={() => setBrowseFilters({ ...INITIAL_FILTERS })}>{he ? 'איפוס' : 'Reset filters'}</button></div></Sheet>
+    {exploreMode === 'map' ? <div className="ui-explore-map"><Suspense fallback={<div className="ui-map-loading">{tx.loading}</div>}><MapView locations={filteredLocations} lang={lang} tx={tx} font={font} onOpenDetail={onOpenDetail} showHeader={false} embedded bottomOffset={bottomOffset} /></Suspense></div> : <div className="ui-explore-scroll">{loading && !locations.length ? <SkeletonCardGrid count={6} label={tx.loading} /> : filteredLocations.length ? <div className="ui-place-grid">{filteredLocations.map(location => <Card key={location.id} loc={location} lang={lang} tx={tx} saved={savedPlaceIds.includes(location.id)} onToggleSave={() => onToggleSavePlace(location, { returnOverlay: null })} onClick={() => onOpenDetail(location)} />)}</div> : <EmptyState icon="⌕" title={he ? 'אין עדיין התאמה' : 'No matches just yet'} text={he ? 'נסו עיר אחרת או התאימו את המסננים.' : 'Try another city or loosen a filter.'} actionLabel={he ? 'איפוס החיפוש' : 'Reset search'} onAction={() => { setBrowseSearch(''); setBrowseFilters({ ...INITIAL_FILTERS }) }} />}<BusinessCta lang={lang} source="browse_banner" onView={onBusinessCtaViewed} onOpen={onOpenBusinesses} /></div>}
+  </div>
 }
 
 function BusinessCta({ lang, source, onView, onOpen }) {
@@ -1977,14 +1644,14 @@ function BusinessCta({ lang, source, onView, onOpen }) {
       style={{
         marginTop: 4,
         background: 'linear-gradient(135deg, #241E16, #403523)',
-        color: '#F7F2E8',
+        color: 'var(--ui-bg)',
         borderRadius: 18,
         padding: '18px 20px',
         border: '1px solid #5B4C31',
         boxShadow: '0 14px 32px -24px rgba(36,30,22,0.9)',
       }}
     >
-      <div style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#E0BE58', marginBottom: 7 }}>
+      <div style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#d4e7ff', marginBottom: 7 }}>
         {isHe ? 'לבעלי מקומות' : 'For venue owners'}
       </div>
       <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, lineHeight: 1.2, marginBottom: 7 }}>
@@ -1999,7 +1666,7 @@ function BusinessCta({ lang, source, onView, onOpen }) {
         type="button"
         onClick={onOpen}
         style={{
-          border: 'none', borderRadius: 9, padding: '10px 14px', background: '#C9A84C', color: '#241E16',
+          border: 'none', borderRadius: 9, padding: '10px 14px', background: 'var(--ui-accent)', color: 'var(--ui-text)',
           fontFamily: 'inherit', fontSize: 13, fontWeight: 800, cursor: 'pointer',
         }}
       >
@@ -2011,66 +1678,18 @@ function BusinessCta({ lang, source, onView, onOpen }) {
 
 function TonightPlanCard({ lang, plan, onOpenPlan }) {
   if (!plan) return null
-  const isHe = lang === 'he'
-  const meta = [
-    isHe ? plan.start_time_text_he : plan.start_time_text_en,
-    isHe ? plan.duration_text_he : plan.duration_text_en,
-    plan._singleVenue ? (isHe ? 'מקום אחד' : 'One place') : `${(plan.stops || []).length} ${isHe ? 'תחנות' : 'stops'}`,
-  ].filter(Boolean)
-
-  return (
-    <button
-      onClick={onOpenPlan}
-      className="hm-lift"
-      style={{
-        display: 'block', width: '100%', textAlign: isHe ? 'right' : 'left',
-        background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 22,
-        padding: 16, cursor: 'pointer', fontFamily: 'inherit',
-        boxShadow: '0 10px 30px -20px rgba(40,30,12,0.5)',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
-        <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', color: APP_ACCENT, textTransform: 'uppercase' }}>
-          {plan.city ? `${isHe ? 'בחירת הערב' : "Tonight's pick"} · ${plan.city}` : (isHe ? 'בחירת הערב' : "Tonight's pick")}
-        </span>
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#4F7144', background: '#E9F0E4', borderRadius: 999, padding: '4px 9px', whiteSpace: 'nowrap' }}>
-          {plan.source_type === 'generated-location' ? (isHe ? 'רעיון לדייט' : 'Date idea') : (isHe ? 'נבחר בקפידה' : 'Hand-picked')}
-        </span>
-      </div>
-
-      <div style={{ fontFamily: SERIF, fontSize: 23, fontWeight: 600, lineHeight: 1.12, marginBottom: 4, color: APP_TEXT }}>
-        {isHe ? plan.title_he : plan.title_en}
-      </div>
-      <div style={{ color: APP_SOFT, fontSize: 13.5, lineHeight: 1.5, marginBottom: 10 }}>
-        {isHe ? plan.narrative_he : plan.narrative_en}
-      </div>
-
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', borderTop: '1px solid #F0E9DA', paddingTop: 10 }}>
-        {meta.map((m, i) => (
-          <span key={m} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 12.5, color: '#7E7361', fontWeight: 600 }}>{m}</span>
-            {i < meta.length - 1 ? <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#D8CCB2' }} /> : null}
-          </span>
-        ))}
-        <span style={{ marginInlineStart: 'auto', fontSize: 13, color: APP_ACCENT, fontWeight: 700, whiteSpace: 'nowrap' }}>
-          {isHe ? '← צפייה' : 'View →'}
-        </span>
-      </div>
-    </button>
-  )
+  const he = lang === 'he'
+  return <button className="ui-inspiration" onClick={() => onOpenPlan(plan)}><div className="ui-inspiration-icon"><Icon name="pin" size={26} /></div><div><p className="ui-eyebrow">{he ? plan.city_he || plan.city : plan.city}</p><h3>{plan.stops.map(s => he ? s.name_he || s.name_en : s.name_en).join(' + ')}</h3><p>{he ? plan.duration_text_he : plan.duration_text_en}</p></div><Icon name="arrow" className="ui-direction" /></button>
 }
 
-function SavedPage({ lang, tx, authUser, plans, places, reminderIds, feedbackByItem, onRemovePlan, onRemovePlace, onTogglePlanReminder, onSubmitFeedback, onOpenPlace, onOpenPlan, onGoHome }) {
-  if (!authUser && !plans.length && !places.length) {
-    return <SavedSignInCard lang={lang} onGoHome={onGoHome} />
-  }
-
+function SavedPage({ lang, tx, plans, places, reminderIds, feedbackByItem, onRemovePlan, onRemovePlace, onTogglePlanReminder, onSubmitFeedback, onOpenPlace, onOpenPlan, onGoHome }) {
   if (!plans.length && !places.length) {
-    return <EmptyState icon="○" title={tx.savedEmptyTitle} text={tx.savedPlansEmptyText} actionLabel={tx.goHome} onAction={onGoHome} />
+    return <div className="ui-saved-empty"><div className="ui-empty-symbol"><Icon name="bookmark" size={38} /></div><h1>{lang === 'he' ? 'רעיונות ששווה לשמור' : 'Good ideas, kept close.'}</h1><p>{lang === 'he' ? 'שמרו מקומות ודייטים שתרצו לחזור אליהם. בלי צורך בחשבון.' : 'Save places and dates you’d like to come back to. No account needed.'}</p><button className="ui-button ui-button-primary" onClick={onGoHome}>{lang === 'he' ? 'מצאו את הדייט שלכם' : 'Find your date'}</button></div>
   }
 
   return (
-    <div style={{ display: 'grid', gap: 12 }}>
+    <div style={{ display: 'grid', gap: 24 }}>
+      <header className="ui-page-heading"><h1>{lang === 'he' ? 'שמורים' : 'Saved'}</h1><p className="ui-subtitle">{lang === 'he' ? 'המקומות והדייטים שתרצו לחזור אליהם.' : 'Places and dates to come back to.'}</p></header>
       <SavedSection title={tx.savedPlansSectionTitle}>
         {plans.length ? (
           <div style={{ display: 'grid', gap: 12 }}>
@@ -2178,9 +1797,9 @@ function SavedSignInCard({ lang, onGoHome }) {
             {isHe ? 'שמור מקומות ותוכניות' : 'Save plans & places'}
           </div>
           <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2, marginBottom: 10 }}>
-            {isHe ? 'היכנסו כדי לשמור את הדייטים שלכם' : 'Sign in to keep your dates'}
+            {isHe ? 'הדייטים שלכם, בכל מכשיר' : 'Your dates, on every device'}
           </div>
-          <div style={{ fontSize: 14, color: '#6E6450', lineHeight: 1.65 }}>
+          <div style={{ fontSize: 14, color: 'var(--ui-muted)', lineHeight: 1.65 }}>
             {isHe
               ? 'כשתמצאו תוכנית שמרגישה נכונה, תוכלו לשמור אותה ולחזור אליה מכל מכשיר.'
               : 'When you find a plan that feels right, save it and come back to it from any device.'}
@@ -2225,7 +1844,7 @@ function SavedSignInCard({ lang, onGoHome }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleEmailSend()}
-                  placeholder={isHe ? 'האימייל שלכם' : 'Your email'}
+                  aria-label={isHe ? 'כתובת אימייל' : 'Email address'} placeholder={isHe ? 'האימייל שלכם' : 'Your email'}
                   style={{
                     width: '100%',
                     background: APP_BG,
@@ -2275,7 +1894,7 @@ function SavedSection({ title, children }) {
 
 function SavedSectionEmpty({ text }) {
   return (
-    <div style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 16, color: '#8A7F6C', fontSize: 14, lineHeight: 1.5 }}>
+    <div style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 16, color: 'var(--ui-muted)', fontSize: 14, lineHeight: 1.5 }}>
       {text}
     </div>
   )
@@ -2283,85 +1902,23 @@ function SavedSectionEmpty({ text }) {
 
 function SavedPlanCard({ lang, tx, plan, reminderSet, feedback, onToggleReminder, onSubmitFeedback, onRemove, onOpen }) {
   const [showFeedback, setShowFeedback] = useState(false)
-  const [draftRating, setDraftRating] = useState(feedback?.rating || 0)
-  const [draftAgain, setDraftAgain] = useState(feedback?.again ?? null)
-  const isHe = lang === 'he'
-  const handleShare = async () => {
-    const payload = sharePlanMessage(plan, lang)
-    await shareContent(payload)
-  }
-
-  return (
-    <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 16, padding: 18 }}>
-      <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.08, marginBottom: 6 }}>{isHe ? plan.title_he : plan.title_en}</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-        <MiniPill>{isHe ? plan.start_time_text_he : plan.start_time_text_en}</MiniPill>
-        <MiniPill>{isHe ? plan.duration_text_he : plan.duration_text_en}</MiniPill>
-        <MiniPill>{isHe ? plan.budget_text_he : plan.budget_text_en}</MiniPill>
-        {reminderSet ? <MiniPill>{isHe ? 'תזכורת נשמרה' : 'Reminder set'}</MiniPill> : null}
-      </div>
-      <div style={{ color: '#6E6450', fontSize: 15, lineHeight: 1.55, marginBottom: 12 }}>{isHe ? plan.narrative_he : plan.narrative_en}</div>
-      <div style={{ display: 'grid', gap: 8 }}>
-        <button onClick={onOpen} style={primaryButtonStyle}>{isHe ? 'פתחו את פרטי הדייט' : 'Open date details'}</button>
-        <button onClick={onToggleReminder} style={secondaryButtonStyle}>
-          {reminderSet ? (isHe ? 'בטלו בדיקה בביקור הבא' : 'Remove next-visit check-in') : isHe ? 'בדיקה בביקור הבא באתר' : 'Check in next time I visit'}
-        </button>
-        <button onClick={handleShare} style={secondaryButtonStyle}>
-          {tx.shareSavedPlan}
-        </button>
-        {!feedback ? (
-          <button onClick={() => setShowFeedback((current) => !current)} style={textLinkButtonStyle}>
-            {isHe ? 'הייתם בדייט הזה?' : 'Did you go?'}
-          </button>
-        ) : (
-          <div style={{ background: '#FBF7EE', border: '1px solid #EDE5D4', borderRadius: 12, padding: 14, color: '#8A7F6C', fontSize: 13, lineHeight: 1.6 }}>
-            <div style={{ color: '#241E16', fontWeight: 600, marginBottom: 4 }}>{isHe ? 'נשמר פידבק לדייט הזה' : 'Feedback saved for this date'}</div>
-            <div>
-              {isHe
-                ? `הלכתם: ${feedback.went ? 'כן' : 'לא'}${feedback.rating ? ` · דירוג: ${feedback.rating}/5` : ''}${feedback.again !== undefined ? ` · שוב: ${feedback.again ? 'כן' : 'לא'}` : ''}`
-                : `Went: ${feedback.went ? 'Yes' : 'No'}${feedback.rating ? ` · Rating: ${feedback.rating}/5` : ''}${feedback.again !== undefined ? ` · Again: ${feedback.again ? 'Yes' : 'No'}` : ''}`}
-            </div>
-          </div>
-        )}
-        {showFeedback ? (
-          <FeedbackComposer
-            lang={lang}
-            rating={draftRating}
-            again={draftAgain}
-            onSetWent={(went) => {
-              if (!went) {
-                onSubmitFeedback({ went: false })
-                setShowFeedback(false)
-                return
-              }
-            }}
-            onSetRating={setDraftRating}
-            onSetAgain={setDraftAgain}
-            onSubmit={() => {
-              onSubmitFeedback({ went: true, rating: draftRating, again: draftAgain })
-              setShowFeedback(false)
-            }}
-          />
-        ) : null}
-        <button onClick={onRemove} style={textLinkButtonStyle}>
-          {tx.removeSavedPlan}
-        </button>
-      </div>
-    </section>
-  )
+  const [rating, setRating] = useState(feedback?.rating || 0)
+  const [again, setAgain] = useState(feedback?.again ?? null)
+  const he = lang === 'he'
+  return <section className="ui-saved-plan"><button className="ui-saved-plan-open" onClick={onOpen}><div className="ui-inspiration-icon"><Icon name="bookmark" size={23} /></div><div><p className="ui-eyebrow">{he ? plan.city_he || plan.city : plan.city}</p><h3>{plan.stops?.map(s => he ? s.name_he || s.name_en : s.name_en).join(' + ') || (he ? plan.title_he : plan.title_en)}</h3><p className="ui-footnote">{he ? plan.duration_text_he : plan.duration_text_en}</p></div><Icon name="chevron" size={18} className="ui-direction" /></button><details className="ui-saved-options"><summary>{he ? 'אפשרויות' : 'Options'}</summary><div className="ui-saved-options-content"><button className="ui-text-button" onClick={() => shareContent(sharePlanMessage(plan, lang))}><Icon name="share" size={17} />{tx.shareSavedPlan}</button><button className="ui-text-button" onClick={onToggleReminder}>{reminderSet ? (he ? 'ביטול בדיקה בביקור הבא' : 'Remove next-visit check-in') : (he ? 'בדיקה בביקור הבא באתר' : 'Check in on my next visit')}</button><p className="ui-footnote">{he ? 'מופיע בביקור הבא באתר, לא כהתראה בטלפון.' : 'Appears when you return here, not as a phone notification.'}</p>{feedback ? <p className="ui-footnote">{he ? 'המשוב שלכם נשמר' : 'Your feedback is saved'}{feedback.rating ? ` · ${feedback.rating}/5` : ''}</p> : <button className="ui-text-button" onClick={() => setShowFeedback(!showFeedback)}>{he ? 'איך היה הדייט?' : 'How did it go?'}</button>}{showFeedback && <FeedbackComposer lang={lang} rating={rating} again={again} onSetWent={went => { if (!went) { onSubmitFeedback({ went:false }); setShowFeedback(false) } }} onSetRating={setRating} onSetAgain={setAgain} onSubmit={() => { onSubmitFeedback({ went:true,rating,again }); setShowFeedback(false) }} />}<button className="ui-text-button ui-destructive" onClick={onRemove}>{tx.removeSavedPlan}</button></div></details></section>
 }
 
 function FeedbackComposer({ lang, rating, again, onSetWent, onSetRating, onSetAgain, onSubmit }) {
   const isHe = lang === 'he'
   return (
-    <div style={{ background: '#FBF7EE', border: '1px solid #EDE5D4', borderRadius: 12, padding: 14, display: 'grid', gap: 10 }}>
-      <div style={{ fontSize: 13, color: '#241E16', fontWeight: 600 }}>{isHe ? 'עזרו לנו לדייק את ההמלצה הבאה' : 'Help us sharpen the next recommendation'}</div>
+    <div style={{ background: '#f5f5f7', border: '1px solid #e5e5e9', borderRadius: 12, padding: 14, display: 'grid', gap: 10 }}>
+      <div style={{ fontSize: 13, color: 'var(--ui-text)', fontWeight: 600 }}>{isHe ? 'עזרו לנו לדייק את ההמלצה הבאה' : 'Help us sharpen the next recommendation'}</div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button onClick={() => onSetWent(true)} style={compactButtonStyle}>{isHe ? 'כן, הלכנו' : 'Yes, we went'}</button>
         <button onClick={() => onSetWent(false)} style={compactButtonStyle}>{isHe ? 'לא בסוף' : 'Not in the end'}</button>
       </div>
       <div>
-        <div style={{ fontSize: 12, color: '#8A7F6C', marginBottom: 6 }}>{isHe ? 'איך היה?' : 'How was it?'}</div>
+        <div style={{ fontSize: 12, color: 'var(--ui-muted)', marginBottom: 6 }}>{isHe ? 'איך היה?' : 'How was it?'}</div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {[1, 2, 3, 4, 5].map((value) => (
             <button key={value} onClick={() => onSetRating(value)} style={rating === value ? primaryCompactButtonStyle : compactButtonStyle}>
@@ -2371,7 +1928,7 @@ function FeedbackComposer({ lang, rating, again, onSetWent, onSetRating, onSetAg
         </div>
       </div>
       <div>
-        <div style={{ fontSize: 12, color: '#8A7F6C', marginBottom: 6 }}>{isHe ? 'הייתם בוחרים משהו כזה שוב?' : 'Would you do something like this again?'}</div>
+        <div style={{ fontSize: 12, color: 'var(--ui-muted)', marginBottom: 6 }}>{isHe ? 'הייתם בוחרים משהו כזה שוב?' : 'Would you do something like this again?'}</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={() => onSetAgain(true)} style={again === true ? primaryCompactButtonStyle : compactButtonStyle}>{isHe ? 'כן' : 'Yes'}</button>
           <button onClick={() => onSetAgain(false)} style={again === false ? primaryCompactButtonStyle : compactButtonStyle}>{isHe ? 'לא' : 'No'}</button>
@@ -2384,297 +1941,18 @@ function FeedbackComposer({ lang, rating, again, onSetWent, onSetRating, onSetAg
   )
 }
 
-function ProfilePage({
-  lang,
-  tx,
-  authUser,
-  savedCount,
-  savedPlansCount,
-  savedPlacesCount,
-  onOpenSaved,
-  onToggleLang,
-  onOpenQuiz,
-  onOpenSuggest,
-  onOpenAdmin,
-  onOpenPrivacy,
-  onOpenTerms,
-  onOpenDeleteAccount,
-  onOpenBusinesses,
-  analyticsEnabled,
-  onToggleAnalytics,
-  onDeleteAccount,
-  onSignOut,
-  onOpenFeedback,
-}) {
+function ProfilePage({ lang, tx, authUser, savedCount, savedPlansCount, savedPlacesCount, onOpenSaved, onToggleLang, onOpenQuiz, onOpenSuggest, onOpenAdmin, onOpenPrivacy, onOpenTerms, onOpenDeleteAccount, onOpenBusinesses, analyticsEnabled, onToggleAnalytics, onDeleteAccount, onSignOut, onOpenFeedback }) {
+  const [signInOpen, setSignInOpen] = useState(false)
   const isHe = lang === 'he'
-  const displayName = authUser?.email
-    ? authUser.email.split('@')[0]
-    : (isHe ? 'אורח' : 'Guest')
-  const initial = displayName.charAt(0).toUpperCase()
-  const savedBreakdown = isHe
-    ? `${savedPlansCount} תוכניות · ${savedPlacesCount} מקומות`
-    : `${savedPlansCount} plans · ${savedPlacesCount} places`
-
-  const quickActions = [
-    {
-      key: 'quiz',
-      title: tx.profileActionQuiz,
-      subtitle: isHe ? 'דייט מותאם בערך דקה' : 'A tailored date in about a minute',
-      onClick: onOpenQuiz,
-      featured: true,
-    },
-    ...(savedCount > 0
-      ? [{
-          key: 'saved',
-          title: isHe ? 'השמורים שלכם' : 'Your saves',
-          subtitle: savedBreakdown,
-          onClick: onOpenSaved,
-        }]
-      : []),
-    {
-      key: 'suggest',
-      title: tx.profileActionSuggest,
-      subtitle: isHe ? 'הוסיפו מקום שחסר לנו' : 'Add a place we are missing',
-      onClick: onOpenSuggest,
-    },
-    {
-      key: 'feedback',
-      title: isHe ? 'דווחו / משוב' : 'Report / feedback',
-      subtitle: isHe ? 'עזרו לנו לדייק את ההמלצות' : 'Help us sharpen recommendations',
-      onClick: onOpenFeedback,
-    },
-    {
-      key: 'language',
-      title: tx.profileActionLanguage,
-      subtitle: lang === 'he' ? 'English' : 'עברית',
-      onClick: onToggleLang,
-    },
-    ...(isAdminUser(authUser)
-      ? [{
-          key: 'admin',
-          title: tx.profileActionAdmin,
-          subtitle: isHe ? 'ניהול תוכן ומערכת' : 'Content and system tools',
-          onClick: onOpenAdmin,
-        }]
-      : []),
-  ]
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <div
-        className="hm-glow"
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          top: -120,
-          left: '50%',
-          marginLeft: -200,
-          width: 400,
-          height: 400,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(201,168,76,0.16), rgba(201,168,76,0) 68%)',
-          pointerEvents: 'none',
-          zIndex: 0,
-        }}
-      />
-
-      <div style={{ position: 'relative', zIndex: 1, display: 'grid', gap: 22 }}>
-        <section style={{ padding: '4px 0 2px' }}>
-          <div className="hm-reveal" style={{ animationDelay: '0.02s', fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: APP_ACCENT, textTransform: 'uppercase', marginBottom: 12 }}>
-            {tx.profileCardEyebrow}
-          </div>
-          <h1 className="hm-reveal" style={{ animationDelay: '0.08s', fontFamily: SERIF, margin: '0 0 10px', fontSize: 'clamp(28px, 7vw, 36px)', lineHeight: 1.08, fontWeight: 600 }}>
-            {tx.profileCardTitle}
-          </h1>
-          <p className="hm-reveal" style={{ animationDelay: '0.14s', margin: 0, color: APP_SOFT, fontSize: 15, lineHeight: 1.55, maxWidth: '34ch' }}>
-            {tx.profileSubtitle}
-          </p>
-        </section>
-
-        <section
-          className="hm-reveal hm-lift"
-          style={{
-            animationDelay: '0.2s',
-            background: APP_PANEL,
-            border: `1px solid ${APP_BORDER}`,
-            borderRadius: 22,
-            padding: 18,
-            boxShadow: '0 10px 30px -20px rgba(40,30,12,0.45)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div
-              style={{
-                width: 54,
-                height: 54,
-                borderRadius: 16,
-                background: authUser ? 'linear-gradient(145deg, #F4ECD8, #E8D9B8)' : '#FBF7EE',
-                border: `1px solid ${authUser ? '#D8C49A' : APP_BORDER}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontFamily: SERIF,
-                fontSize: 24,
-                fontWeight: 600,
-                color: APP_ACCENT,
-                flexShrink: 0,
-              }}
-            >
-              {initial}
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                <div style={{ fontSize: 17, fontWeight: 700, color: APP_TEXT, lineHeight: 1.2 }}>{displayName}</div>
-                <span
-                  style={{
-                    fontSize: 10.5,
-                    fontWeight: 700,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                    color: authUser ? '#4F7144' : APP_MUTED,
-                    background: authUser ? '#E9F0E4' : '#F3EDE2',
-                    borderRadius: 999,
-                    padding: '4px 8px',
-                  }}
-                >
-                  {authUser ? (isHe ? 'מחובר' : 'Signed in') : tx.profileGuest}
-                </span>
-              </div>
-              <div style={{ fontSize: 13, color: APP_SOFT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {authUser?.email || (isHe ? 'התחברו כדי לסנכרן שמורים בין מכשירים' : 'Sign in to sync saves across devices')}
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 16, paddingTop: 16, borderTop: '1px solid #F0E9DA' }}>
-            <ProfileStat label={tx.profileStatsSaved} value={savedCount} hint={savedBreakdown} />
-            <ProfileStat label={tx.profileStatsLanguage} value={lang === 'he' ? 'HE' : 'EN'} hint={lang === 'he' ? 'עברית' : 'English'} />
-            <ProfileStat
-              label={isHe ? 'סטטוס' : 'Status'}
-              value={authUser ? '✓' : '—'}
-              hint={authUser ? (isHe ? 'מסונכרן' : 'Synced') : (isHe ? 'מקומי' : 'Local only')}
-            />
-          </div>
-        </section>
-
-        <section className="hm-reveal" style={{ animationDelay: '0.28s' }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
-            {tx.profileActionsTitle}
-          </div>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {quickActions.map((action) => (
-              <ProfileMenuRow
-                key={action.key}
-                title={action.title}
-                subtitle={action.subtitle}
-                featured={action.featured}
-                onClick={action.onClick}
-                isHe={isHe}
-              />
-            ))}
-          </div>
-        </section>
-
-        <section className="hm-reveal" style={{ animationDelay: '0.36s' }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.18em', color: APP_MUTED, textTransform: 'uppercase', marginBottom: 10 }}>
-            {isHe ? 'הגדרות' : 'Settings'}
-          </div>
-          <div style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 18, overflow: 'hidden' }}>
-            <ProfileToggleRow
-              title={isHe ? 'נתוני שימוש' : 'Usage analytics'}
-              subtitle={isHe ? 'עוזר לנו לשפר את ההמלצות' : 'Helps us improve recommendations'}
-              enabled={analyticsEnabled}
-              onToggle={onToggleAnalytics}
-            />
-            <ProfileMenuRow
-              title={tx.forBusinesses}
-              subtitle={tx.forBusinessesSub}
-              onClick={onOpenBusinesses}
-              isHe={isHe}
-              borderTop
-            />
-            <ProfileMenuRow
-              title={isHe ? 'מדיניות פרטיות' : 'Privacy Policy'}
-              onClick={onOpenPrivacy}
-              isHe={isHe}
-              compact
-              borderTop
-            />
-            <ProfileMenuRow
-              title={isHe ? 'תנאי שירות' : 'Terms of Service'}
-              onClick={onOpenTerms}
-              isHe={isHe}
-              compact
-              borderTop
-            />
-            <ProfileMenuRow
-              title={isHe ? 'מחיקת חשבון ונתונים' : 'Delete account & data'}
-              onClick={onOpenDeleteAccount}
-              isHe={isHe}
-              compact
-              borderTop
-            />
-          </div>
-        </section>
-
-        {authUser ? (
-          <section className="hm-reveal" style={{ animationDelay: '0.42s' }}>
-            <button onClick={onSignOut} style={{ width: '100%', background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 12, padding: 14, marginBottom: 14, color: APP_TEXT, font: 'inherit', cursor: 'pointer' }}>{isHe ? 'התנתקות' : 'Sign out'}</button>
-            <div style={{ background: '#FFF8F8', border: '1px solid #F0D4D4', borderRadius: 16, padding: 16 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#9B2C2C', marginBottom: 4 }}>
-                {isHe ? 'אזור מסוכן' : 'Danger zone'}
-              </div>
-              <p style={{ margin: '0 0 12px', fontSize: 13, color: '#8A5A5A', lineHeight: 1.5 }}>
-                {isHe ? 'מחיקת החשבון תסיר לצמיתות את כל השמורים, ההעדפות והנתונים שלכם.' : 'Deleting your account permanently removes all saves, preferences, and data.'}
-              </p>
-              <button
-                onClick={onDeleteAccount}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid #C97A7A',
-                  color: '#B42318',
-                  borderRadius: 12,
-                  padding: '10px 14px',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontFamily: 'inherit',
-                  fontWeight: 700,
-                }}
-              >
-                {isHe ? 'מחיקת חשבון' : 'Delete account'}
-              </button>
-            </div>
-          </section>
-        ) : null}
-
-        <section
-          className="hm-reveal"
-          style={{
-            animationDelay: '0.48s',
-            background: '#FBF7EE',
-            border: '1px solid #EDE5D4',
-            borderRadius: 16,
-            padding: '14px 16px',
-          }}
-        >
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: APP_ACCENT, marginBottom: 6 }}>
-            {tx.profileNotesTitle}
-          </div>
-          <p style={{ margin: 0, fontSize: 13.5, color: APP_SOFT, lineHeight: 1.55 }}>{tx.profileNotesText}</p>
-        </section>
-      </div>
-    </div>
-  )
-}
-
-function ProfileStat({ label, value, hint }) {
-  return (
-    <div style={{ textAlign: 'center', padding: '2px 4px' }}>
-      <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 600, color: APP_ACCENT, lineHeight: 1 }}>{value}</div>
-      <div style={{ marginTop: 5, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: APP_MUTED }}>{label}</div>
-      {hint ? <div style={{ marginTop: 3, fontSize: 11, color: '#9A8F7C', lineHeight: 1.3 }}>{hint}</div> : null}
-    </div>
-  )
+  const name = authUser?.email?.split('@')[0] || (isHe ? 'ברוכים הבאים' : 'Make yourself at home')
+  return <div className="ui-profile"><div className="ui-page-heading"><h1>{isHe ? 'החשבון שלכם' : 'Your space'}</h1><p className="ui-subtitle">{isHe ? 'העדפות, שמורים וכל השאר.' : 'Your preferences. Your possibilities.'}</p></div><section className="ui-account-card"><div className="ui-account-avatar"><Icon name="profile" size={28} /></div><div><h2>{name}</h2><p>{authUser?.email || (isHe ? 'התחברו כדי לסנכרן שמורים בין מכשירים.' : 'Sign in to keep your saves across devices.')}</p>{!authUser && <button className="ui-text-button" onClick={() => setSignInOpen(true)}>{isHe ? 'כניסה לחשבון' : 'Sign in'}<Icon name="chevron" size={15} className="ui-direction" /></button>}</div></section>
+    <section className="ui-settings-group"><ProfileMenuRow title={isHe ? `השמורים שלכם (${savedCount})` : `Your saves (${savedCount})`} subtitle={isHe ? `${savedPlansCount} דייטים · ${savedPlacesCount} מקומות` : `${savedPlansCount} dates · ${savedPlacesCount} places`} onClick={onOpenSaved} isHe={isHe} /><ProfileMenuRow title={isHe ? 'תכנון דייט חדש' : 'Plan a new date'} onClick={onOpenQuiz} isHe={isHe} borderTop /><ProfileMenuRow title={tx.profileActionLanguage} subtitle={isHe ? 'עברית' : 'English'} onClick={onToggleLang} isHe={isHe} borderTop /><ProfileToggleRow title={isHe ? 'נתוני שימוש' : 'Usage analytics'} subtitle={isHe ? 'שיתוף נתוני שימוש כדי לעזור לנו להשתפר.' : 'Share usage data to help improve HaMakom.'} enabled={analyticsEnabled} onToggle={onToggleAnalytics} /></section>
+    <h2 className="ui-settings-label">{isHe ? 'עזרה ומידע' : 'Help & information'}</h2><section className="ui-settings-group">{[
+      [isHe ? 'הצעת מקום' : 'Suggest a place',onOpenSuggest], [isHe ? 'משוב ודיווח על בעיה' : 'Feedback & support',onOpenFeedback], [tx.forBusinesses,onOpenBusinesses], [isHe ? 'מדיניות פרטיות' : 'Privacy policy',onOpenPrivacy], [isHe ? 'תנאי שימוש' : 'Terms of service',onOpenTerms],
+    ].map(([title,action],i) => <ProfileMenuRow key={title} title={title} onClick={action} isHe={isHe} borderTop={i>0} compact />)}{isAdminUser(authUser) && <ProfileMenuRow title={tx.profileActionAdmin} onClick={onOpenAdmin} isHe={isHe} borderTop />}</section>
+    {authUser ? <div className="ui-account-actions"><button className="ui-text-button" onClick={onSignOut}>{isHe ? 'התנתקות' : 'Sign out'}</button><details className="ui-more-options"><summary>{isHe ? 'מחיקת חשבון' : 'Delete account'}</summary><p className="ui-footnote">{isHe ? 'המחיקה קבועה ומסירה את השמורים ואת נתוני החשבון.' : 'Permanently removes your account and its saved data.'}</p><button className="ui-text-button ui-destructive" onClick={onDeleteAccount}>{isHe ? 'מחיקת החשבון והנתונים' : 'Delete account and data'}</button></details></div> : <button className="ui-text-button" onClick={onOpenDeleteAccount}>{isHe ? 'על מחיקת נתונים' : 'About deleting your data'}</button>}
+    <p className="ui-profile-footer">HaMakom · {isHe ? 'מקום לשניכם' : 'Somewhere for two'}</p><Sheet open={signInOpen} onClose={() => setSignInOpen(false)} title={isHe ? 'ברוכים הבאים' : 'Welcome to HaMakom'} lang={lang}><SavedSignInCard lang={lang} onGoHome={() => setSignInOpen(false)} /></Sheet>
+  </div>
 }
 
 function ProfileMenuRow({ title, subtitle, onClick, isHe, featured = false, compact = false, borderTop = false }) {
@@ -2690,7 +1968,7 @@ function ProfileMenuRow({ title, subtitle, onClick, isHe, featured = false, comp
         gap: 12,
         textAlign: isHe ? 'right' : 'left',
         background: featured ? APP_INK : APP_PANEL,
-        color: featured ? '#F4ECD8' : APP_TEXT,
+        color: featured ? '#ffffff' : APP_TEXT,
         border: featured ? 'none' : 'none',
         borderTop: borderTop ? `1px solid ${APP_BORDER}` : 'none',
         borderRadius: featured ? 18 : 0,
@@ -2708,7 +1986,7 @@ function ProfileMenuRow({ title, subtitle, onClick, isHe, featured = false, comp
           </div>
         ) : null}
       </div>
-      <span style={{ fontSize: 15, color: featured ? '#E0BE58' : APP_ACCENT, flexShrink: 0, fontWeight: 700 }}>
+      <span style={{ fontSize: 15, color: featured ? '#d4e7ff' : APP_ACCENT, flexShrink: 0, fontWeight: 700 }}>
         {isHe ? '←' : '→'}
       </span>
     </button>
@@ -2733,11 +2011,13 @@ function ProfileToggleRow({ title, subtitle, enabled, onToggle }) {
           cursor: 'pointer',
           padding: 0,
           flexShrink: 0,
-          background: enabled ? APP_ACCENT : '#E6DCC8',
+          background: enabled ? APP_ACCENT : 'var(--ui-border)',
           position: 'relative',
           transition: 'background 0.2s',
         }}
-        aria-label={enabled ? 'Disable analytics' : 'Enable analytics'}
+        role="switch"
+        aria-checked={enabled}
+        aria-label={title}
       >
         <span
           style={{
@@ -2758,155 +2038,16 @@ function ProfileToggleRow({ title, subtitle, enabled, onToggle }) {
 
 function MiniPill({ children }) {
   return (
-    <span style={{ background: '#FFFFFF', border: '1px solid #EBE2D0', borderRadius: 999, padding: '5px 10px', fontSize: 12, color: '#9A7A28' }}>
+    <span style={{ background: 'var(--ui-surface)', border: '1px solid #EBE2D0', borderRadius: 999, padding: '5px 10px', fontSize: 12, color: 'var(--ui-accent)' }}>
       {children}
     </span>
   )
 }
 
-function BottomNavIcon({ name, active }) {
-  const stroke = active ? APP_ACCENT : '#A99A85'
-  const sw = 1.85
-  const svgProps = {
-    width: 22,
-    height: 22,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke,
-    strokeWidth: sw,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    'aria-hidden': true,
-  }
-
-  switch (name) {
-    case 'home':
-      return (
-        <svg {...svgProps}>
-          <path d="M3 11 L12 4 L21 11 V19.5 H15 V12 H9 V19.5 H3 Z" />
-        </svg>
-      )
-    case 'explore':
-      return (
-        <svg {...svgProps}>
-          <circle cx="11" cy="11" r="6.25" />
-          <path d="m20 20-3.35-3.35" />
-        </svg>
-      )
-    case 'saved':
-      return (
-        <svg {...svgProps}>
-          <path d="M19 21l-7-4.5L5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
-        </svg>
-      )
-    case 'profile':
-      return (
-        <svg {...svgProps}>
-          <circle cx="12" cy="8" r="3.5" />
-          <path d="M6.5 20.25c0-3 2.9-5.25 5.5-5.25s5.5 2.25 5.5 5.25" />
-        </svg>
-      )
-    default:
-      return null
-  }
-}
-
 function BottomNav({ tx, tab, savedCount, onSelect }) {
-  const items = [
-    { key: 'home', icon: 'home', label: tx.home },
-    { key: 'explore', icon: 'explore', label: tx.explore },
-    { key: 'saved', icon: 'saved', label: tx.saved, badge: savedCount > 0 ? savedCount : null },
-    { key: 'profile', icon: 'profile', label: tx.profile },
-  ]
-  const viewportGap = useViewportBottomGap()
-
-  return (
-    <nav
-      style={{
-        position: 'fixed',
-        left: 14,
-        right: 14,
-        maxWidth: 640,
-        marginInline: 'auto',
-        bottom: `calc(max(12px, var(--hm-sab, 0px)) + ${viewportGap}px)`,
-        height: NAV_HEIGHT,
-        background: APP_PANEL,
-        border: `1px solid ${APP_BORDER}`,
-        borderRadius: 18,
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        boxShadow: '0 12px 30px -14px rgba(40,30,12,0.4)',
-        zIndex: 8000,
-        isolation: 'isolate',
-        overflow: 'hidden',
-      }}
-    >
-      {items.map((item) => {
-        const active = tab === item.key
-        return (
-          <button
-            key={item.key}
-            onClick={() => onSelect(item.key)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: active ? APP_ACCENT : APP_MUTED,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 4,
-              position: 'relative',
-              paddingTop: 4,
-            }}
-          >
-            {/* Top accent bar for active tab */}
-            {active ? (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: '20%',
-                  right: '20%',
-                  height: 2,
-                  background: APP_ACCENT,
-                  borderRadius: '0 0 2px 2px',
-                }}
-              />
-            ) : null}
-            <BottomNavIcon name={item.icon} active={active} />
-            <span style={{ fontSize: 10, fontWeight: active ? 700 : 400, letterSpacing: active ? '0.01em' : 0 }}>
-              {item.label}
-            </span>
-            {item.badge ? (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 8,
-                  right: '18%',
-                  minWidth: 16,
-                  height: 16,
-                  padding: '0 4px',
-                  borderRadius: 999,
-                  background: APP_ACCENT,
-                  color: APP_BG,
-                  fontSize: 9,
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {item.badge}
-              </span>
-            ) : null}
-          </button>
-        )
-      })}
-    </nav>
-  )
+  const gap = useViewportBottomGap()
+  const items = [['home', 'home', tx.home], ['explore', 'search', tx.dir === 'rtl' ? 'מקומות' : 'Browse'], ['saved', 'bookmark', tx.saved], ['profile', 'profile', tx.profile]]
+  return <nav className="ui-tabbar" aria-label={tx.dir === 'rtl' ? 'ניווט ראשי' : 'Main navigation'} style={{ bottom: `calc(12px + var(--hm-sab, 0px) + ${gap}px)` }}>{items.map(([key,icon,label]) => <button key={key} aria-current={tab === key ? 'page' : undefined} onClick={() => onSelect(key)}><Icon name={icon} size={22} /><span>{label}</span>{key === 'saved' && savedCount > 0 && <span className="ui-nav-dot" aria-label={`${savedCount} ${label}`} />}</button>)}</nav>
 }
 
 function EmptyState({ icon, title, text, actionLabel, onAction }) {
@@ -2926,7 +2067,7 @@ function EmptyState({ icon, title, text, actionLabel, onAction }) {
 
 const primaryButtonStyle = {
   background: APP_INK,
-  color: '#F4ECD8',
+  color: '#ffffff',
   border: 'none',
   borderRadius: 16,
   padding: '16px 18px',
@@ -2939,7 +2080,7 @@ const primaryButtonStyle = {
 
 const secondaryButtonStyle = {
   background: APP_PANEL,
-  color: '#3C342A',
+  color: 'var(--ui-text)',
   border: `1px solid #E6DCC8`,
   borderRadius: 16,
   padding: '14px 16px',
@@ -2951,7 +2092,7 @@ const secondaryButtonStyle = {
 
 const compactButtonStyle = {
   background: APP_PANEL,
-  color: '#3C342A',
+  color: 'var(--ui-text)',
   border: `1px solid #E6DCC8`,
   borderRadius: 10,
   padding: '9px 14px',
@@ -2963,7 +2104,7 @@ const compactButtonStyle = {
 
 const primaryCompactButtonStyle = {
   background: APP_INK,
-  color: '#F4ECD8',
+  color: '#ffffff',
   border: 'none',
   borderRadius: 10,
   padding: '9px 14px',
@@ -3001,13 +2142,13 @@ function ConsentBanner({ lang, font, onAccept, onDecline, onOpenPrivacy }) {
         right: 16,
         maxWidth: 480,
         marginInline: 'auto',
-        background: '#FFFFFF',
+        background: 'var(--ui-surface)',
         border: '1px solid #EBE2D0',
         borderRadius: 16,
         padding: '14px 16px',
         zIndex: 9000,
         fontFamily: font,
-        boxShadow: '0 8px 32px rgba(40,30,12,0.25)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
         display: 'flex',
         flexDirection: 'column',
         gap: 10,
@@ -3018,20 +2159,20 @@ function ConsentBanner({ lang, font, onAccept, onDecline, onOpenPrivacy }) {
           ? 'אנחנו משתמשים בנתוני שימוש אנונימיים לשיפור ההמלצות.'
           : 'We use anonymous usage data to improve recommendations.'}
         {' '}
-        <button onClick={onOpenPrivacy} style={{ background: 'none', border: 'none', color: '#9A7A28', cursor: 'pointer', fontSize: 13, fontFamily: font, padding: 0, textDecoration: 'underline' }}>
+        <button onClick={onOpenPrivacy} style={{ background: 'none', border: 'none', color: 'var(--ui-accent)', cursor: 'pointer', fontSize: 13, fontFamily: font, padding: 0, textDecoration: 'underline' }}>
           {isHe ? 'מדיניות פרטיות' : 'Privacy Policy'}
         </button>
       </p>
       <div style={{ display: 'flex', gap: 8 }}>
         <button
           onClick={onAccept}
-          style={{ flex: 1, background: '#241E16', color: '#F4ECD8', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: font }}
+          style={{ flex: 1, background: 'var(--ui-text)', color: '#ffffff', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: font }}
         >
           {isHe ? 'אישור' : 'Accept'}
         </button>
         <button
           onClick={onDecline}
-          style={{ flex: 1, background: '#F2EBDB', color: '#8A7F6C', border: '1px solid #E6DCC8', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: font }}
+          style={{ flex: 1, background: '#F2EBDB', color: 'var(--ui-muted)', border: '1px solid #E6DCC8', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: font }}
         >
           {isHe ? 'דחייה' : 'Decline'}
         </button>
@@ -3054,9 +2195,9 @@ function FeedbackNudge({ lang, font, plan, onRespond, onDismiss }) {
       style={{
         position: 'fixed', left: 16, right: 16, maxWidth: 480, marginInline: 'auto',
         bottom: `calc(${NAV_HEIGHT + 8}px + max(12px, var(--hm-sab, 0px)))`,
-        background: '#FFFFFF', border: '1px solid #EBE2D0', borderRadius: 16,
+        background: 'var(--ui-surface)', border: '1px solid #EBE2D0', borderRadius: 16,
         padding: '16px', zIndex: 8500, fontFamily: font,
-        boxShadow: '0 8px 32px rgba(40,30,12,0.25)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
       }}
     >
       {step === 'ask' ? (
@@ -3065,13 +2206,13 @@ function FeedbackNudge({ lang, font, plan, onRespond, onDismiss }) {
             {isHe ? `הלכתם ל"${planTitle}"?` : `Did you go on "${planTitle}"? 🌟`}
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setStep('rate')} style={{ flex: 1, background: '#241E16', color: '#F4ECD8', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: font }}>
+            <button onClick={() => setStep('rate')} style={{ flex: 1, background: 'var(--ui-text)', color: '#ffffff', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: font }}>
               {isHe ? 'כן!' : 'Yes!'}
             </button>
-            <button onClick={() => onRespond({ went: false })} style={{ flex: 1, background: '#F2EBDB', color: '#8A7F6C', border: '1px solid #E6DCC8', borderRadius: 10, padding: '10px 0', fontSize: 13, cursor: 'pointer', fontFamily: font }}>
+            <button onClick={() => onRespond({ went: false })} style={{ flex: 1, background: '#F2EBDB', color: 'var(--ui-muted)', border: '1px solid #E6DCC8', borderRadius: 10, padding: '10px 0', fontSize: 13, cursor: 'pointer', fontFamily: font }}>
               {isHe ? 'לא עדיין' : 'Not yet'}
             </button>
-            <button onClick={onDismiss} style={{ background: 'none', border: 'none', color: '#A99A85', cursor: 'pointer', padding: '10px 6px', fontSize: 13, fontFamily: font }}>✕</button>
+            <button onClick={onDismiss} style={{ background: 'none', border: 'none', color: 'var(--ui-muted)', cursor: 'pointer', padding: '10px 6px', fontSize: 13, fontFamily: font }}>✕</button>
           </div>
         </>
       ) : (
@@ -3089,7 +2230,7 @@ function FeedbackNudge({ lang, font, plan, onRespond, onDismiss }) {
           <button
             onClick={() => rating && onRespond({ went: true, rating, again: rating >= 4 })}
             disabled={!rating}
-            style={{ width: '100%', background: rating ? '#241E16' : '#E6DCC8', color: rating ? '#F4ECD8' : '#A99A85', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: rating ? 'pointer' : 'default', fontFamily: font, transition: 'all 0.2s' }}
+            style={{ width: '100%', background: rating ? 'var(--ui-text)' : 'var(--ui-border)', color: rating ? '#ffffff' : 'var(--ui-muted)', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: rating ? 'pointer' : 'default', fontFamily: font, transition: 'all 0.2s' }}
           >
             {isHe ? 'שמרו' : 'Save'}
           </button>

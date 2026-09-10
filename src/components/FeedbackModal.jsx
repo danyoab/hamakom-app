@@ -65,14 +65,14 @@ export default function FeedbackModal({ lang, font, locationName, locationId, on
         dir={dir}
         style={{
           width: '100%', maxWidth: 520,
-          background: '#FFFFFF',
+          background: 'var(--ui-surface)',
           border: '1px solid #EBE2D0', borderBottom: 'none',
           borderRadius: '24px 24px 0 0',
           padding: '14px 22px calc(40px + var(--hm-sab, 0px))',
-          boxSizing: 'border-box', color: '#241E16',
+          boxSizing: 'border-box', color: 'var(--ui-text)',
         }}
       >
-        <div style={{ width: 36, height: 4, background: '#EBE2D0', borderRadius: 999, margin: '0 auto 18px' }} />
+        <div style={{ width: 36, height: 4, background: 'var(--ui-border)', borderRadius: 999, margin: '0 auto 18px' }} />
 
         {status === 'done' ? (
           <div style={{ textAlign: 'center', padding: '20px 0 10px' }}>
@@ -80,23 +80,23 @@ export default function FeedbackModal({ lang, font, locationName, locationId, on
             <h3 style={{ fontSize: 20, fontWeight: 500, margin: '0 0 8px' }}>
               {isHe ? 'תודה!' : 'Thanks for the report!'}
             </h3>
-            <p style={{ color: '#8A7F6C', fontSize: 14, margin: '0 0 24px' }}>
+            <p style={{ color: 'var(--ui-muted)', fontSize: 14, margin: '0 0 24px' }}>
               {isHe ? 'נבדוק את זה בהקדם.' : "We'll look into it soon."}
             </p>
-            <button onClick={onClose} style={btnStyle('#C9A84C', '#F7F2E8', font)}>
+            <button onClick={onClose} style={btnStyle('var(--ui-accent)', 'var(--ui-bg)', font)}>
               {isHe ? 'סגור' : 'Close'}
             </button>
           </div>
         ) : (
           <>
             <div style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 12, letterSpacing: '0.14em', color: '#9A7A28', textTransform: 'uppercase', marginBottom: 6 }}>
+              <div style={{ fontSize: 12, letterSpacing: '0.14em', color: 'var(--ui-accent)', textTransform: 'uppercase', marginBottom: 6 }}>
                 {isLocation
                   ? (isHe ? 'דיווח על מקום' : 'Report a location')
                   : (isHe ? 'משוב / דיווח על בעיה' : 'Feedback / Report a problem')}
               </div>
               {locationName ? (
-                <div style={{ fontSize: 13, color: '#A99A85' }}>{locationName}</div>
+                <div style={{ fontSize: 13, color: 'var(--ui-muted)' }}>{locationName}</div>
               ) : null}
             </div>
 
@@ -106,10 +106,10 @@ export default function FeedbackModal({ lang, font, locationName, locationId, on
                   key={t.value}
                   onClick={() => setType(t.value)}
                   style={{
-                    background: type === t.value ? '#FBF4E1' : '#FFFFFF',
-                    border: `1px solid ${type === t.value ? '#C9A84C' : '#EBE2D0'}`,
+                    background: type === t.value ? '#eef5ff' : 'var(--ui-surface)',
+                    border: `1px solid ${type === t.value ? 'var(--ui-accent)' : 'var(--ui-border)'}`,
                     borderRadius: 10, padding: '11px 14px',
-                    color: type === t.value ? '#9A7A28' : '#6E6450',
+                    color: type === t.value ? 'var(--ui-accent)' : 'var(--ui-muted)',
                     fontSize: 14, cursor: 'pointer', fontFamily: font,
                     textAlign: isHe ? 'right' : 'left',
                     transition: 'all 0.15s',
@@ -126,8 +126,8 @@ export default function FeedbackModal({ lang, font, locationName, locationId, on
               placeholder={isHe ? 'פרטים נוספים (אופציונלי)' : 'More details (optional)'}
               rows={3}
               style={{
-                width: '100%', background: '#FFFFFF', border: '1px solid #EBE2D0',
-                borderRadius: 10, padding: '11px 14px', color: '#241E16',
+                width: '100%', background: 'var(--ui-surface)', border: '1px solid #EBE2D0',
+                borderRadius: 10, padding: '11px 14px', color: 'var(--ui-text)',
                 fontSize: 14, fontFamily: font, resize: 'none',
                 outline: 'none', boxSizing: 'border-box', marginBottom: 10,
                 direction: dir,
@@ -141,8 +141,8 @@ export default function FeedbackModal({ lang, font, locationName, locationId, on
               placeholder={isHe ? 'אימייל לתגובה (אופציונלי)' : 'Your email for follow-up (optional)'}
               dir="ltr"
               style={{
-                width: '100%', background: '#FFFFFF', border: '1px solid #EBE2D0',
-                borderRadius: 10, padding: '11px 14px', color: '#241E16',
+                width: '100%', background: 'var(--ui-surface)', border: '1px solid #EBE2D0',
+                borderRadius: 10, padding: '11px 14px', color: 'var(--ui-text)',
                 fontSize: 14, fontFamily: font, outline: 'none',
                 boxSizing: 'border-box', marginBottom: 14,
               }}
@@ -159,7 +159,7 @@ export default function FeedbackModal({ lang, font, locationName, locationId, on
                 onClick={handleSubmit}
                 disabled={!type || status === 'submitting'}
                 style={{
-                  ...btnStyle(type ? '#C9A84C' : '#E6DCC8', type ? '#F7F2E8' : '#A99A85', font),
+                  ...btnStyle(type ? 'var(--ui-accent)' : 'var(--ui-border)', type ? 'var(--ui-bg)' : 'var(--ui-muted)', font),
                   opacity: status === 'submitting' ? 0.7 : 1,
                   cursor: type ? 'pointer' : 'default',
                 }}
@@ -190,7 +190,7 @@ function btnStyle(bg, color, font) {
 
 function ghostBtnStyle(font) {
   return {
-    background: '#FFFFFF', color: '#8A7F6C',
+    background: 'var(--ui-surface)', color: 'var(--ui-muted)',
     border: '1px solid #EBE2D0', borderRadius: 12,
     padding: '13px 0', fontSize: 14, fontWeight: 600,
     cursor: 'pointer', fontFamily: font, width: '100%',

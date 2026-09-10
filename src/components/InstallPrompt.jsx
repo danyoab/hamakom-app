@@ -41,17 +41,17 @@ export default function InstallPrompt({ lang }) {
         maxWidth: 480,
         marginInline: 'auto',
         zIndex: 9998,
-        background: '#FFFFFF',
+        background: 'var(--ui-surface)',
         border: '1px solid #EBE2D0',
         borderRadius: 16,
         padding: '14px 16px',
-        boxShadow: '0 12px 32px rgba(40,30,12,0.18)',
+        boxShadow: '0 12px 32px rgba(0,0,0,0.18)',
       }}
     >
-      <div style={{ fontSize: 15, fontWeight: 700, color: '#241E16', marginBottom: 4 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ui-text)', marginBottom: 4 }}>
         {isHe ? 'הוסיפו את HaMakom למסך הבית' : 'Add HaMakom to your home screen'}
       </div>
-      <div style={{ fontSize: 13, color: '#6E6450', lineHeight: 1.45, marginBottom: 12 }}>
+      <div style={{ fontSize: 13, color: 'var(--ui-muted)', lineHeight: 1.45, marginBottom: 12 }}>
         {isHe ? 'גישה מהירה לתוכניות דייט — בלי סרגל דפדפן.' : 'Quick access to date plans — no browser bar.'}
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
@@ -60,8 +60,8 @@ export default function InstallPrompt({ lang }) {
           onClick={install}
           style={{
             flex: 1,
-            background: '#C9A84C',
-            color: '#241E16',
+            background: 'var(--ui-accent)',
+            color: 'var(--ui-text)',
             border: 'none',
             borderRadius: 10,
             padding: '10px 12px',
@@ -78,7 +78,7 @@ export default function InstallPrompt({ lang }) {
           onClick={dismiss}
           style={{
             background: 'transparent',
-            color: '#8A7F6C',
+            color: 'var(--ui-muted)',
             border: '1px solid #EBE2D0',
             borderRadius: 10,
             padding: '10px 12px',

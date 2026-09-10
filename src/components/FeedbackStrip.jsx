@@ -39,7 +39,7 @@ export default function FeedbackStrip({ lang, loc, dateFeedback, setDateFeedback
 
   return (
     <div style={{ marginTop: 24, paddingTop: 18, borderTop: '1px solid #EBE2D0' }}>
-      <div style={{ fontSize: 10, letterSpacing: '0.15em', color: '#A99A85', marginBottom: 10, textTransform: 'uppercase' }}>
+      <div style={{ fontSize: 10, letterSpacing: '0.15em', color: 'var(--ui-muted)', marginBottom: 10, textTransform: 'uppercase' }}>
         {lang === 'he' ? 'איך היה?' : 'How was this?'}
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -49,12 +49,13 @@ export default function FeedbackStrip({ lang, loc, dateFeedback, setDateFeedback
             <button
               key={c.key}
               onClick={() => toggle(c.key)}
+              aria-pressed={active}
               style={{
-                background: active ? '#C9A84C' : '#F2EBDB',
-                color: active ? '#F7F2E8' : '#8A7F6C',
-                border: `1px solid ${active ? '#C9A84C' : '#E6DCC8'}`,
+                background: active ? 'var(--ui-accent)' : 'var(--ui-bg)',
+                color: active ? 'var(--ui-bg)' : 'var(--ui-muted)',
+                border: `1px solid ${active ? 'var(--ui-accent)' : 'var(--ui-border)'}`,
                 borderRadius: 999,
-                padding: '5px 12px',
+                minHeight: 44, padding: '5px 12px',
                 fontSize: 12,
                 cursor: 'pointer',
                 fontFamily: font || 'inherit',
@@ -66,7 +67,7 @@ export default function FeedbackStrip({ lang, loc, dateFeedback, setDateFeedback
           )
         })}
       </div>
-      <div style={{ fontSize: 10, color: '#B0A48E', marginTop: 8 }}>
+      <div style={{ fontSize: 10, color: 'var(--ui-muted)', marginTop: 8 }}>
         {lang === 'he'
           ? 'נשמר באופן פרטי כדי לשפר את ההמלצות שלכם.'
           : 'Saved privately to improve your recommendations.'}

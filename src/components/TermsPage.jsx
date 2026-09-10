@@ -1,9 +1,9 @@
-const APP_BG = '#F7F2E8'
-const APP_PANEL = '#FFFFFF'
-const APP_BORDER = '#EBE2D0'
-const APP_TEXT = '#241E16'
-const APP_ACCENT = '#C9A84C'
-const APP_MUTED = '#A99A85'
+const APP_BG = 'var(--ui-bg)'
+const APP_PANEL = 'var(--ui-surface)'
+const APP_BORDER = 'var(--ui-border)'
+const APP_TEXT = 'var(--ui-text)'
+const APP_ACCENT = 'var(--ui-accent)'
+const APP_MUTED = 'var(--ui-muted)'
 
 const SECTIONS_EN = [
   {
@@ -146,7 +146,7 @@ export default function TermsPage({ lang, font, onBack }) {
         {sections.map((s) => (
           <section key={s.title} style={{ marginBottom: 32, paddingBottom: 32, borderBottom: `1px solid ${APP_BORDER}` }}>
             <h2 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: APP_ACCENT }}>{s.title}</h2>
-            <div style={{ fontSize: 14, lineHeight: 1.8, color: '#6E6450', whiteSpace: 'pre-line' }}>{s.body}</div>
+            <div style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--ui-muted)', whiteSpace: 'pre-line' }}>{s.body}</div>
           </section>
         ))}
       </div>

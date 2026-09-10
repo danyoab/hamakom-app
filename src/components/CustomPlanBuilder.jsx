@@ -11,12 +11,12 @@ import { shareContent, sharePlanMessage } from '../lib/share.js'
 
 const PlanRouteMap = lazy(() => import('./PlanRouteMap'))
 
-const SURFACE = '#FFFFFF'
-const PANEL = '#FBF7EE'
-const BORDER = '#EBE2D0'
-const ACCENT = '#C9A84C'
-const TEXT = '#241E16'
-const MUTED = '#8A7F6C'
+const SURFACE = 'var(--ui-surface)'
+const PANEL = '#f5f5f7'
+const BORDER = 'var(--ui-border)'
+const ACCENT = 'var(--ui-accent)'
+const TEXT = 'var(--ui-text)'
+const MUTED = 'var(--ui-muted)'
 
 function normalizeCategory(category) {
   if (category === 'CafÃ©s & Restaurants') return 'Cafés & Restaurants'
@@ -144,10 +144,10 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
   }
 
   return (
-    <div dir={tx.dir} style={{ minHeight: '100vh', background: '#F7F2E8', color: TEXT, fontFamily: font }}>
+    <div dir={tx.dir} style={{ minHeight: '100vh', background: 'var(--ui-bg)', color: TEXT, fontFamily: font }}>
       <div
         style={{
-          background: 'linear-gradient(165deg,#F7F2E8 0%,#F1EAD9 100%)',
+          background: 'var(--ui-bg)',
           borderBottom: `1px solid ${BORDER}`,
           padding: 'calc(20px + var(--hm-sat, 0px)) 20px 18px',
         }}
@@ -160,27 +160,18 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
             {tx.back}
           </button>
           <div style={{ fontSize: 12, letterSpacing: '0.14em', color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>{tx.buildYourOwnPlanEyebrow}</div>
-          <h1 style={{ fontSize: 30, lineHeight: 1.08, margin: '0 0 8px' }}>{tx.buildYourOwnPlanTitle}</h1>
-          <p style={{ margin: 0, maxWidth: 720, color: '#6E6450', fontSize: 15, lineHeight: 1.6 }}>{tx.buildYourOwnPlanText}</p>
+          <h1 style={{ fontSize: 30, lineHeight: 1.08, margin: '0 0 8px' }}>{isHe ? 'דייט בדרך שלכם' : 'A date, your way'}</h1>
+          <p style={{ margin: 0, maxWidth: 720, color: 'var(--ui-muted)', fontSize: 15, lineHeight: 1.6 }}>{tx.buildYourOwnPlanText}</p>
         </div>
       </div>
 
       <div style={{ maxWidth: 940, margin: '0 auto', padding: '20px 20px 40px', display: 'grid', gap: 16 }}>
         <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
-          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepArea}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <button
-              onClick={() => { setSelectedCity(''); setFirstStop(null); setSecondStop(null) }}
-              style={!selectedCity ? selectedChipStyle : chipStyle}
-            >
-              {tx.buildPlanFlexibleCity}
-            </button>
-            {availableCities.map((city) => (
-              <button key={city} onClick={() => { setSelectedCity(city); setFirstStop(null); setSecondStop(null) }} style={selectedCity === city ? selectedChipStyle : chipStyle}>
-                {city}
-              </button>
-            ))}
-          </div>
+          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: 'var(--ui-muted)', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepArea}</div>
+          <select aria-label={isHe ? 'עיר' : 'City'} value={selectedCity} onChange={e => { setSelectedCity(e.target.value); setFirstStop(null); setSecondStop(null) }} style={inputStyle(tx.dir)}>
+            <option value="">{tx.buildPlanFlexibleCity}</option>
+            {availableCities.map(city => <option key={city} value={city}>{tx.cities?.[city] || city}</option>)}
+          </select>
         </section>
 
         <details style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
@@ -189,9 +180,10 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
         </details>
         <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))' }}>
           <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
-            <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepOne}</div>
+            <div style={{ fontSize: 11, letterSpacing: '0.14em', color: 'var(--ui-muted)', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepOne}</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{tx.buildPlanFirstStop}</div>
             <input
+              aria-label={isHe ? 'חיפוש מקום ראשון' : 'Search first stop'}
               value={firstSearch}
               onChange={(event) => setFirstSearch(event.target.value)}
               placeholder={tx.buildPlanSearchFirst}
@@ -222,7 +214,7 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
           </section>
 
           <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
-            <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepTwo}</div>
+            <div style={{ fontSize: 11, letterSpacing: '0.14em', color: 'var(--ui-muted)', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanStepTwo}</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>{tx.buildPlanSecondStop}</div>
 
             {!firstStop ? (
@@ -241,7 +233,8 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
                 </div>
 
                 <input
-                  value={secondSearch}
+                  aria-label={isHe ? 'חיפוש מקום נוסף' : 'Search next stop'}
+              value={secondSearch}
                   onChange={(event) => setSecondSearch(event.target.value)}
                   placeholder={builderMode === 'nearby' ? tx.buildPlanSearchNearby : tx.buildPlanSearchAnywhere}
                   style={inputStyle(tx.dir)}
@@ -274,16 +267,16 @@ export default function CustomPlanBuilder({ lang, font, tx, locations, onBack, o
         </div>
 
         <section style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 18 }}>
-          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanPreview}</div>
+          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: 'var(--ui-muted)', textTransform: 'uppercase', marginBottom: 10 }}>{tx.buildPlanPreview}</div>
           <div style={{ display: 'grid', gap: 12 }}>
             <PlanSummaryStop index={1} label={tx.buildPlanFirstStop} location={firstStop} lang={lang} />
             <PlanSummaryStop index={2} label={tx.buildPlanSecondStop} location={secondStop} lang={lang} />
           </div>
-          <p style={{ margin: '14px 0 0', color: '#6E6450', lineHeight: 1.6 }}>{summaryText || tx.buildPlanPreviewPrompt}</p>
+          <p style={{ margin: '14px 0 0', color: 'var(--ui-muted)', lineHeight: 1.6 }}>{summaryText || tx.buildPlanPreviewPrompt}</p>
 
           {firstStop ? (
             <div style={{ marginTop: 16, borderRadius: 12, overflow: 'hidden', height: 340, border: `1px solid ${BORDER}` }}>
-              <Suspense fallback={<div style={{ height: '100%', background: '#EDE7D9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>Loading map…</div>}>
+              <Suspense fallback={<div style={{ height: '100%', background: '#ededf0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 13 }}>Loading map…</div>}>
                 <PlanRouteMap stops={[firstStop, secondStop].filter(Boolean)} lang={lang} travelMode={builderMode === 'nearby' ? 'walking' : 'driving'} />
               </Suspense>
             </div>
@@ -387,7 +380,7 @@ function PlanSummaryStop({ index, label, location, lang }) {
           height: 30,
           borderRadius: 999,
           background: ACCENT,
-          color: '#F4ECD8',
+          color: '#ffffff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -398,7 +391,7 @@ function PlanSummaryStop({ index, label, location, lang }) {
         {index}
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 11, letterSpacing: '0.12em', color: '#A99A85', textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+        <div style={{ fontSize: 11, letterSpacing: '0.12em', color: 'var(--ui-muted)', textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
         {text ? (
           <>
             <div style={{ fontSize: 17, fontWeight: 600 }}>{text.name}</div>
@@ -426,8 +419,8 @@ const chipStyle = {
 }
 
 const selectedChipStyle = {
-  background: '#241E16',
-  color: '#F4ECD8',
+  background: 'var(--ui-text)',
+  color: '#ffffff',
   border: 'none',
   borderRadius: 999,
   padding: '10px 14px',
@@ -438,8 +431,8 @@ const selectedChipStyle = {
 }
 
 const primaryButtonStyle = {
-  background: '#241E16',
-  color: '#F4ECD8',
+  background: 'var(--ui-text)',
+  color: '#ffffff',
   border: 'none',
   borderRadius: 12,
   padding: '14px 16px',
@@ -468,8 +461,8 @@ const secondaryButtonStyle = {
 }
 
 const primaryMiniButtonStyle = {
-  background: '#241E16',
-  color: '#F4ECD8',
+  background: 'var(--ui-text)',
+  color: '#ffffff',
   border: 'none',
   borderRadius: 12,
   padding: '9px 12px',

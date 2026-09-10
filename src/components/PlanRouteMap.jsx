@@ -6,7 +6,7 @@ import { getPlanMapData, getPlanNavigationUrl } from '../lib/planMap.js'
 
 function stopIcon(number) {
   return L.divIcon({
-    html: `<div style="background:${number === 1 ? '#9A7A28' : '#241E16'};color:#fff;border:2px solid #fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 2px 8px #0005">${number}</div>`,
+    html: `<div style="background:${number === 1 ? 'var(--ui-accent)' : 'var(--ui-text)'};color:#fff;border:2px solid #fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 2px 8px #0005">${number}</div>`,
     className: '', iconSize: [32, 32], iconAnchor: [16, 16],
   })
 }
@@ -41,8 +41,8 @@ export default function PlanRouteMap({ stops = [], lang, planCity, travelMode = 
   return (
     <section aria-label={title} dir={he ? 'rtl' : 'ltr'} style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: '#fff' }}>
       <div style={{ padding: '12px 14px', borderBottom: '1px solid #EBE2D0' }}>
-        <h2 style={{ font: 'inherit', fontSize: 14, fontWeight: 700, margin: 0, color: '#241E16' }}>{title}</h2>
-        {!data.complete && <p style={{ fontSize: 12, lineHeight: 1.45, margin: '4px 0 0', color: '#6E6450' }}>
+        <h2 style={{ font: 'inherit', fontSize: 14, fontWeight: 700, margin: 0, color: 'var(--ui-text)' }}>{title}</h2>
+        {!data.complete && <p style={{ fontSize: 12, lineHeight: 1.45, margin: '4px 0 0', color: 'var(--ui-muted)' }}>
           {he ? 'מיקום מדויק חסר בחלק מהפרטים. פתחו במפות כדי לבדוק את המקום והכניסה.' : 'Exact pins are missing from our records. Open in Maps to check the venue and entrance.'}
         </p>}
       </div>
@@ -58,16 +58,16 @@ export default function PlanRouteMap({ stops = [], lang, planCity, travelMode = 
               <Popup><strong>{number}. {name}</strong><br /><a href={getPlanNavigationUrl([stop])} target="_blank" rel="noopener noreferrer" onClick={onOpenMaps}>{he ? 'פתיחה במפות' : 'Open in Maps'}</a></Popup>
             </Marker>
           })}
-          {data.route.length > 1 && <Polyline positions={data.route} pathOptions={{ color: '#9A7A28', weight: 3, dashArray: '8 6', opacity: 0.85 }} />}
+          {data.route.length > 1 && <Polyline positions={data.route} pathOptions={{ color: 'var(--ui-accent)', weight: 3, dashArray: '8 6', opacity: 0.85 }} />}
         </MapContainer>
-        {tileError && <div role="status" style={{ position: 'absolute', top: 8, left: 8, right: 8, zIndex: 1000, padding: 8, borderRadius: 8, background: '#fff', color: '#6E6450', fontSize: 12 }}>{he ? 'המפה לא נטענה במלואה. אפשר לפתוח במפות.' : 'Some map tiles could not load. You can still open in Maps.'}</div>}
+        {tileError && <div role="status" style={{ position: 'absolute', top: 8, left: 8, right: 8, zIndex: 1000, padding: 8, borderRadius: 8, background: '#fff', color: 'var(--ui-muted)', fontSize: 12 }}>{he ? 'המפה לא נטענה במלואה. אפשר לפתוח במפות.' : 'Some map tiles could not load. You can still open in Maps.'}</div>}
       </div>
       <div style={{ padding: '10px 14px', borderTop: '1px solid #EBE2D0', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        {data.distanceKm != null && <span style={{ fontSize: 11, color: '#6E6450' }}>{data.distanceKm.toFixed(1)} km · {he ? 'קו אווירי' : 'Straight line'}</span>}
-        {navUrl && <a href={navUrl} target="_blank" rel="noopener noreferrer" onClick={onOpenMaps} style={{ color: '#725A1E', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+        {data.distanceKm != null && <span style={{ fontSize: 11, color: 'var(--ui-muted)' }}>{data.distanceKm.toFixed(1)} km · {he ? 'קו אווירי' : 'Straight line'}</span>}
+        {navUrl && <a href={navUrl} target="_blank" rel="noopener noreferrer" onClick={onOpenMaps} style={{ color: 'var(--ui-accent)', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
           {he ? stops.length > 1 ? 'ניווט לכל המסלול ↗' : 'פתיחת המקום במפות ↗' : stops.length > 1 ? 'Navigate the full route ↗' : 'Open this place in Maps ↗'}
         </a>}
-        {data.route.length > 1 && <span style={{ fontSize: 11, color: '#6E6450' }}>{he ? travelMode === 'driving' ? 'ברכב' : 'ברגל' : travelMode === 'driving' ? 'Driving' : 'Walking'}</span>}
+        {data.route.length > 1 && <span style={{ fontSize: 11, color: 'var(--ui-muted)' }}>{he ? travelMode === 'driving' ? 'ברכב' : 'ברגל' : travelMode === 'driving' ? 'Driving' : 'Walking'}</span>}
       </div>
     </section>
   )

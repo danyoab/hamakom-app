@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { CATEGORY_EMOJI, DATE_STAGE_BADGE, getCategoryColor, getInviteUrl, getMapsUrl, getWhatsAppUrl } from '../lib/constants'
+import { CATEGORY_EMOJI, getCategoryColor, getMapsUrl } from '../lib/constants'
 import { shareContent, shareLocationMessage } from '../lib/share'
+import Icon from './Icon.jsx'
 import FeedbackModal from './FeedbackModal'
 import FeedbackStrip from './FeedbackStrip'
 import VenueFoodDetails from './VenueFoodDetails.jsx'
-import { hasVerifiedKashrut, safeExternalUrl } from '../lib/venuePreferences.js'
+import { hasVerifiedKashrut, isFoodVenue, safeExternalUrl } from '../lib/venuePreferences.js'
 
 export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true, dateFeedback, setDateFeedback, onMapOpen, onReserve, onPhone, onShare, onClaim, onClaimViewed }) {
   const [imgFailed, setImgFailed] = useState(false)
@@ -15,11 +16,14 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
   const stages = Array.isArray(loc.date_stage) ? loc.date_stage : [loc.date_stage]
   const color = getCategoryColor(loc.category)
   const mapsUrl = getMapsUrl(loc.maps_query)
-  const waUrl = getWhatsAppUrl(name, city, lang)
-  const inviteUrl = getInviteUrl(name, city, lang)
   const showImg = loc.image_url && !imgFailed
   const kashrut = getKashrutDisplay(loc, lang)
   const claimViewSent = useRef(false)
+  const heading = useRef(null)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+    heading.current?.focus({ preventScroll: true })
+  }, [loc.id])
 
   useEffect(() => {
     if (claimViewSent.current) return
@@ -33,8 +37,8 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
   }
 
   return (
-    <div dir={tx.dir} style={{ minHeight: '100vh', background: '#F7F2E8', color: '#241E16', fontFamily: font }}>
-      <div style={{ position: 'relative', height: 220, background: showImg ? '#000' : `${color}22`, overflow: 'hidden' }}>
+    <div className="ui-detail" dir={tx.dir} style={{ minHeight: '100vh', background: 'var(--ui-bg)', color: 'var(--ui-text)', fontFamily: font }}>
+      <div className="ui-detail-photo" style={{ position: 'relative', height: 220, background: showImg ? '#000' : `${color}22`, overflow: 'hidden' }}>
         {showImg ? (
           <img src={loc.image_url} alt={name} onError={() => setImgFailed(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
         ) : (
@@ -52,7 +56,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
             background: 'rgba(13,17,23,0.55)',
             border: '1px solid rgba(255,253,247,0.5)',
             borderRadius: 8,
-            color: '#F4ECD8',
+            color: '#ffffff',
             cursor: 'pointer',
             fontSize: 13,
             fontFamily: 'inherit',
@@ -64,21 +68,19 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         </button>
       </div>
 
-      <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 20px' }}>
+      <div className="ui-detail-content">
         <div style={{ marginBottom: 6, fontSize: 11, color, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
           {CATEGORY_EMOJI[loc.category]} {tx.categories[loc.category]}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-          <h2 style={{ fontFamily: "'Spectral','Frank Ruhl Libre',Georgia,serif", fontSize: 30, fontWeight: 600, margin: 0, lineHeight: 1.1 }}>{name}</h2>
+          <h1 ref={heading} tabIndex={-1} style={{ fontFamily: "var(--ui-font)", fontSize: 30, fontWeight: 600, margin: 0, lineHeight: 1.1 }}>{name}</h1>
           {showSave ? (
-            <button onClick={onToggleSave} aria-label={saved ? 'Remove from saved' : 'Save this place'} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 26, padding: 4, flexShrink: 0 }}>
-              {saved ? '♥' : '♡'}
-            </button>
+            <button className="ui-icon-button" onClick={onToggleSave} aria-pressed={saved} aria-label={lang === 'he' ? saved ? 'הסרה מהשמורים' : 'שמירת המקום' : saved ? 'Remove from saved' : 'Save this place'}><Icon name={saved ? 'check' : 'bookmark'} /></button>
           ) : null}
         </div>
-        <div style={{ fontSize: 15, color: '#9A7A28', marginTop: 4, fontStyle: 'italic' }}>{city}</div>
-        <p style={{ fontSize: 12, lineHeight: 1.5, color: '#6E6450' }}>{['CLOSED_TEMPORARILY', 'CLOSED_PERMANENTLY'].includes(loc.business_status)
+        <div style={{ fontSize: 15, color: 'var(--ui-accent)', marginTop: 4, fontStyle: 'normal' }}>{city}</div>
+        <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--ui-muted)' }}>{['CLOSED_TEMPORARILY', 'CLOSED_PERMANENTLY'].includes(loc.business_status)
           ? (lang === 'he' ? 'המקום מדווח כסגור. בחרו מקום אחר.' : 'This venue is reported closed. Choose another place.')
           : (lang === 'he' ? 'בדקו שעות פתיחה, זמינות וכשרות עם המקום לפני ההגעה.' : 'Confirm opening hours, availability and kashrut with the venue before going.')}</p>
         {loc.formatted_address && <div style={{ fontSize: 13, marginTop: 6 }}>{loc.formatted_address}</div>}
@@ -86,19 +88,19 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         {loc.opening_hours?.weekday_text?.length > 0 && <details style={{ marginTop: 14, fontSize: 13, lineHeight: 1.7 }}>
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{lang === 'he' ? 'שעות פתיחה שפורסמו' : 'Published opening hours'}</summary>
           {loc.opening_hours.weekday_text.map((line, i) => <div key={i}>{line}</div>)}
-          <div style={{ color: '#6E6450', fontSize: 12 }}>{lang === 'he' ? 'בחגים ובשבת ייתכנו שינויים. יש לאשר עם המקום.' : 'Holiday and Shabbat hours can vary. Confirm with the venue.'}</div>
+          <div style={{ color: 'var(--ui-muted)', fontSize: 12 }}>{lang === 'he' ? 'בחגים ובשבת ייתכנו שינויים. יש לאשר עם המקום.' : 'Holiday and Shabbat hours can vary. Confirm with the venue.'}</div>
         </details>}
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {loc.is_partner ? (
             <div style={{ marginTop: 8, display: 'inline-block', background: '#F6EEDA', border: '1px solid #D8C49A', borderRadius: 999, padding: '4px 12px' }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#9A7A28' }}>{tx.partnerBadge}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ui-accent)' }}>{tx.partnerBadge}</span>
             </div>
           ) : null}
           {kashrut ? (
             kashrut.status !== 'verified' ? (
               <div style={{ marginTop: 8, display: 'inline-block', background: '#F2EBDB', border: '1px solid #E6DCC8', borderRadius: 999, padding: '4px 12px' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#8A7F6C' }}>{kashrut.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ui-muted)' }}>{kashrut.label}</span>
               </div>
             ) : (
               <div style={{ marginTop: 8, display: 'inline-block', background: '#E9F0E4', border: '1px solid #C7DCBC', borderRadius: 999, padding: '4px 12px' }}>
@@ -108,172 +110,43 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
           ) : null}
         </div>
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-          {stages.map((stage) => (
-            <div key={stage} style={{ background: DATE_STAGE_BADGE[stage]?.bg, border: `1px solid ${DATE_STAGE_BADGE[stage]?.text}`, borderRadius: 8, padding: '5px 12px' }}>
-              <div style={{ fontSize: 12, color: DATE_STAGE_BADGE[stage]?.text, fontWeight: 600 }}>{tx.dateLabels[String(stage)]}</div>
-              <div style={{ fontSize: 10, color: DATE_STAGE_BADGE[stage]?.text, opacity: 0.75 }}>{tx.dateDesc[String(stage)]}</div>
-            </div>
-          ))}
-        </div>
+        <p className="ui-footnote">{stages.filter(stage => tx.dateLabels[String(stage)]).map(stage => tx.dateLabels[String(stage)]).join(' · ')}</p>
 
-        <div style={{ height: 1, background: '#EBE2D0', margin: '20px 0' }} />
+        <div style={{ height: 1, background: 'var(--ui-border)', margin: '20px 0' }} />
 
-        <p style={{ fontSize: 16, lineHeight: 1.7, color: '#6E6450', fontStyle: 'italic' }}>{desc}</p>
+        <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--ui-muted)', fontStyle: 'normal' }}>{desc}</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 20 }}>
           <InfoBox label={tx.priceRange} value={tx.priceLabels[loc.price]} />
           <InfoBox label={tx.location} value={city} />
         </div>
 
-        <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
-          {safeExternalUrl(loc.reservation_url) ? (
-            <a
-              href={safeExternalUrl(loc.reservation_url)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => onReserve?.(loc)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: '#9A7A28',
-                border: '1px solid #9A7A28',
-                borderRadius: 10,
-                padding: '13px 16px',
-                textDecoration: 'none',
-                color: '#F7F2E8',
-                fontSize: 14,
-                fontWeight: 700,
-                fontFamily: font,
-              }}
-            >
-              <span>🗓 {tx.reserveButton}</span>
-              <span style={{ fontSize: 18 }}>→</span>
-            </a>
-          ) : null}
-          {mapsUrl ? (
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => onMapOpen?.(loc)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: '#FFFFFF',
-                border: '1px solid #EBE2D0',
-                borderRadius: 10,
-                padding: '13px 16px',
-                textDecoration: 'none',
-                color: '#9A7A28',
-                fontSize: 14,
-                fontFamily: font,
-              }}
-            >
-              <span>📍 {name}</span>
-              <span style={{ fontSize: 12, opacity: 0.8 }}>{tx.openMaps}</span>
-            </a>
-          ) : null}
-          {loc.phone ? (
-            <a
-              href={`tel:${String(loc.phone).replace(/[^+\d]/g, '')}`}
-              onClick={() => onPhone?.(loc)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#FFFFFF',
-                border: '1px solid #EBE2D0', borderRadius: 10, padding: '13px 16px', textDecoration: 'none',
-                color: '#9A7A28', fontSize: 14, fontFamily: font,
-              }}
-            >
-              <span>☎ {lang === 'he' ? 'התקשרו למקום' : 'Call the venue'}</span>
-              <span style={{ fontSize: 12, opacity: 0.8 }}>{loc.phone}</span>
-            </a>
-          ) : null}
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: '#E9F0E4',
-              border: '1px solid #C7DCBC',
-              borderRadius: 10,
-              padding: '13px 16px',
-              textDecoration: 'none',
-              color: '#2F6B3F',
-              fontSize: 14,
-              fontFamily: font,
-            }}
-          >
-            <span>💬 {tx.whatsapp}</span>
-            <span style={{ fontSize: 18 }}>→</span>
-          </a>
-          <a
-            href={inviteUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: '#F3EDFA',
-              border: '1px solid #E0D0F0',
-              borderRadius: 10,
-              padding: '13px 16px',
-              textDecoration: 'none',
-              color: '#7A4F9A',
-              fontSize: 14,
-              fontFamily: font,
-            }}
-          >
-            <span>💌 {tx.inviteToDate}</span>
-            <span style={{ fontSize: 18 }}>→</span>
-          </a>
-          <button
-            type="button"
-            onClick={handleShare}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-              background: '#FBF7EE',
-              border: '1px solid #EBE2D0',
-              borderRadius: 10,
-              padding: '13px 16px',
-              color: '#9A7A28',
-              fontSize: 14,
-              fontFamily: font,
-              cursor: 'pointer',
-            }}
-          >
-            <span>↗ {lang === 'he' ? 'שתף מקום' : 'Share place'}</span>
-            <span style={{ fontSize: 18 }}>→</span>
-          </button>
+        <div className="ui-detail-actions">
+          {mapsUrl && <a className="ui-button ui-button-primary" href={mapsUrl} target="_blank" rel="noopener noreferrer" onClick={() => onMapOpen?.(loc)}><Icon name="pin" size={18} />{tx.openMaps}</a>}
+          <button className="ui-button ui-button-secondary" onClick={handleShare}><Icon name="share" size={18} />{lang === 'he' ? 'שיתוף' : 'Share'}</button>
+          {safeExternalUrl(loc.reservation_url) && <a className="ui-text-button" href={safeExternalUrl(loc.reservation_url)} target="_blank" rel="noopener noreferrer" onClick={() => onReserve?.(loc)}>{tx.reserveButton}<Icon name="arrow" size={16} /></a>}
+          {loc.phone && <a className="ui-text-button" href={`tel:${String(loc.phone).replace(/[^+\d]/g, '')}`} onClick={() => onPhone?.(loc)}>{lang === 'he' ? 'התקשרו למקום' : 'Call the venue'}</a>}
         </div>
 
         <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.15em', color: '#A99A85', marginBottom: 8, textTransform: 'uppercase' }}>{tx.goodFor}</div>
+          <div style={{ fontSize: 10, letterSpacing: '0.15em', color: 'var(--ui-muted)', marginBottom: 8, textTransform: 'uppercase' }}>{tx.goodFor}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {loc.occasion?.map((tag) => (
-              <span key={tag} style={{ background: '#F2EBDB', border: '1px solid #E6DCC8', borderRadius: 16, padding: '4px 12px', fontSize: 12, color: '#8A7F6C' }}>
+              <span key={tag} style={{ background: '#F2EBDB', border: '1px solid #E6DCC8', borderRadius: 16, padding: '4px 12px', fontSize: 12, color: 'var(--ui-muted)' }}>
                 {tx.occasions[tag] || tag}
               </span>
             ))}
           </div>
         </div>
 
-        <div style={{ marginTop: 24, background: '#FFFFFF', borderRadius: 10, padding: 18, border: '1px solid #EBE2D0' }}>
-          <div style={{ fontSize: 11, color: '#9A7A28', letterSpacing: '0.1em', marginBottom: 6, textTransform: 'uppercase' }}>{tx.importantNote}</div>
-          <p style={{ fontSize: 13, color: '#8A7F6C', margin: 0, lineHeight: 1.6 }}>{tx.kashrusNote}</p>
-          {kashrut?.meta ? <p style={{ fontSize: 11.5, color: '#A99A85', margin: '8px 0 0', lineHeight: 1.5 }}>{kashrut.meta}</p> : null}
-        </div>
+        {isFoodVenue(loc) && <div style={{ marginTop: 24, background: 'var(--ui-surface)', borderRadius: 10, padding: 18, border: '1px solid #EBE2D0' }}>
+          <div style={{ fontSize: 11, color: 'var(--ui-accent)', letterSpacing: '0.1em', marginBottom: 6, textTransform: 'uppercase' }}>{tx.importantNote}</div>
+          <p style={{ fontSize: 13, color: 'var(--ui-muted)', margin: 0, lineHeight: 1.6 }}>{tx.kashrusNote}</p>
+          {kashrut?.meta ? <p style={{ fontSize: 11.5, color: 'var(--ui-muted)', margin: '8px 0 0', lineHeight: 1.5 }}>{kashrut.meta}</p> : null}
+        </div>}
 
-        <aside style={{ marginTop: 18, padding: '16px 18px', borderRadius: 14, background: '#FBF7EE', border: '1px solid #E6D8B8' }}>
-          <div style={{ fontSize: 13.5, fontWeight: 800, color: '#241E16', marginBottom: 4 }}>
+        <aside style={{ marginTop: 18, padding: '16px 18px', borderRadius: 14, background: '#f5f5f7', border: '1px solid #E6D8B8' }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--ui-text)', marginBottom: 4 }}>
             {lang === 'he' ? 'זה העסק שלכם?' : 'Own or manage this venue?'}
           </div>
           <p style={{ margin: '0 0 10px', fontSize: 12.5, color: '#7E7361', lineHeight: 1.5 }}>
@@ -284,14 +157,14 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
           <button
             type="button"
             onClick={() => onClaim?.(loc)}
-            style={{ background: 'none', border: 'none', padding: 0, color: '#9A7A28', fontFamily: font, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}
+            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--ui-accent)', fontFamily: font, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}
           >
             {lang === 'he' ? 'תבעו או עדכנו את הרישום ←' : 'Claim or update this listing →'}
           </button>
         </aside>
 
         {setDateFeedback ? (
-          <FeedbackStrip lang={lang} font={font} loc={loc} dateFeedback={dateFeedback} setDateFeedback={setDateFeedback} />
+          <details className="ui-more-options"><summary>{lang === 'he' ? 'כבר ביקרתם? איך היה?' : 'Been here? How was it?'}</summary><FeedbackStrip lang={lang} font={font} loc={loc} dateFeedback={dateFeedback} setDateFeedback={setDateFeedback} /></details>
         ) : null}
 
         <button
@@ -343,9 +216,9 @@ function getKashrutDisplay(loc, lang) {
 
 function InfoBox({ label, value }) {
   return (
-    <div style={{ background: '#FFFFFF', border: '1px solid #EBE2D0', borderRadius: 8, padding: '11px 14px' }}>
-      <div style={{ fontSize: 9, letterSpacing: '0.15em', color: '#A99A85', marginBottom: 3, textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ fontSize: 14, color: '#241E16' }}>{value}</div>
+    <div style={{ background: 'var(--ui-surface)', border: '1px solid #EBE2D0', borderRadius: 8, padding: '11px 14px' }}>
+      <div style={{ fontSize: 9, letterSpacing: '0.15em', color: 'var(--ui-muted)', marginBottom: 3, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontSize: 14, color: 'var(--ui-text)' }}>{value}</div>
     </div>
   )
 }

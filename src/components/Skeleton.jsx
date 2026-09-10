@@ -16,7 +16,7 @@ export function SkeletonCard() {
   return (
     <div
       style={{
-        background: '#FFFFFF',
+        background: 'var(--ui-surface)',
         border: '1px solid #EBE2D0',
         borderRadius: 14,
         overflow: 'hidden',

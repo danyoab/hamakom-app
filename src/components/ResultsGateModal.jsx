@@ -120,29 +120,29 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
       <div
         style={{
           width: 'min(100%, 520px)',
-          background: '#FFFFFF',
+          background: 'var(--ui-surface)',
           border: '1px solid #EBE2D0',
           borderBottom: 'none',
           borderRadius: '24px 24px 0 0',
           padding: '14px 22px calc(34px + var(--hm-sab, 0px))',
           boxSizing: 'border-box',
-          color: '#241E16',
+          color: 'var(--ui-text)',
         }}
       >
-        <div style={{ width: 36, height: 4, background: '#EBE2D0', borderRadius: 999, margin: '0 auto 18px' }} />
+        <div style={{ width: 36, height: 4, background: 'var(--ui-border)', borderRadius: 999, margin: '0 auto 18px' }} />
 
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 30, marginBottom: 8, color: '#9A7A28' }}>◍</div>
-          <div style={{ fontSize: 12, letterSpacing: '0.16em', color: '#9A7A28', textTransform: 'uppercase', marginBottom: 8 }}>{copy.eyebrow}</div>
-          <h2 style={{ fontSize: 24, lineHeight: 1.15, margin: '0 0 8px', color: '#241E16' }}>{copy.title}</h2>
-          <p style={{ margin: 0, color: '#6E6450', fontSize: 15, lineHeight: 1.6 }}>{copy.body}</p>
+          <div style={{ fontSize: 30, marginBottom: 8, color: 'var(--ui-accent)' }}>◍</div>
+          <div style={{ fontSize: 12, letterSpacing: '0.16em', color: 'var(--ui-accent)', textTransform: 'uppercase', marginBottom: 8 }}>{copy.eyebrow}</div>
+          <h2 style={{ fontSize: 24, lineHeight: 1.15, margin: '0 0 8px', color: 'var(--ui-text)' }}>{copy.title}</h2>
+          <p style={{ margin: 0, color: 'var(--ui-muted)', fontSize: 15, lineHeight: 1.6 }}>{copy.body}</p>
         </div>
 
         {previewTitle ? (
-          <div style={{ background: '#FBF7EE', border: '1px solid #EBE2D0', borderRadius: 16, padding: 14, marginBottom: 18 }}>
-            <div style={{ fontSize: 11, letterSpacing: '0.12em', color: '#9A7A28', textTransform: 'uppercase', marginBottom: 6 }}>{copy.previewLabel}</div>
-            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: '#241E16' }}>{previewTitle}</div>
-            {previewSubtitle ? <div style={{ fontSize: 13, color: '#8A7F6C' }}>{previewSubtitle}</div> : null}
+          <div style={{ background: '#f5f5f7', border: '1px solid #EBE2D0', borderRadius: 16, padding: 14, marginBottom: 18 }}>
+            <div style={{ fontSize: 11, letterSpacing: '0.12em', color: 'var(--ui-accent)', textTransform: 'uppercase', marginBottom: 6 }}>{copy.previewLabel}</div>
+            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: 'var(--ui-text)' }}>{previewTitle}</div>
+            {previewSubtitle ? <div style={{ fontSize: 13, color: 'var(--ui-muted)' }}>{previewSubtitle}</div> : null}
           </div>
         ) : null}
 
@@ -153,8 +153,8 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
                 <button
                   onClick={handleGoogle}
                   style={{
-                    background: '#241E16',
-                    color: '#F4ECD8',
+                    background: 'var(--ui-text)',
+                    color: '#ffffff',
                     border: 'none',
                     borderRadius: 12,
                     padding: '14px 18px',
@@ -170,8 +170,8 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
                 <button
                   onClick={() => setMode('email')}
                   style={{
-                    background: '#FBF7EE',
-                    color: '#241E16',
+                    background: '#f5f5f7',
+                    color: 'var(--ui-text)',
                     border: '1px solid #EBE2D0',
                     borderRadius: 12,
                     padding: '14px 18px',
@@ -186,7 +186,7 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
 
                 <button
                   onClick={onClose}
-                  style={{ background: 'none', border: 'none', color: '#8A7F6C', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', paddingTop: 4 }}
+                  style={{ background: 'none', border: 'none', color: 'var(--ui-muted)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', paddingTop: 4 }}
                 >
                   {isHe ? 'לא עכשיו' : 'Not now'}
                 </button>
@@ -199,7 +199,7 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
                     setMode('choose')
                     setError('')
                   }}
-                  style={{ background: 'none', border: 'none', color: '#8A7F6C', fontSize: 13, cursor: 'pointer', textAlign: isHe ? 'right' : 'left', fontFamily: 'inherit', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: 'var(--ui-muted)', fontSize: 13, cursor: 'pointer', textAlign: isHe ? 'right' : 'left', fontFamily: 'inherit', padding: 0 }}
                 >
                   {isHe ? 'חזרה' : 'Back'}
                 </button>
@@ -212,11 +212,11 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
                   required
                   dir="ltr"
                   style={{
-                    background: '#FBF7EE',
+                    background: '#f5f5f7',
                     border: '1px solid #EBE2D0',
                     borderRadius: 12,
                     padding: '14px 16px',
-                    color: '#241E16',
+                    color: 'var(--ui-text)',
                     fontSize: 15,
                     fontFamily: 'inherit',
                     outline: 'none',
@@ -227,8 +227,8 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
                   type="submit"
                   disabled={loading}
                   style={{
-                    background: loading ? '#E6DCC8' : '#241E16',
-                    color: '#F4ECD8',
+                    background: loading ? 'var(--ui-border)' : 'var(--ui-text)',
+                    color: '#ffffff',
                     border: 'none',
                     borderRadius: 12,
                     padding: '14px 18px',
@@ -247,9 +247,9 @@ export default function ResultsGateModal({ lang, font, plan, itemType = 'plan', 
           </>
         ) : (
           <div style={{ textAlign: 'center', paddingTop: 6 }}>
-            <div style={{ fontSize: 38, marginBottom: 10, color: '#9A7A28' }}>✉</div>
-            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6, color: '#241E16' }}>{isHe ? 'בדקו את תיבת המייל' : 'Check your inbox'}</div>
-            <div style={{ fontSize: 14, color: '#6E6450', lineHeight: 1.5 }}>{isHe ? `שלחנו קישור ל-${email}` : `We sent a link to ${email}`}</div>
+            <div style={{ fontSize: 38, marginBottom: 10, color: 'var(--ui-accent)' }}>✉</div>
+            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6, color: 'var(--ui-text)' }}>{isHe ? 'בדקו את תיבת המייל' : 'Check your inbox'}</div>
+            <div style={{ fontSize: 14, color: 'var(--ui-muted)', lineHeight: 1.5 }}>{isHe ? `שלחנו קישור ל-${email}` : `We sent a link to ${email}`}</div>
           </div>
         )}
       </div>

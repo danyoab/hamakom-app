@@ -119,34 +119,34 @@ export default function BusinessesPage({ tx, font, onBack, source = 'direct_url'
   }
 
   if (status === 'success') return (
-    <div dir={dir} style={{ minHeight: '100vh', background: '#F7F2E8', color: '#241E16', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, textAlign: 'center' }}>
+    <div dir={dir} style={{ minHeight: '100vh', background: 'var(--ui-bg)', color: 'var(--ui-text)', fontFamily: font, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, textAlign: 'center' }}>
       <div style={{ fontSize: 56, marginBottom: 20 }}>🤝</div>
       <h2 style={{ fontSize: 26, fontWeight: 400, margin: '0 0 12px' }}>{tx.bizSuccess}</h2>
-      <p style={{ color: '#8A7F6C', fontSize: 15, marginBottom: 40 }}>{tx.bizSuccessSub}</p>
-      <button onClick={onBack} style={{ background: '#C9A84C', color: '#F7F2E8', border: 'none', borderRadius: 8, padding: '11px 20px', cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>
+      <p style={{ color: 'var(--ui-muted)', fontSize: 15, marginBottom: 40 }}>{tx.bizSuccessSub}</p>
+      <button onClick={onBack} style={{ background: 'var(--ui-accent)', color: 'var(--ui-bg)', border: 'none', borderRadius: 8, padding: '11px 20px', cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>
         {tx.back}
       </button>
     </div>
   )
 
   return (
-    <div dir={dir} style={{ minHeight: '100vh', background: '#F7F2E8', color: '#241E16', fontFamily: font }}>
-      <div style={{ background: '#FFFFFF', borderBottom: '1px solid #EBE2D0', padding: 'calc(16px + var(--hm-sat, 0px)) 20px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#C9A84C', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}>{tx.back}</button>
+    <div dir={dir} style={{ minHeight: '100vh', background: 'var(--ui-bg)', color: 'var(--ui-text)', fontFamily: font }}>
+      <div style={{ background: 'var(--ui-surface)', borderBottom: '1px solid #EBE2D0', padding: 'calc(16px + var(--hm-sat, 0px)) 20px 16px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--ui-accent)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', padding: 0 }}>{tx.back}</button>
         <span style={{ fontSize: 15, fontWeight: 500 }}>{tx.forBusinesses}</span>
       </div>
 
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '28px 20px 48px' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: '#C9A84C', textTransform: 'uppercase', marginBottom: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: 'var(--ui-accent)', textTransform: 'uppercase', marginBottom: 10 }}>
           {tx.bizHeroEyebrow}
         </div>
-        <h1 style={{ fontFamily: "'Spectral','Frank Ruhl Libre',Georgia,serif", fontSize: 'clamp(26px, 6vw, 34px)', fontWeight: 600, margin: '0 0 12px', lineHeight: 1.15 }}>
+        <h1 style={{ fontFamily: "var(--ui-font)", fontSize: 'clamp(26px, 6vw, 34px)', fontWeight: 600, margin: '0 0 12px', lineHeight: 1.15 }}>
           {tx.bizHeroTitle}
         </h1>
-        <p style={{ color: '#6E6450', fontSize: 15, lineHeight: 1.65, margin: '0 0 24px' }}>{tx.bizHeroText}</p>
+        <p style={{ color: 'var(--ui-muted)', fontSize: 15, lineHeight: 1.65, margin: '0 0 24px' }}>{tx.bizHeroText}</p>
 
-        <div style={{ background: '#241E16', color: '#F7F2E8', borderRadius: 14, padding: '17px 18px', marginBottom: 20, border: '1px solid #4A3D29' }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#E0BE58', marginBottom: 6 }}>
+        <div style={{ background: 'var(--ui-text)', color: 'var(--ui-bg)', borderRadius: 14, padding: '17px 18px', marginBottom: 20, border: '1px solid #4A3D29' }}>
+          <div style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d4e7ff', marginBottom: 6 }}>
             {isHe ? 'פיילוט שותפים מייסדים' : 'Founding partner pilot'}
           </div>
           <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>
@@ -162,7 +162,7 @@ export default function BusinessesPage({ tx, font, onBack, source = 'direct_url'
           <button
             type="button"
             onClick={() => { onEvent?.('business_offer_clicked'); document.getElementById('partner-form')?.scrollIntoView({ behavior: 'smooth' }) }}
-            style={{ background: '#C9A84C', color: '#241E16', border: 'none', borderRadius: 8, padding: '9px 13px', fontFamily: 'inherit', fontWeight: 800, cursor: 'pointer' }}
+            style={{ background: 'var(--ui-accent)', color: 'var(--ui-text)', border: 'none', borderRadius: 8, padding: '9px 13px', fontFamily: 'inherit', fontWeight: 800, cursor: 'pointer' }}
           >
             {isHe ? 'הגישו מועמדות לפיילוט ←' : 'Apply for the pilot →'}
           </button>
@@ -174,18 +174,18 @@ export default function BusinessesPage({ tx, font, onBack, source = 'direct_url'
             [tx.bizBenefit2Title, tx.bizBenefit2Text, '✦'],
             [tx.bizBenefit3Title, tx.bizBenefit3Text, '📊'],
           ].map(([title, text, icon]) => (
-            <div key={title} style={{ background: '#FFFFFF', border: '1px solid #EBE2D0', borderRadius: 12, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <span style={{ fontSize: 20, color: '#C9A84C', lineHeight: 1.2 }}>{icon}</span>
+            <div key={title} style={{ background: 'var(--ui-surface)', border: '1px solid #EBE2D0', borderRadius: 12, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <span style={{ fontSize: 20, color: 'var(--ui-accent)', lineHeight: 1.2 }}>{icon}</span>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>{title}</div>
-                <div style={{ fontSize: 13, color: '#8A7F6C', lineHeight: 1.5 }}>{text}</div>
+                <div style={{ fontSize: 13, color: 'var(--ui-muted)', lineHeight: 1.5 }}>{text}</div>
               </div>
             </div>
           ))}
         </div>
 
-        <div style={{ background: '#FBF7EE', border: '1px solid #EDE5D4', borderRadius: 12, padding: '12px 16px', marginBottom: 28 }}>
-          <p style={{ margin: 0, fontSize: 12.5, color: '#8A7F6C', lineHeight: 1.55 }}>{tx.bizIntegrityNote}</p>
+        <div style={{ background: '#f5f5f7', border: '1px solid #e5e5e9', borderRadius: 12, padding: '12px 16px', marginBottom: 28 }}>
+          <p style={{ margin: 0, fontSize: 12.5, color: 'var(--ui-muted)', lineHeight: 1.55 }}>{tx.bizIntegrityNote}</p>
         </div>
 
         <h2 id="partner-form" style={{ fontSize: 18, fontWeight: 700, margin: '0 0 16px', scrollMarginTop: 24 }}>
@@ -240,7 +240,7 @@ export default function BusinessesPage({ tx, font, onBack, source = 'direct_url'
             {status === 'error' ? (
               <>
                 {' '}{tx.bizEmailUs}
-                <a href={mailtoHref} style={{ color: '#9A7A28' }}>{PARTNER_EMAIL}</a>
+                <a href={mailtoHref} style={{ color: 'var(--ui-accent)' }}>{PARTNER_EMAIL}</a>
               </>
             ) : null}
           </div>
@@ -249,7 +249,7 @@ export default function BusinessesPage({ tx, font, onBack, source = 'direct_url'
         <button
           onClick={handleSubmit}
           disabled={status === 'submitting'}
-          style={{ background: '#C9A84C', color: '#F7F2E8', border: 'none', borderRadius: 8, padding: '13px 20px', cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', width: '100%', opacity: status === 'submitting' ? 0.7 : 1 }}
+          style={{ background: 'var(--ui-accent)', color: 'var(--ui-bg)', border: 'none', borderRadius: 8, padding: '13px 20px', cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', width: '100%', opacity: status === 'submitting' ? 0.7 : 1 }}
         >
           {status === 'submitting' ? tx.bizSubmitting : tx.bizSubmit}
         </button>
@@ -262,7 +262,7 @@ function Field({ label, required, error, children, style }) {
   return (
     <div style={style}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <label style={{ fontSize: 11, letterSpacing: '0.1em', color: error ? '#F87171' : '#A99A85', textTransform: 'uppercase' }}>
+        <label style={{ fontSize: 11, letterSpacing: '0.1em', color: error ? '#F87171' : 'var(--ui-muted)', textTransform: 'uppercase' }}>
           {label}{required && <span style={{ color: '#F87171' }}> *</span>}
         </label>
       </div>
@@ -279,13 +279,13 @@ function Input({ value, onChange, placeholder, dir, hasError, type = 'text' }) {
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      style={{ ...inputStyle, width: '100%', textAlign: dir === 'rtl' ? 'right' : 'left', direction: dir, borderColor: hasError ? '#F87171' : '#EBE2D0' }}
+      style={{ ...inputStyle, width: '100%', textAlign: dir === 'rtl' ? 'right' : 'left', direction: dir, borderColor: hasError ? '#F87171' : 'var(--ui-border)' }}
     />
   )
 }
 
 const inputStyle = {
-  background: '#FFFFFF', border: '1px solid #EBE2D0', borderRadius: 8,
-  padding: '10px 12px', color: '#241E16', fontSize: 13,
+  background: 'var(--ui-surface)', border: '1px solid #EBE2D0', borderRadius: 8,
+  padding: '10px 12px', color: 'var(--ui-text)', fontSize: 13,
   fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
 }

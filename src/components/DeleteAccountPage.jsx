@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const APP_BG = '#F7F2E8'
-const APP_PANEL = '#FFFFFF'
-const APP_BORDER = '#EBE2D0'
-const APP_TEXT = '#241E16'
-const APP_ACCENT = '#C9A84C'
-const APP_MUTED = '#A99A85'
+const APP_BG = 'var(--ui-bg)'
+const APP_PANEL = 'var(--ui-surface)'
+const APP_BORDER = 'var(--ui-border)'
+const APP_TEXT = 'var(--ui-text)'
+const APP_ACCENT = 'var(--ui-accent)'
+const APP_MUTED = 'var(--ui-muted)'
 
 const SUPPORT_EMAIL = 'privacy@hamakom.app'
 
@@ -198,7 +198,7 @@ export default function DeleteAccountPage({ lang, font, onBack }) {
         <h1 style={{ fontSize: 28, fontWeight: 400, margin: '0 0 6px' }}>{c.heading}</h1>
         <p style={{ color: APP_MUTED, fontSize: 13, margin: '0 0 24px' }}>{c.lastUpdated}</p>
 
-        <p style={{ color: '#6E6450', fontSize: 15, lineHeight: 1.7, margin: '0 0 28px' }}>{c.intro}</p>
+        <p style={{ color: 'var(--ui-muted)', fontSize: 15, lineHeight: 1.7, margin: '0 0 28px' }}>{c.intro}</p>
 
         {done ? (
           <section
@@ -217,7 +217,7 @@ export default function DeleteAccountPage({ lang, font, onBack }) {
 
         <section style={{ marginBottom: 28 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: APP_ACCENT, margin: '0 0 10px' }}>{c.whatSectionTitle}</h2>
-          <ul style={{ margin: 0, paddingInlineStart: 20, color: '#6E6450', fontSize: 14, lineHeight: 1.8 }}>
+          <ul style={{ margin: 0, paddingInlineStart: 20, color: 'var(--ui-muted)', fontSize: 14, lineHeight: 1.8 }}>
             {c.whatItems.map((item) => (
               <li key={item}>{item}</li>
             ))}
@@ -227,14 +227,14 @@ export default function DeleteAccountPage({ lang, font, onBack }) {
 
         <section style={{ marginBottom: 28 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: APP_ACCENT, margin: '0 0 10px' }}>{c.retentionTitle}</h2>
-          <p style={{ margin: 0, color: '#6E6450', fontSize: 14, lineHeight: 1.7 }}>{c.retentionBody}</p>
+          <p style={{ margin: 0, color: 'var(--ui-muted)', fontSize: 14, lineHeight: 1.7 }}>{c.retentionBody}</p>
         </section>
 
         {!checking && authUser ? (
           <section style={{ background: APP_PANEL, border: `1px solid ${APP_BORDER}`, borderRadius: 14, padding: 18, marginBottom: 24 }}>
             <div style={{ fontSize: 13, color: APP_MUTED, marginBottom: 4 }}>{c.signedInHeading}</div>
             <div style={{ fontSize: 15, fontWeight: 600, color: APP_TEXT, marginBottom: 12, wordBreak: 'break-all' }}>{authUser.email || authUser.id}</div>
-            <p style={{ fontSize: 13, color: '#6E6450', margin: '0 0 14px', lineHeight: 1.6 }}>{c.signedInHelp}</p>
+            <p style={{ fontSize: 13, color: 'var(--ui-muted)', margin: '0 0 14px', lineHeight: 1.6 }}>{c.signedInHelp}</p>
             <button
               type="button"
               onClick={handleDelete}
@@ -242,7 +242,7 @@ export default function DeleteAccountPage({ lang, font, onBack }) {
               style={{
                 width: '100%',
                 background: done ? '#9DB88C' : '#B84A3A',
-                color: '#FFFFFF',
+                color: 'var(--ui-surface)',
                 border: 'none',
                 borderRadius: 10,
                 padding: '13px 16px',
@@ -265,11 +265,11 @@ export default function DeleteAccountPage({ lang, font, onBack }) {
           </section>
         ) : null}
 
-        <section style={{ background: '#FBF7EE', border: `1px solid ${APP_BORDER}`, borderRadius: 14, padding: 18, marginBottom: 24 }}>
+        <section style={{ background: '#f5f5f7', border: `1px solid ${APP_BORDER}`, borderRadius: 14, padding: 18, marginBottom: 24 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: APP_ACCENT, margin: '0 0 10px' }}>{c.signedOutHeading}</h2>
-          <p style={{ fontSize: 14, color: '#6E6450', lineHeight: 1.7, margin: '0 0 8px' }}>{c.signedOutBody}</p>
-          <p style={{ fontSize: 14, color: '#6E6450', lineHeight: 1.7, margin: '0 0 4px' }}>{c.optionSignIn}</p>
-          <p style={{ fontSize: 14, color: '#6E6450', lineHeight: 1.7, margin: '0 0 14px' }}>
+          <p style={{ fontSize: 14, color: 'var(--ui-muted)', lineHeight: 1.7, margin: '0 0 8px' }}>{c.signedOutBody}</p>
+          <p style={{ fontSize: 14, color: 'var(--ui-muted)', lineHeight: 1.7, margin: '0 0 4px' }}>{c.optionSignIn}</p>
+          <p style={{ fontSize: 14, color: 'var(--ui-muted)', lineHeight: 1.7, margin: '0 0 14px' }}>
             {c.optionEmail}
             <a href={mailtoHref} style={{ color: APP_ACCENT, fontWeight: 700 }}>{SUPPORT_EMAIL}</a>
             {c.optionEmailSuffix}
@@ -294,7 +294,7 @@ export default function DeleteAccountPage({ lang, font, onBack }) {
 
         <section>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: APP_ACCENT, margin: '0 0 8px' }}>{c.contactTitle}</h2>
-          <p style={{ margin: 0, color: '#6E6450', fontSize: 14, lineHeight: 1.7 }}>
+          <p style={{ margin: 0, color: 'var(--ui-muted)', fontSize: 14, lineHeight: 1.7 }}>
             {c.contactBody}
             <a href={`mailto:${SUPPORT_EMAIL}`} style={{ color: APP_ACCENT, fontWeight: 700 }}>{SUPPORT_EMAIL}</a>
           </p>

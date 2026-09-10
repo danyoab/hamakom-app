@@ -117,7 +117,7 @@ export default function PlanCoverageMatrix({ datePlans = [] }) {
         <button
           onClick={run}
           disabled={loading || running || !locations.length}
-          style={{ background: '#C9A84C', color: '#0D1117', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: running ? 'wait' : 'pointer', fontFamily: 'inherit' }}
+          style={{ background: 'var(--ui-accent)', color: '#0D1117', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: running ? 'wait' : 'pointer', fontFamily: 'inherit' }}
         >
           {running ? 'Running…' : loading ? 'Loading…' : results ? 'Re-run' : 'Run coverage'}
         </button>

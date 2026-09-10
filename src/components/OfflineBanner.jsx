@@ -27,7 +27,7 @@ export default function OfflineBanner({ lang }) {
         right: 12,
         zIndex: 9999,
         background: '#3D3528',
-        color: '#F4ECD8',
+        color: '#ffffff',
         borderRadius: 12,
         padding: '10px 14px',
         fontSize: 13,

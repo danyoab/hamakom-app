@@ -1,3 +1,4 @@
+import { foodService } from './venuePreferences.js'
 // Plan safety gates — the hard rules from DATE_PLANNING_RULES.md (Priority 1).
 //
 // Pure and deterministic. No DOM / no network. These are HARD gates: a venue or
@@ -119,7 +120,7 @@ const BAR_RE = /\bbar\b|wine|winery|yayin|lounge|\bpub\b|speakeasy|cocktail|brew
 export function foodClassOf(loc) {
   const cat = loc?.category || ''
   const name = `${loc?.name || ''} ${loc?.name_he || ''}`
-  const isFoodCat = /caf|restaurant|winer|hotel|lounge/i.test(cat)
+  const isFoodCat = loc?.food_type === 'restaurant' || /caf|restaurant|winer|hotel|lounge/i.test(cat)
   if (!isFoodCat) {
     return { is_food: false, food_type: 'none', meal_weight: 'none', can_be_meal_anchor: false, can_follow_dinner: false }
   }
@@ -150,6 +151,9 @@ export function isHeavyMeal(loc) {
 //   - two adjacent food stops where the second is not a legitimate light follow-on
 //     (blocks restaurant→restaurant, café→restaurant; allows dinner→dessert, etc.)
 export function violatesFoodPairing(selectedStops, candidate, prevStop) {
+  const service = foodService(candidate)
+  // A short date must not mix meat and dairy, even with a walk between them.
+  if (['meat', 'dairy'].includes(service) && selectedStops.some(s => foodService(s) === (service === 'meat' ? 'dairy' : 'meat'))) return true
   const cand = foodClassOf(candidate)
   const heavyCount = (selectedStops || []).filter(isHeavyMeal).length + (cand.meal_weight === 'heavy' ? 1 : 0)
   if (heavyCount > 1) return true

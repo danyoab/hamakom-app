@@ -1,3 +1,4 @@
+import { marketOf } from '../lib/markets.js'
 import { lazy, Suspense, useState } from 'react'
 import { getMapsUrl } from '../lib/constants'
 import { sharePlanMessage } from '../lib/share'
@@ -27,7 +28,7 @@ export default function ResultsPage({ lang, plan, plans = [], locations = [], pl
   const minutes = plan._schedule?.totalMinutes
   const rows = stops.map(s => locations.find(l => String(l.id) === String(s.source_location_id ?? s._locationId)))
   const prices = rows.map(r => r?.price)
-  const price = prices.length && prices.every(p => Number.isInteger(p) && p >= 0 && p <= 4) ? '₪'.repeat(Math.max(...prices)) || (he ? 'ללא תשלום' : 'Free entry') : null
+  const price = prices.length && prices.every(p => Number.isInteger(p) && p >= 0 && p <= 4) ? marketOf(plan).symbol.repeat(Math.max(...prices)) || (he ? 'ללא תשלום' : 'Free entry') : null
   const link = `${siteOrigin()}${sharedPlanPath(plan, lang)}`
   const share = () => setShareOpen(true)
   const systemShare = async () => {
@@ -51,7 +52,7 @@ export default function ResultsPage({ lang, plan, plans = [], locations = [], pl
           {price && <span title={he ? 'רמת מחיר משוערת; יש לאשר עם המקום' : 'Catalog price level; confirm with the venue'}>{price}</span>}
           {stops.length === 1 && <span>{city}</span>}
         </div>
-        {plan.planning_date && <p className="ui-footnote">{plan.planning_date}{plan.start_time ? ` · ${plan.start_time}` : ''} · {he ? 'שעון ישראל' : 'Israel time'}</p>}
+        {plan.planning_date && <p className="ui-footnote">{plan.planning_date}{plan.start_time ? ` · ${plan.start_time}` : ''} · {marketOf(plan).id === 'ny' ? (he ? 'שעון ניו יורק' : 'New York time') : (he ? 'שעון ישראל' : 'Israel time')}</p>}
         <div className="ui-plan-actions"><button className={`ui-button ${saved ? 'ui-button-saved' : 'ui-button-primary'}`} aria-pressed={saved} onClick={onSavePlan}><Icon name={saved ? 'check' : 'bookmark'} size={18} />{he ? saved ? 'נשמר' : 'שמירת הדייט' : saved ? 'Saved' : 'Save this date'}</button><button className="ui-button ui-button-secondary" onClick={share}><Icon name="share" size={18} />{he ? 'שיתוף' : 'Share'}</button></div>
       </header>
       <div className="ui-plan-controls">
@@ -71,6 +72,7 @@ export default function ResultsPage({ lang, plan, plans = [], locations = [], pl
             <div className="ui-stop-meta"><span>{stop.arrival != null ? `≈ ${clock(stop.arrival)}` : he ? i === 0 ? 'מתחילים כאן' : 'ממשיכים לכאן' : i === 0 ? 'Start here' : 'Then, head here'}</span>{stop.duration && <span>{stop.duration} {he ? 'דקות' : 'min'}</span>}</div>
             <h3>{stopName(stop, he)}</h3>
             <p>{he ? stop.instruction_he : stop.instruction_en}</p>
+            {rows[i]?.region === 'New York Metro' && <p className="ui-stop-practical">{he ? rows[i].description_he || rows[i].description : rows[i].description}</p>}
             <div className="ui-stop-links">{rows[i] && onOpenBackupLocation && <button className="ui-text-button" onClick={() => onOpenBackupLocation(rows[i])}>{he ? 'פרטי המקום' : 'Place details'}<Icon name="chevron" size={14} className="ui-direction" /></button>}{getMapsUrl(stop.maps_query) && <a className="ui-text-button" href={getMapsUrl(stop.maps_query)} target="_blank" rel="noopener noreferrer" onClick={onOpenPlanMaps}>{he ? 'הוראות הגעה' : 'Directions'}<Icon name="arrow" size={14} className="ui-direction" /></a>}</div>
             {rows[i] && (isFoodVenue(rows[i]) || safeExternalUrl(rows[i].menu_url)) && <details className="ui-stop-details"><summary>{he ? 'תפריט, תזונה וכשרות' : 'Menu, food & kashrut'}</summary><VenueFoodDetails loc={rows[i]} lang={lang} compact /><p className="ui-footnote">{he ? 'לפרטי הכשרות המעודכנים, פתחו את פרטי המקום ואשרו מולו.' : 'Open place details for available kashrut evidence, and confirm with the venue.'}</p></details>}
             {stop.hours === 'fits_regular_hours' && <p className="ui-footnote">{he ? 'מתאים לשעות הרגילות שפורסמו; יש לאשר ליום הביקור.' : 'Fits published regular hours; confirm for your date.'}</p>}

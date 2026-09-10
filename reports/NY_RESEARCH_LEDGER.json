@@ -1,0 +1,1180 @@
+[
+  {
+    "requested_name": "Wall Street Grill",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Reserve Cut",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900030,
+    "published_name": "Reserve Cut — Broad Street",
+    "source_url": "https://www.reservecut.com/about/"
+  },
+  {
+    "requested_name": "Mocha Burger",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Rothschild TLV",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Barnea Bistro",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900029,
+    "published_name": "Barnea Bistro",
+    "source_url": "https://oukosher.org/restaurants/barnea-bistro-llc/"
+  },
+  {
+    "requested_name": "Bonito",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "La Brochette",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900051,
+    "published_name": "La Brochette",
+    "source_url": "https://labrochetteny.com/"
+  },
+  {
+    "requested_name": "Le Marais",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900052,
+    "published_name": "Le Marais",
+    "source_url": "https://oukosher.org/restaurants/le-marais-restaurant/"
+  },
+  {
+    "requested_name": "Noi Due Carne",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900003,
+    "published_name": "Noi Due Carne",
+    "source_url": "https://www.ok.org/restaurant-guide/"
+  },
+  {
+    "requested_name": "Tempura",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Wolf and Lamb",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_relocating",
+    "note": "Operator currently says closed while relocating. Do not route to the old address.",
+    "checked_at": "2026-09-10",
+    "source_url": "https://www.wolfandlambsteakhouse.com/"
+  },
+  {
+    "requested_name": "Mr Broadway",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "UN Plaza Grill",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Sen Sakana",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900057,
+    "published_name": "Sen Sakana",
+    "source_url": "https://sensakana.com/"
+  },
+  {
+    "requested_name": "Mike’s Bistro",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900053,
+    "published_name": "Mike’s Bistro",
+    "source_url": "https://oukosher.org/restaurants/mikes-bistro-2/"
+  },
+  {
+    "requested_name": "Eighteen",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900005,
+    "published_name": "Eighteen Restaurant",
+    "source_url": "https://www.ok.org/restaurant-guide/"
+  },
+  {
+    "requested_name": "Tabernacle",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900054,
+    "published_name": "Tabernacle Steakhouse",
+    "source_url": "https://www.tabernaclesteakhouse.com/about/"
+  },
+  {
+    "requested_name": "Spiced",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Masuda Omakase",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Fins and Scales",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Deli Kasbah",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900006,
+    "published_name": "Deli Kasbah",
+    "source_url": "https://www.ok.org/restaurant-guide/"
+  },
+  {
+    "requested_name": "Talia’s Steakhouse",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Akimori",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Nome",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900055,
+    "published_name": "Nomé",
+    "source_url": "https://nomenewyork.com/"
+  },
+  {
+    "requested_name": "Ren",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes. Area corrected to Brooklyn.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900056,
+    "published_name": "REN",
+    "source_url": "https://renkosher.com/reservation/"
+  },
+  {
+    "requested_name": "Thyme and Tonic",
+    "area": "Manhattan",
+    "requested_type": "meat",
+    "status": "withheld_closed",
+    "note": "User reported closed; closure reporting corroborates. Not published.",
+    "checked_at": "2026-09-10",
+    "source_url": "https://www.ilovetheupperwestside.com/thyme-tonic-closing-to-make-way-for-new-concept/"
+  },
+  {
+    "requested_name": "Noi Due Cafe",
+    "area": "Manhattan",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900004,
+    "published_name": "Noi Due Cafe",
+    "source_url": "https://www.ok.org/restaurant-guide/"
+  },
+  {
+    "requested_name": "Abaita",
+    "area": "Manhattan",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900007,
+    "published_name": "Abaita",
+    "source_url": "https://www.ok.org/restaurant-guide/"
+  },
+  {
+    "requested_name": "Bravo Pizza",
+    "area": "Manhattan",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Saba’s Pizza",
+    "area": "Manhattan",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Tiberias",
+    "area": "Manhattan",
+    "requested_type": "dairy",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900058,
+    "published_name": "Tiberias",
+    "source_url": "https://tiberiasnyc.com/"
+  },
+  {
+    "requested_name": "Patis Bakery",
+    "area": "Manhattan",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Milk and Honey",
+    "area": "Manhattan",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Jerusalem Cafe",
+    "area": "Manhattan",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Boeuf and Bun",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Bordeaux",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900059,
+    "published_name": "Bordeaux",
+    "source_url": "https://bordeauxnyc.com/menus/"
+  },
+  {
+    "requested_name": "Bison and Bourbon",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900031,
+    "published_name": "Bison & Bourbon",
+    "source_url": "https://www.bisonandbourbon.com/"
+  },
+  {
+    "requested_name": "Trastevere",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Margez",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "MEAT",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900060,
+    "published_name": "MEAT",
+    "source_url": "https://www.meatny.com/"
+  },
+  {
+    "requested_name": "The Loft",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Koma",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Gruit",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Carbon Charcoal Bar & Grill",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Akimori",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Sauteed NYC",
+    "area": "Brooklyn",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Bass and Bourbon",
+    "area": "Brooklyn",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Cafe Renaissance",
+    "area": "Brooklyn",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Siena",
+    "area": "Brooklyn",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Mozzarella",
+    "area": "Brooklyn",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Pescada",
+    "area": "Brooklyn",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900032,
+    "published_name": "Pescada",
+    "source_url": "https://pescadanewyork.com/"
+  },
+  {
+    "requested_name": "Castell’s",
+    "area": "Brooklyn",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Urbana",
+    "area": "Brooklyn",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Florencia",
+    "area": "Brooklyn",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Cork and Slice",
+    "area": "Five Towns",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900019,
+    "published_name": "Cork & Slice",
+    "source_url": "https://vaadhakashrus.org/listing/cork-slice/"
+  },
+  {
+    "requested_name": "Upper Crust",
+    "area": "Five Towns",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Sunflower Cafe",
+    "area": "Five Towns",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900020,
+    "published_name": "Sunflower Cafe",
+    "source_url": "https://vaadhakashrus.org/listing/sunflower-cafe/"
+  },
+  {
+    "requested_name": "Coffee Bar",
+    "area": "Five Towns",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Central Perk",
+    "area": "Five Towns",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900021,
+    "published_name": "Central Perk",
+    "source_url": "https://vaadhakashrus.org/listing/central-perk/"
+  },
+  {
+    "requested_name": "Capri",
+    "area": "Five Towns",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900022,
+    "published_name": "Capri",
+    "source_url": "https://vaadhakashrus.org/listing/capri/"
+  },
+  {
+    "requested_name": "Uncle Mochi",
+    "area": "Five Towns",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900023,
+    "published_name": "Uncle Mochi",
+    "source_url": "https://vaadhakashrus.org/listing/uncle-mochi/"
+  },
+  {
+    "requested_name": "Chosen",
+    "area": "Five Towns",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "DOMA",
+    "area": "Five Towns",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900024,
+    "published_name": "DOMA",
+    "source_url": "https://vaadhakashrus.org/listing/doma/"
+  },
+  {
+    "requested_name": "Prime Bistro",
+    "area": "Five Towns",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900025,
+    "published_name": "Prime Bistro",
+    "source_url": "https://vaadhakashrus.org/listing/prime-bistro/"
+  },
+  {
+    "requested_name": "Five Fifty",
+    "area": "Five Towns",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Anju",
+    "area": "Five Towns",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900026,
+    "published_name": "Anju",
+    "source_url": "https://vaadhakashrus.org/listing/anju/"
+  },
+  {
+    "requested_name": "Barbacoa",
+    "area": "Five Towns",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900027,
+    "published_name": "Barbacoa Burger House",
+    "source_url": "https://vaadhakashrus.org/listing/barbacoa/"
+  },
+  {
+    "requested_name": "Ondas",
+    "area": "Five Towns",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900028,
+    "published_name": "Ondas",
+    "source_url": "https://vaadhakashrus.org/listing/ondas/"
+  },
+  {
+    "requested_name": "Hibana Hibachi",
+    "area": "Five Towns",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Crave",
+    "area": "Five Towns",
+    "requested_type": "meat",
+    "status": "withheld_closed",
+    "note": "Closure reported January 24, 2025. Not published.",
+    "checked_at": "2026-09-10",
+    "source_url": "https://yeahthatskosher.com/tag/kosher-5-towns/"
+  },
+  {
+    "requested_name": "Cafe Muscat",
+    "area": "Queens",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900012,
+    "published_name": "Cafe Muscat",
+    "source_url": "https://queensvaad.org/location/cafe-muscat/"
+  },
+  {
+    "requested_name": "Cafe Premiata",
+    "area": "Queens",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900011,
+    "published_name": "Café Premiata",
+    "source_url": "https://queensvaad.org/location/cafe-premiata/"
+  },
+  {
+    "requested_name": "Trattoria",
+    "area": "Queens",
+    "requested_type": "dairy",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Upper Crust",
+    "area": "Queens",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900018,
+    "published_name": "The Upper Crust",
+    "source_url": "https://queensvaad.org/location/the-upper-crust/"
+  },
+  {
+    "requested_name": "Turquoise",
+    "area": "Queens",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900015,
+    "published_name": "Turquoise",
+    "source_url": "https://queensvaad.org/location/turquoise/"
+  },
+  {
+    "requested_name": "Urban Press",
+    "area": "Queens",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900010,
+    "published_name": "Urban Press",
+    "source_url": "https://queensvaad.org/location/urban-press/"
+  },
+  {
+    "requested_name": "Posh Pizza",
+    "area": "Queens",
+    "requested_type": "dairy",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900009,
+    "published_name": "Posh Pizza",
+    "source_url": "https://queensvaad.org/location/posh-pizza/"
+  },
+  {
+    "requested_name": "Mamma’s Kitchen",
+    "area": "Queens",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Marani",
+    "area": "Queens",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900016,
+    "published_name": "Marani",
+    "source_url": "https://queensvaad.org/location/marani/"
+  },
+  {
+    "requested_name": "Hapisgah",
+    "area": "Queens",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900013,
+    "published_name": "Hapisgah",
+    "source_url": "https://queensvaad.org/location/hapisgah/"
+  },
+  {
+    "requested_name": "Hot Spot",
+    "area": "Queens",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900017,
+    "published_name": "The Hot Spot BBQ & Grill",
+    "source_url": "https://queensvaad.org/location/the-hot-spot-bbq-grill/"
+  },
+  {
+    "requested_name": "Grill Point",
+    "area": "Queens",
+    "requested_type": "meat",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900014,
+    "published_name": "Grill Point",
+    "source_url": "https://queensvaad.org/location/grill-point/"
+  },
+  {
+    "requested_name": "Otoro",
+    "area": "Queens",
+    "requested_type": "meat",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Watermark",
+    "area": "Manhattan",
+    "requested_type": "lounge",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Dear Irving on Hudson",
+    "area": "Manhattan",
+    "requested_type": "lounge",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Electric Lemon",
+    "area": "Manhattan",
+    "requested_type": "lounge",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900050,
+    "published_name": "Electric Lemon",
+    "source_url": "https://electriclemonnyc.com/"
+  },
+  {
+    "requested_name": "The Greens at Pier 17",
+    "area": "Manhattan",
+    "requested_type": "lounge",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "The Beekman",
+    "area": "Manhattan",
+    "requested_type": "lounge",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900048,
+    "published_name": "The Beekman",
+    "source_url": "https://www.thebeekman.com/"
+  },
+  {
+    "requested_name": "The Press Lounge",
+    "area": "Manhattan",
+    "requested_type": "lounge",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "City Vineyard at Pier 26",
+    "area": "Manhattan",
+    "requested_type": "lounge",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Nubeluz",
+    "area": "Manhattan",
+    "requested_type": "lounge",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Employees Only",
+    "area": "Manhattan",
+    "requested_type": "lounge",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Smalls Jazz Club",
+    "area": "Manhattan",
+    "requested_type": "lounge",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Westlight",
+    "area": "Brooklyn",
+    "requested_type": "lounge",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900049,
+    "published_name": "Westlight",
+    "source_url": "https://www.westlightnyc.com/menus/"
+  },
+  {
+    "requested_name": "The Williamsburg Hotel",
+    "area": "Brooklyn",
+    "requested_type": "lounge",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900047,
+    "published_name": "Arlo Williamsburg — Lobby Bar",
+    "source_url": "https://arlohotels.com/williamsburg/"
+  },
+  {
+    "requested_name": "Hiking",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "withheld_needs_booking_details",
+    "note": "Keep out of automatic plans until the specific venue, season/session and two-person booking requirements are established.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Axe throwing",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900037,
+    "published_name": "Kick Axe — Brooklyn",
+    "source_url": "https://www.kickaxe.com/brooklyn"
+  },
+  {
+    "requested_name": "Paint and pour",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "withheld_needs_booking_details",
+    "note": "Keep out of automatic plans until the specific venue, season/session and two-person booking requirements are established.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Go-karting in Farmingdale",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900038,
+    "published_name": "RPM Raceway — Long Island",
+    "source_url": "https://www.rpmraceway.com/locations/long-island-ny"
+  },
+  {
+    "requested_name": "Skyline movies",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "withheld_needs_booking_details",
+    "note": "Keep out of automatic plans until the specific venue, season/session and two-person booking requirements are established.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "The Uncommons",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900034,
+    "published_name": "The Uncommons",
+    "source_url": "https://uncommonsnyc.com/"
+  },
+  {
+    "requested_name": "Archery",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900061,
+    "published_name": "Gotham Archery — Brooklyn",
+    "source_url": "https://www.got-archery.com/contact-us/"
+  },
+  {
+    "requested_name": "Shuffleboard",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900062,
+    "published_name": "Royal Palms Shuffleboard",
+    "source_url": "https://www.royalpalmsbrooklyn.com/contact"
+  },
+  {
+    "requested_name": "Break Bar",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Dave and Buster’s",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900066,
+    "published_name": "Dave & Buster’s — Times Square",
+    "source_url": "https://www.daveandbusters.com/us/en/about/locations/new-york-city-times-square"
+  },
+  {
+    "requested_name": "Bowling",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900065,
+    "published_name": "Lucky Strike — Chelsea Piers",
+    "source_url": "https://www.bowlero.com/location/bowlero-chelsea-piers"
+  },
+  {
+    "requested_name": "Pottery",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900063,
+    "published_name": "Color Me Mine — Tribeca",
+    "source_url": "https://tribeca.colormemine.com/faq/"
+  },
+  {
+    "requested_name": "Cooking class",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_kosher_evidence",
+    "note": "Source and branch recorded; certificate expiry applied where supplied.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900069,
+    "published_name": "Apron Masters Kitchen",
+    "source_url": "https://apronmasters.com/faq/"
+  },
+  {
+    "requested_name": "Topgolf",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900039,
+    "published_name": "Topgolf — Holtsville",
+    "source_url": "https://topgolf.com/us/holtsville/"
+  },
+  {
+    "requested_name": "Swingers mini golf",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900035,
+    "published_name": "Swingers NoMad",
+    "source_url": "https://www.swingers.club/us/locations/nyc/faq"
+  },
+  {
+    "requested_name": "Central Park rowboats",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "withheld_needs_booking_details",
+    "note": "Keep out of automatic plans until the specific venue, season/session and two-person booking requirements are established.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Ice skating",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900064,
+    "published_name": "Sky Rink — Chelsea Piers",
+    "source_url": "https://www.chelseapiers.com/skyrink-chelsea/winter-drop-ins"
+  },
+  {
+    "requested_name": "Chelsea Piers arcade / bowling",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Edge",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900043,
+    "published_name": "Edge at Hudson Yards",
+    "source_url": "https://www.edgenyc.com/visit/getting-here/"
+  },
+  {
+    "requested_name": "Brooklyn Bridge / DUMBO",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Beat the Bomb",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900036,
+    "published_name": "Beat The Bomb — Brooklyn",
+    "source_url": "https://www.beatthebomb.com/locations/brooklyn"
+  },
+  {
+    "requested_name": "Escape room",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "withheld_needs_booking_details",
+    "note": "Keep out of automatic plans until the specific venue, season/session and two-person booking requirements are established.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Adventureland / Six Flags",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "withheld_unconfirmed",
+    "note": "Not published: current branch details and/or kosher evidence were not sufficiently established. This is not a claim that the venue is closed or non-kosher.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Zoo",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900068,
+    "published_name": "Bronx Zoo",
+    "source_url": "https://bronxzoo.com/plan-your-visit/getting-here"
+  },
+  {
+    "requested_name": "Apple picking",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "withheld_needs_booking_details",
+    "note": "Keep out of automatic plans until the specific venue, season/session and two-person booking requirements are established.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Rollerblading",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "withheld_needs_booking_details",
+    "note": "Keep out of automatic plans until the specific venue, season/session and two-person booking requirements are established.",
+    "checked_at": "2026-09-10"
+  },
+  {
+    "requested_name": "Indoor skydiving",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900067,
+    "published_name": "iFLY — Yonkers",
+    "source_url": "https://www.iflyworld.com/westchester"
+  },
+  {
+    "requested_name": "Museum of Illusions",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900040,
+    "published_name": "Museum of Illusions — New York",
+    "source_url": "https://newyork.museumofillusions.us/contact-us/"
+  },
+  {
+    "requested_name": "The Met",
+    "area": "New York Metro",
+    "requested_type": "activity",
+    "status": "published_with_disclosures",
+    "note": "Venue source recorded. No verified kosher-food claim. See listing for activity and access notes.",
+    "checked_at": "2026-09-10",
+    "catalog_id": 900041,
+    "published_name": "The Met — Fifth Avenue",
+    "source_url": "https://www.metmuseum.org/plan-your-visit/met-fifth-avenue"
+  }
+]

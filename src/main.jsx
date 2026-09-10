@@ -1,3 +1,4 @@
+import { MarketProvider } from './lib/MarketContext.jsx'
 import './product.css'
 import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -40,7 +41,7 @@ class ErrorBoundary extends Component {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <MarketProvider><App /></MarketProvider>
     </ErrorBoundary>
   </StrictMode>
 )

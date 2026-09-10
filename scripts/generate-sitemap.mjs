@@ -12,6 +12,7 @@ const SITE = 'https://hamakom.app'
 const locations = await loadBuildCatalog()
 
 const staticUrls = [
+  { loc: `${SITE}/new-york`, changefreq: 'weekly', priority: '0.9' },
   { loc: `${SITE}/`, changefreq: 'weekly', priority: '1.0' },
   { loc: `${SITE}/privacy`, changefreq: 'monthly', priority: '0.5' },
   { loc: `${SITE}/terms`, changefreq: 'monthly', priority: '0.5' },

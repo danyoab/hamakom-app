@@ -1,3 +1,4 @@
+import { marketOf } from '../lib/markets.js'
 import { useEffect, useMemo, useState } from 'react'
 import { MapContainer, Marker, Polyline, Popup, TileLayer, ZoomControl, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -63,7 +64,7 @@ export default function PlanRouteMap({ stops = [], lang, planCity, travelMode = 
         {tileError && <div role="status" style={{ position: 'absolute', top: 8, left: 8, right: 8, zIndex: 1000, padding: 8, borderRadius: 8, background: '#fff', color: 'var(--ui-muted)', fontSize: 12 }}>{he ? 'המפה לא נטענה במלואה. אפשר לפתוח במפות.' : 'Some map tiles could not load. You can still open in Maps.'}</div>}
       </div>
       <div style={{ padding: '10px 14px', borderTop: '1px solid #EBE2D0', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        {data.distanceKm != null && <span style={{ fontSize: 11, color: 'var(--ui-muted)' }}>{data.distanceKm.toFixed(1)} km · {he ? 'קו אווירי' : 'Straight line'}</span>}
+        {data.distanceKm != null && <span style={{ fontSize: 11, color: 'var(--ui-muted)' }}>{marketOf(stops[0]).id === 'ny' ? `${(data.distanceKm / 1.609344).toFixed(1)} mi` : `${data.distanceKm.toFixed(1)} km`} · {he ? 'קו אווירי' : 'Straight line'}</span>}
         {navUrl && <a href={navUrl} target="_blank" rel="noopener noreferrer" onClick={onOpenMaps} style={{ color: 'var(--ui-accent)', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
           {he ? stops.length > 1 ? 'ניווט לכל המסלול ↗' : 'פתיחת המקום במפות ↗' : stops.length > 1 ? 'Navigate the full route ↗' : 'Open this place in Maps ↗'}
         </a>}

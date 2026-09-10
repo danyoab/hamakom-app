@@ -227,7 +227,7 @@ export const t = {
     forBusinessesSub: 'List or claim your venue',
     bizHeroEyebrow: 'Partner Program',
     bizHeroTitle: 'Put your venue in front of daters ready to go out',
-    bizHeroText: 'HaMakom plans real dates for religious singles across Israel. Featured Partners get a gold badge, priority placement in browse, and real numbers on how many daters saw your venue and opened directions.',
+    bizHeroText: 'HaMakom plans real dates for religious singles across Israel and the New York area. Featured Partners get a gold badge, priority placement in browse, and real numbers on how many daters saw your venue and opened directions.',
     bizBenefit1Title: 'Priority placement',
     bizBenefit1Text: 'Your venue appears first when singles browse places in your city.',
     bizBenefit2Title: 'The ✦ Partner badge',

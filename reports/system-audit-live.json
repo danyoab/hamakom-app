@@ -1,20 +1,20 @@
 {
-  "checkedAt": "2026-09-08T18:18:45.675Z",
+  "checkedAt": "2026-09-10T16:57:29.648Z",
   "source": "live-public-database",
   "inventory": {
-    "total": 318,
-    "discoverable": 277,
+    "total": 387,
+    "discoverable": 346,
     "excluded": 41,
-    "foodVenues": 190,
-    "cities": 83,
-    "coordinateCoverage": 276,
-    "operational": 269,
-    "menus": 6,
-    "dietary": 6
+    "foodVenues": 238,
+    "cities": 90,
+    "coordinateCoverage": 340,
+    "operational": 338,
+    "menus": 25,
+    "dietary": 11
   },
-  "scenarios": 3735,
-  "plansChecked": 3036,
-  "emptyScenarios": 1629,
+  "scenarios": 4050,
+  "plansChecked": 3444,
+  "emptyScenarios": 1740,
   "invalidPlans": [],
   "duplicateIds": [],
   "cities": [
@@ -127,6 +127,26 @@
       "scenarios": 45,
       "returned": 18,
       "empty": 27
+    },
+    {
+      "city": "Bronx",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Brooklyn",
+      "venues": 13,
+      "routeReady": 13,
+      "menus": 3,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 105,
+      "empty": 0
     },
     {
       "city": "Caesarea",
@@ -257,6 +277,16 @@
       "scenarios": 45,
       "returned": 45,
       "empty": 9
+    },
+    {
+      "city": "Five Towns",
+      "venues": 12,
+      "routeReady": 11,
+      "menus": 6,
+      "dietary": 1,
+      "scenarios": 45,
+      "returned": 63,
+      "empty": 12
     },
     {
       "city": "Ganei Tal",
@@ -419,6 +449,16 @@
       "empty": 27
     },
     {
+      "city": "Long Island",
+      "venues": 3,
+      "routeReady": 3,
+      "menus": 1,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 54,
+      "empty": 18
+    },
+    {
       "city": "Magshimim",
       "venues": 1,
       "routeReady": 1,
@@ -427,6 +467,16 @@
       "scenarios": 45,
       "returned": 18,
       "empty": 27
+    },
+    {
+      "city": "Manhattan",
+      "venues": 29,
+      "routeReady": 25,
+      "menus": 5,
+      "dietary": 3,
+      "scenarios": 45,
+      "returned": 96,
+      "empty": 0
     },
     {
       "city": "Masada",
@@ -649,6 +699,16 @@
       "empty": 9
     },
     {
+      "city": "Queens",
+      "venues": 10,
+      "routeReady": 10,
+      "menus": 4,
+      "dietary": 1,
+      "scenarios": 45,
+      "returned": 54,
+      "empty": 27
+    },
+    {
       "city": "Ra'anana",
       "venues": 1,
       "routeReady": 1,
@@ -800,6 +860,16 @@
     },
     {
       "city": "Tzur Yigal",
+      "venues": 1,
+      "routeReady": 1,
+      "menus": 0,
+      "dietary": 0,
+      "scenarios": 45,
+      "returned": 18,
+      "empty": 27
+    },
+    {
+      "city": "Westchester",
       "venues": 1,
       "routeReady": 1,
       "menus": 0,

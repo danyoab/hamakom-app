@@ -1,8 +1,10 @@
+import { useMarket } from '../lib/MarketContext.jsx'
 import { DIETARY_OPTIONS } from '../lib/venuePreferences.js'
 
 const inputStyle = { width: '100%', minWidth: 0, padding: '11px 10px', color: 'var(--ui-text)', background: '#fff', border: '1px solid var(--ui-border)', borderRadius: 10, font: 'inherit', fontSize: 14, boxSizing: 'border-box' }
 
 export default function VenuePreferences({ lang, value, onChange, planning = false }) {
+  const { market } = useMarket()
   const he = lang === 'he'
   const set = (key, v) => onChange({ ...value, [key]: v })
   const selected = value.dietary || []
@@ -28,11 +30,19 @@ export default function VenuePreferences({ lang, value, onChange, planning = fal
             <option value="mehadrin">{he ? 'רק מהדרין מאומת' : 'Verified mehadrin only'}</option>
           </select>
         </label>
+        <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>{he ? 'סוג אוכל' : 'Dining type'}
+          <select value={value.foodService || ''} onChange={e => set('foodService', e.target.value)} style={inputStyle}>
+            <option value="">{he ? 'הכול' : 'Any type'}</option>
+            <option value="meat">{he ? 'בשרי' : 'Meat'}</option>
+            <option value="dairy">{he ? 'חלבי' : 'Dairy'}</option>
+            <option value="pareve">{he ? 'פרווה' : 'Pareve'}</option>
+          </select>
+        </label>
         <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>{he ? 'רמת מחיר' : 'Price level'}
           <select value={value.budget || 'any'} onChange={e => set('budget', e.target.value)} style={inputStyle}>
             <option value="any">{he ? 'הכול' : 'Any price'}</option>
-            <option value="budget">{he ? 'עד ₪₪ — נוח לכיס' : 'Up to ₪₪ — budget friendly'}</option>
-            <option value="moderate">{he ? 'עד ₪₪₪' : 'Up to ₪₪₪'}</option>
+            <option value="budget">{he ? `עד ${market.symbol.repeat(2)} — נוח לכיס` : `Up to ${market.symbol.repeat(2)} — budget friendly`}</option>
+            <option value="moderate">{he ? `עד ${market.symbol.repeat(3)}` : `Up to ${market.symbol.repeat(3)}`}</option>
           </select>
         </label>
         {planning && <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>{he ? 'כמה זמן יש לכם?' : 'Time available'}
@@ -52,7 +62,7 @@ export default function VenuePreferences({ lang, value, onChange, planning = fal
         {planning && <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>{he ? 'תאריך (לא חובה)' : 'Date (optional)'}
           <input type="date" value={value.date || ''} onChange={e => set('date', e.target.value)} style={inputStyle} />
         </label>}
-        {planning && <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>{he ? 'שעת התחלה בישראל (לא חובה)' : 'Start time in Israel (optional)'}
+        {planning && <label style={{ display: 'grid', gap: 6, fontSize: 13 }}>{he ? `שעת התחלה מקומית (${market.he})` : `Start time · ${market.timeLabel}`}
           <input type="time" value={value.startTime || ''} onChange={e => set('startTime', e.target.value)} style={inputStyle} />
         </label>}
       </div>

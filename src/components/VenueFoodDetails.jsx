@@ -1,4 +1,4 @@
-import { DIETARY_OPTIONS, dietaryEvidence, isFoodVenue, safeExternalUrl } from '../lib/venuePreferences.js'
+import { DIETARY_OPTIONS, foodService, hasVerifiedKashrut, dietaryEvidence, isFoodVenue, safeExternalUrl } from '../lib/venuePreferences.js'
 
 export default function VenueFoodDetails({ loc, lang, compact = false }) {
   const he = lang === 'he'
@@ -9,6 +9,8 @@ export default function VenueFoodDetails({ loc, lang, compact = false }) {
   if (!isFoodVenue(loc) && !menu) return null
   const linkStyle = { color: '#295A42', fontWeight: 700, textUnderlineOffset: 3 }
   return <section aria-label={he ? 'תפריט וצרכים תזונתיים' : 'Menu and dietary details'} style={{ padding: compact ? '12px 0' : 16, background: compact ? 'transparent' : '#F2F5EF', borderRadius: 14, marginTop: 12, fontSize: 13, lineHeight: 1.6 }}>
+    {foodService(loc) && <p className="ui-food-type">{({ meat: he ? 'בשרי' : 'Meat', dairy: he ? 'חלבי' : 'Dairy', pareve: he ? 'פרווה' : 'Pareve' })[foodService(loc)]}</p>}
+    {safeExternalUrl(loc.kashrut_verification_source) && <p className="ui-footnote"><a href={safeExternalUrl(loc.kashrut_verification_source)} target="_blank" rel="noopener noreferrer" style={linkStyle}>{hasVerifiedKashrut(loc) ? (loc.kashrut_authority || (he ? 'מקור הכשרות' : 'Kashrut source')) : (he ? 'מקור כשרות — נדרשת בדיקה מחדש' : 'Kashrut source — recheck required')} ↗</a>{loc.kashrut_certificate_expiry ? ` · ${he ? 'בתוקף עד' : 'Valid through'} ${loc.kashrut_certificate_expiry}` : ''}</p>}
     {menu ? <a href={menu} target="_blank" rel="noopener noreferrer" style={linkStyle}>{he ? 'פתיחת התפריט' : 'View menu'} ↗</a>
       : <span style={{ color: 'var(--ui-muted)' }}>{he ? 'עדיין אין קישור לתפריט.' : 'Menu link not yet available.'}{website && <> <a href={website} target="_blank" rel="noopener noreferrer" style={linkStyle}>{he ? 'אתר המקום' : 'Venue website'} ↗</a></>}</span>}
     {menu && <div style={{ fontSize: 11, color: 'var(--ui-muted)' }}>{loc.menu_scope === 'chain' ? (he ? 'תפריט רשת — ההיצע משתנה בין הסניפים' : 'Chain menu — availability varies by branch') : (he ? 'תפריט הסניף' : 'Branch menu')}{loc.menu_checked_at ? ` · ${loc.menu_checked_at.slice(0, 10)}` : ''}</div>}

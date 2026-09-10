@@ -1,3 +1,4 @@
+import { useMarket } from '../lib/MarketContext.jsx'
 import { useState } from 'react'
 import VenuePreferences from './VenuePreferences.jsx'
 import { getPlanPreferences, planPreferenceLabels, PLAN_FOCUS_OPTIONS } from '../lib/planPreferences.js'
@@ -12,7 +13,8 @@ function PreferencesEditor({ value, lang, onApply }) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(value)
   const he = lang === 'he'
-  const labels = planPreferenceLabels(value, lang)
+  const { market } = useMarket()
+  const labels = planPreferenceLabels({ ...value, market: market.id }, lang)
   const close = () => { setDraft(value); setOpen(false) }
   return <div className="ui-preferences">
     <button type="button" className="ui-button ui-button-subtle" aria-haspopup="dialog" onClick={() => setOpen(true)}><Icon name="tune" size={18} />{he ? 'התאמה אישית' : 'Customize'}{labels.length > 0 && <span className="ui-count">{labels.length}</span>}</button>

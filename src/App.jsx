@@ -1,3 +1,6 @@
+import { useMarket } from './lib/MarketContext.jsx'
+import { marketOf, NY_AREAS } from './lib/markets.js'
+import MarketPicker from './components/MarketPicker.jsx'
 import Icon from './components/Icon.jsx'
 import Sheet from './components/Sheet.jsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -81,6 +84,7 @@ const APP_INK = 'var(--ui-text)'     // dark pill / primary button background
 const SERIF = "var(--ui-font)"
 const NAV_HEIGHT = 82
 const INITIAL_FILTERS = {
+  foodService: '',
   cityFilter: 'All Cities',
   categoryFilter: 'All',
   occasionFilter: 'All',
@@ -174,7 +178,9 @@ export default function App() {
   const tx = t[lang]
   const font = "var(--ui-font)"
 
-  const { locations, loading, error: locError } = useLocations()
+  const { market, setMarket } = useMarket()
+  const { locations: allLocations, loading, error: locError } = useLocations()
+  const locations = useMemo(() => allLocations.filter(l => marketOf(l).id === market.id), [allLocations, market.id])
 
   useSyncSaves({ authUser, savedPlanIds, setSavedPlanIds, savedPlaceIds, setSavedPlaceIds })
 
@@ -205,7 +211,8 @@ export default function App() {
   // Curated plans with stops linked to real DB venues where a confident match
   // exists — lets verified curated plans pass the same hard gates as generated
   // plans, and flags plans whose venues have since closed.
-  const resolvedDatePlans = useMemo(() => resolveCuratedPlans(datePlans, locations), [datePlans, locations])
+  const allResolvedDatePlans = useMemo(() => resolveCuratedPlans(datePlans, allLocations), [datePlans, allLocations])
+  const resolvedDatePlans = useMemo(() => allResolvedDatePlans.filter(p => marketOf(p).id === market.id), [allResolvedDatePlans, market.id])
 
   const matchedPlans = useMemo(() => {
     if (!quizAnswers) return []
@@ -253,19 +260,20 @@ export default function App() {
   const tonightPool = useMemo(() => {
     const safe = resolvedDatePlans.filter(curatedPlanSafe)
       .map(p => finalizePlan(p, planLocationRows(p, locations))).filter(Boolean)
-    return safe.length ? safe : getSmartMatchedPlans([], locations, { city: 'flexible', seriousness: 'just-met', length: 'short' }, 8)
-  }, [resolvedDatePlans, locations])
+    return safe.length ? safe : getSmartMatchedPlans([], locations, { city: 'flexible', seriousness: 'just-met', length: 'short', kosher: market.id === 'ny' ? 'verified' : 'any' }, 8)
+  }, [resolvedDatePlans, locations, market.id])
   const tonightPlan = useMemo(() => getTonightPlan(tonightPool), [tonightPool])
   const savedPlans = useMemo(() => savedPlanIds.map(id => {
-    const plan = savedPlanSnapshots[id] || resolvedDatePlans.find(p => p.id === id) || restoreSavedPlan(id, locations)
-    return plan ? finalizePlan(plan, planLocationRows(plan, locations), { travelMode: plan.travel_mode, date: plan.planning_date, startTime: plan.start_time }) : null
-  }).filter(Boolean), [resolvedDatePlans, savedPlanIds, savedPlanSnapshots, locations])
-  const savedPlaces = useMemo(() => locations.filter((location) => savedPlaceIds.includes(location.id)), [locations, savedPlaceIds])
+    const plan = savedPlanSnapshots[id] || allResolvedDatePlans.find(p => p.id === id) || restoreSavedPlan(id, allLocations)
+    return plan ? finalizePlan(plan, planLocationRows(plan, allLocations), { travelMode: plan.travel_mode, date: plan.planning_date, startTime: plan.start_time }) : null
+  }).filter(Boolean), [allResolvedDatePlans, savedPlanIds, savedPlanSnapshots, allLocations])
+  const savedPlaces = useMemo(() => allLocations.filter((location) => savedPlaceIds.includes(location.id)), [allLocations, savedPlaceIds])
   const savedCount = savedPlans.length + savedPlaces.length
   const availablePlanCities = useMemo(() => {
     const cities = new Set(locations.filter(isDiscoverable).map(l => l.city))
+    if (market.id === 'ny') return NY_AREAS.filter(c => cities.has(c))
     return [...QUIZ_CITIES.filter(c => cities.has(c)), ...[...cities].filter(c => !QUIZ_CITIES.includes(c)).sort()]
-  }, [locations])
+  }, [locations, market.id])
   const backupLocations = useMemo(() => {
     if (!quizAnswers) return []
     return getRecommendedLocations(locations, quizAnswers, {
@@ -541,10 +549,10 @@ export default function App() {
   }, [authUser, quizAnswers])
 
   useEffect(() => {
-    const base = 'HaMakom · המקום'
+    const base = market.id === 'ny' ? 'HaMakom New York · המקום' : 'HaMakom · המקום'
     let title = base
-    let desc = 'Date ideas for Jewish singles in Israel.'
-    let canonical = `${siteOrigin()}/`
+    let desc = market.id === 'ny' ? 'Thoughtful New York dates: kosher dining, activities, menus and short local plans.' : 'Date ideas for Jewish singles in Israel.'
+    let canonical = `${siteOrigin()}${market.id === 'ny' ? '/new-york' : '/'}`
 
     if (overlay === 'detail' && selectedLocation) {
       title = `${selectedLocation.name} · HaMakom`
@@ -600,7 +608,7 @@ export default function App() {
         address: {
           '@type': 'PostalAddress',
           addressLocality: selectedLocation.city,
-          addressCountry: 'IL',
+          addressCountry: marketOf(selectedLocation).country,
         },
         url: canonical,
         ...(selectedLocation.image_url ? { image: selectedLocation.image_url } : {}),
@@ -608,23 +616,26 @@ export default function App() {
     } else if (ldScript) {
       ldScript.remove()
     }
-  }, [overlay, selectedLocation, currentPlan])
+  }, [overlay, selectedLocation, currentPlan, market.id])
 
   const openRoute = useCallback((route) => {
     if (!route) return
+    if (route.type === 'market') { setMarket(route.market); setOverlay(null); setTab('home'); return }
     if (route.type === 'plan') {
-      const shared = restoreSharedPlan(route, locations)
+      const shared = restoreSharedPlan(route, allLocations)
       if (route.lang === 'he' || route.lang === 'en') setLang(route.lang)
+      if (shared) setMarket(marketOf(shared).id)
       setPreviewPlan(shared)
       setOverlay(shared ? 'shared-plan' : 'unavailable-plan')
       return
     }
     if (route.type === 'location') {
-      const loc = locations.find((l) => l.slug === route.key || String(l.id) === route.key)
+      const loc = allLocations.find((l) => l.slug === route.key || String(l.id) === route.key)
       if (!loc) {
         window.history.replaceState({}, '', '/')
         return
       }
+      setMarket(marketOf(loc).id)
       setDetailReturnOverlay(null)
       setSelectedLocation(loc)
       setOverlay('detail')
@@ -652,7 +663,7 @@ export default function App() {
       setBusinessLeadContext({ source: 'direct_url', location: null })
       setOverlay('businesses')
     }
-  }, [authUser?.id, locations, setLang])
+  }, [authUser?.id, allLocations, setLang, setMarket])
 
   const handleAppBack = useCallback(() => {
     if (overlay === 'detail') {
@@ -711,10 +722,10 @@ export default function App() {
     const route = parseAppRoute(window.location.pathname + window.location.search)
     if (!route) return
     if (loading && ['plan', 'location'].includes(route.type)) return
-    if (route.type === 'location' && !locations.length) return
+    if (route.type === 'location' && !allLocations.length) return
     deepLinkHandled.current = true
     openRoute(route)
-  }, [loading, locations, openRoute])
+  }, [loading, allLocations, openRoute])
 
   useEffect(() => {
     const onPop = () => {
@@ -792,7 +803,7 @@ export default function App() {
   }
 
   const handleQuizComplete = (answers) => {
-    const seeded = { ...answers, _seed: Date.now() }
+    const seeded = { kosher: market.id === 'ny' ? 'verified' : 'any', ...answers, market: market.id, _seed: Date.now() }
     setQuizAnswers(seeded)
     setResultIndex(0)
     saveAnswersToSession(seeded)
@@ -918,6 +929,7 @@ export default function App() {
   }
 
   const openDetail = (location) => {
+    setMarket(marketOf(location).id)
     setClickedLocationCounts((prev) => ({
       ...prev,
       [location.id]: (prev[location.id] || 0) + 1,
@@ -1410,6 +1422,7 @@ export default function App() {
         <AppHeader
           tx={tx}
           lang={lang}
+          onMarketChange={(id) => { setBrowseFilters({ ...INITIAL_FILTERS }); setBrowseSearch(''); setQuizAnswers(null); setPreviewPlan(null); setOverlay(null); setTab('home'); window.history.replaceState({}, '', id === 'ny' ? '/new-york' : '/?area=israel'); }}
           onToggleLang={() => setLang((current) => (current === 'en' ? 'he' : 'en'))}
         />
 
@@ -1490,7 +1503,7 @@ export default function App() {
               onTogglePlanReminder={handleTogglePlanReminder}
               onSubmitFeedback={handleSubmitFeedback}
               onOpenPlace={openDetail}
-              onOpenPlan={plan => { setPreviewPlan(plan); setOverlay('plan-preview') }}
+              onOpenPlan={plan => { setMarket(marketOf(plan).id); setPreviewPlan(plan); setOverlay('plan-preview') }}
               onGoHome={() => selectTab('home')}
             />
             </div>
@@ -1592,18 +1605,19 @@ export default function App() {
   )
 }
 
-function AppHeader({ lang, onToggleLang }) {
-  return <header className="ui-app-header"><div><a className="ui-wordmark" href="/" aria-label="HaMakom home"><img src="/logo-icon.svg" alt="" />HaMakom<span>המקום</span></a><button className="ui-language" onClick={onToggleLang}>{lang === 'en' ? 'עברית' : 'English'}</button></div></header>
+function AppHeader({ lang, onToggleLang, onMarketChange }) {
+  return <header className="ui-app-header"><div><a className="ui-wordmark" href="/" aria-label="HaMakom home"><img src="/logo-icon.svg" alt="" />HaMakom<span>המקום</span></a><MarketPicker lang={lang} onChange={onMarketChange} /><button className="ui-language" onClick={onToggleLang}>{lang === 'en' ? 'עברית' : 'English'}</button></div></header>
 }
 
 function HomePage({ lang, tonightPlan, loading, error, onStartQuiz, onSurpriseMe, onOpenTonightPlan, onOpenBusinesses, onBusinessCtaViewed }) {
+  const { market } = useMarket()
   const he = lang === 'he'
   const businessViewed = useRef(false)
   useEffect(() => { if (!businessViewed.current) { businessViewed.current = true; onBusinessCtaViewed?.() } }, [onBusinessCtaViewed])
   return <div className="ui-home">
     <section className="ui-home-hero">
       <div className="ui-home-copy"><p className="ui-eyebrow">{he ? 'מקום טוב להתחיל' : 'Good places. Better company.'}</p><h1>{he ? <>פחות לתכנן.<br /><span>יותר להיות יחד.</span></> : <>Less planning.<br /><span>More connection.</span></>}</h1><p className="ui-home-intro">{he ? 'מצאו מקום שמתאים לשניכם. אנחנו נדאג לרעיונות, אתם תביאו את השיחה.' : 'Find somewhere that feels right for both of you. We’ll bring the ideas. You bring the conversation.'}</p><button className="ui-button ui-button-primary ui-home-cta" onClick={onStartQuiz}>{he ? 'בואו נמצא את הדייט שלכם' : 'Find your date'}<Icon name="arrow" className="ui-direction" size={18} /></button><p className="ui-footnote">{he ? 'שתי בחירות. בלי צורך בחשבון.' : 'Two choices. No account needed.'}</p></div>
-      <div className="ui-home-photo"><img src="/city-images/jerusalem.jpg" alt={he ? 'ירושלים' : 'Jerusalem'} fetchPriority="high" /><div><Icon name="pin" size={16} />{he ? 'ירושלים, ישראל' : 'Jerusalem, Israel'}</div></div>
+      <div className="ui-home-photo"><img src={market.id === 'ny' ? '/city-images/new-york.svg' : '/city-images/jerusalem.jpg'} alt={market.id === 'ny' ? 'New York skyline illustration' : he ? 'ירושלים' : 'Jerusalem'} fetchPriority="high" /><div><Icon name="pin" size={16} />{market.id === 'ny' ? (he ? 'ניו יורק והסביבה' : 'New York & nearby') : he ? 'ירושלים, ישראל' : 'Jerusalem, Israel'}</div></div>
     </section>
     <section className="ui-home-discover"><div className="ui-section-heading"><h2>{he ? 'קצת השראה' : 'A little inspiration'}</h2><button className="ui-text-button" onClick={onSurpriseMe}><Icon name="sparkle" size={17} />{he ? 'הפתיעו אותי' : 'Surprise me'}</button></div><TonightPlanCard lang={lang} plan={tonightPlan} onOpenPlan={onOpenTonightPlan} /></section>
     <section className="ui-home-benefits">{[

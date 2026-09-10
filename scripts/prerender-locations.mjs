@@ -1,3 +1,4 @@
+import { marketOf } from '../src/lib/markets.js'
 // Prerenders static HTML for each /location/<slug> page after vite build.
 // Crawlers get real title, description, canonical, JSON-LD, and visible text
 // without waiting for React. The SPA still boots from the same bundle.
@@ -36,7 +37,7 @@ function buildJsonLd(loc, canonical) {
     address: {
       '@type': 'PostalAddress',
       addressLocality: loc.city,
-      addressCountry: 'IL',
+      addressCountry: marketOf(loc).country,
     },
     url: canonical,
     ...(loc.image_url ? { image: loc.image_url } : {}),
@@ -46,7 +47,7 @@ function buildJsonLd(loc, canonical) {
 function buildLocationHtml(template, loc) {
   const canonical = locationCanonical(loc)
   const title = `${loc.name} · HaMakom`
-  const desc = (loc.description || 'Date ideas for Jewish singles in Israel.').slice(0, 300)
+  const desc = (loc.description || 'Date ideas for Jewish singles.').slice(0, 300)
   const jsonLd = buildJsonLd(loc, canonical)
 
   let html = template
@@ -148,6 +149,8 @@ for (const loc of locations) {
 console.log(`Prerender: wrote ${written} location pages to dist/location/<slug>/index.html`)
 
 const staticPages = [
+  { slug: 'new-york', title: 'HaMakom New York · Thoughtful dates for two', desc: 'Find kosher dining and date ideas in Manhattan, Brooklyn, Queens, the Five Towns and nearby. Menus, maps and plans in two simple choices.', body: '<h1>Your next date, New York.</h1><p>Discover places for two in Manhattan, Brooklyn, Queens, the Five Towns, Long Island, the Bronx and Westchester. Choose an area and your pace; customize food preferences when you need them.</p><p>Kosher evidence, menu links and dietary details are shown where verified. Confirm availability with each venue.</p><p><a href="/new-york">Find your New York date</a> · <a href="/?area=israel">Explore Israel</a></p>' },
+
   {
     slug: 'privacy',
     title: 'Privacy Policy · HaMakom',
@@ -189,7 +192,7 @@ const staticPages = [
     desc: 'List your venue on HaMakom and reach religious couples actively deciding where to go on a date.',
     body: `<p style="font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#9A7A28">Founding partner pilot</p>
 <h1>Put your venue in front of daters ready to go out</h1>
-<p>HaMakom plans complete dates for religious singles in Israel. Founding partners receive a verified listing, reservation link, clearly labeled Browse placement, and reporting on views, directions, calls, and reservations.</p>
+<p>HaMakom plans complete dates for religious singles in Israel and the New York area. Founding partners receive a verified listing, reservation link, clearly labeled Browse placement, and reporting on views, directions, calls, and reservations.</p>
 <h2>What partners receive</h2>
 <ul><li>Verified venue and kashrut details</li><li>A visible partner badge</li><li>Priority placement in Browse</li><li>Monthly performance reporting</li></ul>
 <p><strong>Quiz recommendations are never sold.</strong></p>

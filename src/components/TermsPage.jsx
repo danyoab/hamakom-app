@@ -14,7 +14,7 @@ These terms apply to all visitors, registered users, and anyone who accesses or 
   },
   {
     title: '2. Description of Service',
-    body: `HaMakom is a date ideas and location discovery platform designed for Jewish singles in Israel. We provide personalised date plan recommendations, curated location browsing, and a community-driven location suggestion feature.
+    body: `HaMakom is a date ideas and location discovery platform designed for Jewish singles in Israel and the New York area. We provide personalised date plan recommendations, curated location browsing, and a community-driven location suggestion feature.
 
 The Service is provided free of charge. We may introduce optional paid features in the future, which will be governed by separate pricing terms.`,
   },

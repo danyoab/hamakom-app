@@ -53,9 +53,9 @@ test('navigation covers all stops in order with the selected travel mode', () =>
 
 test('resetting advanced preferences clears every restriction while keeping quiz context', () => {
   const old = { city: 'Beit Shemesh', seriousness: 'just-met', _seed: 123,
-    focus: 'food-drink', length: 'short', dietary: ['vegan'], kosher: 'mehadrin', budget: 'budget', travelMode: 'driving', date: '2026-09-10', startTime: '18:00', menuOnly: true }
+    foodService: 'meat', focus: 'food-drink', length: 'short', dietary: ['vegan'], kosher: 'mehadrin', budget: 'budget', travelMode: 'driving', date: '2026-09-10', startTime: '18:00', menuOnly: true }
   const reset = { ...old, ...getPlanPreferences() }
-  assert.deepEqual(reset, { city: old.city, seriousness: old.seriousness, _seed: old._seed, focus: '', length: '', dietary: [], kosher: 'any', budget: 'any', travelMode: 'walking', date: '', startTime: '', menuOnly: false })
+  assert.deepEqual(reset, { city: old.city, seriousness: old.seriousness, _seed: old._seed, foodService: '', focus: '', length: '', dietary: [], kosher: 'any', budget: 'any', travelMode: 'walking', date: '', startTime: '', menuOnly: false })
 })
 
 test('fine-tuning a shared or saved plan preserves its date, time, and mode', () => {

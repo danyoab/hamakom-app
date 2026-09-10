@@ -1,9 +1,10 @@
+import { marketOf } from './markets.js'
 import { CITY_COORDS, getMapsUrl } from './constants.js'
 import { canonicalCity, hasVenueCoordinates } from './planGates.js'
 import { getDistanceKm } from './distance.js'
 
 function placeQuery(stop) {
-  return stop.maps_query || [stop.name_en || stop.name, stop.city || stop._city, 'Israel'].filter(Boolean).join(' ')
+  return stop.maps_query || [stop.name_en || stop.name, stop.city || stop._city, marketOf(stop).country === 'US' ? 'USA' : 'Israel'].filter(Boolean).join(' ')
 }
 
 export function getPlanNavigationUrl(stops = [], mode = 'walking') {

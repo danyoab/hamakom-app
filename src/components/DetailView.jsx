@@ -1,3 +1,4 @@
+import { priceLevel } from '../lib/markets.js'
 import { useEffect, useRef, useState } from 'react'
 import { CATEGORY_EMOJI, getCategoryColor, getMapsUrl } from '../lib/constants'
 import { shareContent, shareLocationMessage } from '../lib/share'
@@ -5,7 +6,7 @@ import Icon from './Icon.jsx'
 import FeedbackModal from './FeedbackModal'
 import FeedbackStrip from './FeedbackStrip'
 import VenueFoodDetails from './VenueFoodDetails.jsx'
-import { hasVerifiedKashrut, isFoodVenue, safeExternalUrl } from '../lib/venuePreferences.js'
+import { certificateExpired, hasVerifiedKashrut, isFoodVenue, safeExternalUrl } from '../lib/venuePreferences.js'
 
 export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true, dateFeedback, setDateFeedback, onMapOpen, onReserve, onPhone, onShare, onClaim, onClaimViewed }) {
   const [imgFailed, setImgFailed] = useState(false)
@@ -85,6 +86,8 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
           : (lang === 'he' ? 'בדקו שעות פתיחה, זמינות וכשרות עם המקום לפני ההגעה.' : 'Confirm opening hours, availability and kashrut with the venue before going.')}</p>
         {loc.formatted_address && <div style={{ fontSize: 13, marginTop: 6 }}>{loc.formatted_address}</div>}
         <VenueFoodDetails loc={loc} lang={lang} />
+        {safeExternalUrl(loc.details_source_url) && <p className="ui-footnote"><a href={safeExternalUrl(loc.details_source_url)} target="_blank" rel="noopener noreferrer">{lang === 'he' ? 'מקור פרטי המקום' : 'Venue information source'} ↗</a>{loc.details_checked_at ? ` · ${loc.details_checked_at.slice(0, 10)}` : ''}</p>}
+
         {loc.opening_hours?.weekday_text?.length > 0 && <details style={{ marginTop: 14, fontSize: 13, lineHeight: 1.7 }}>
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{lang === 'he' ? 'שעות פתיחה שפורסמו' : 'Published opening hours'}</summary>
           {loc.opening_hours.weekday_text.map((line, i) => <div key={i}>{line}</div>)}
@@ -117,7 +120,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
         <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--ui-muted)', fontStyle: 'normal' }}>{desc}</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 20 }}>
-          <InfoBox label={tx.priceRange} value={tx.priceLabels[loc.price]} />
+          <InfoBox label={tx.priceRange} value={priceLevel(loc, lang)} />
           <InfoBox label={tx.location} value={city} />
         </div>
 
@@ -191,7 +194,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
 function getKashrutDisplay(loc, lang) {
   const isHe = lang === 'he'
   let status = loc.kashrut_status || (/not certified/i.test(loc.kashrus || '') ? 'not_certified' : 'unknown')
-  if (loc.kashrut_certificate_expiry && Date.parse(`${loc.kashrut_certificate_expiry}T23:59:59+03:00`) < Date.now()) status = 'expired'
+  if (certificateExpired(loc)) status = 'expired'
   if (status === 'verified' && !hasVerifiedKashrut(loc)) status = 'unknown'
   if (status === 'unknown') return loc.kashrus ? { status: 'unknown', label: `${loc.kashrus} · ${isHe ? 'לא מאומת' : 'unverified'}`, meta: null } : null
   if (status === 'not_certified') {

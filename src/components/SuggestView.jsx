@@ -1,3 +1,4 @@
+import { useMarket } from '../lib/MarketContext.jsx'
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { DATE_STAGE_BADGE, CATEGORIES } from '../lib/constants'
@@ -6,6 +7,7 @@ const WHY_MAX = 300
 const SUBMIT_COOLDOWN_MS = 5 * 60 * 1000
 
 export default function SuggestView({ tx, font, onBack, initialCity = '' }) {
+  const { market } = useMarket()
   const [form, setForm] = useState({
     name: '', city: initialCity, category: '', kashrus: '', why: '',
     whatsapp: '', dateStage: [], price: 2,
@@ -148,7 +150,7 @@ export default function SuggestView({ tx, font, onBack, initialCity = '' }) {
 
         <Field label={tx.suggestPrice} style={{ marginBottom:14 }}>
           <div style={{ display:'flex', gap:8 }}>
-            {[[1,'₪'],[2,'₪₪'],[3,'₪₪₪'],[4,'₪₪₪₪']].map(([p,label]) => (
+            {[1,2,3,4].map(p => [p, market.symbol.repeat(p)]).map(([p,label]) => (
               <button key={p} onClick={() => set('price',p)} style={{
                 flex:1, padding:'8px 4px', borderRadius:8, cursor:'pointer', fontSize:13, fontFamily:'inherit',
                 background: form.price===p ? 'var(--ui-accent)' : '#F2EBDB',

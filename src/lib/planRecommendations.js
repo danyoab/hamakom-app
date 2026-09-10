@@ -1,3 +1,4 @@
+import { priceLevel } from './markets.js'
 import { getMatchedPlans } from './quiz.js'
 import { scoreLocation } from './locationRecommendations.js'
 import {
@@ -231,17 +232,6 @@ function deriveLengthTags(location) {
 
   if (!tags.size) tags.add('medium')
   return [...tags]
-}
-
-function buildBudgetText(price, lang) {
-  const map = {
-    1: { en: '₪60-100 per person', he: '60-100 ₪ לאדם' },
-    2: { en: '₪90-140 per person', he: '90-140 ₪ לאדם' },
-    3: { en: '₪140-210 per person', he: '140-210 ₪ לאדם' },
-    4: { en: '₪200-320 per person', he: '200-320 ₪ לאדם' },
-  }
-
-  return map[price]?.[lang] || map[2][lang]
 }
 
 function buildDurationText(length, lang) {
@@ -758,8 +748,8 @@ function buildGeneratedPlan(location, locations, answers, behavior, usageProfile
     start_time_text_he: buildStartTimeText(when, 'he'),
     duration_text_en: buildDurationText(chosenLength, 'en'),
     duration_text_he: buildDurationText(chosenLength, 'he'),
-    budget_text_en: buildBudgetText(location.price, 'en'),
-    budget_text_he: buildBudgetText(location.price, 'he'),
+    budget_text_en: priceLevel(location, 'en'),
+    budget_text_he: priceLevel(location, 'he'),
     share_summary_en: buildGeneratedShareSummary(location, supportLocations, 'en'),
     share_summary_he: buildGeneratedShareSummary(location, supportLocations, 'he'),
     route_reason_en: singleOnly ? 'Keep it simple: meet here and stay as long as feels comfortable.' : route_reason_en,

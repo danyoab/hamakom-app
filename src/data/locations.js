@@ -1,7 +1,9 @@
+import { NEW_YORK_LOCATIONS } from './newYorkLocations.js'
 // Public catalog snapshot exported 2026-09-08. IDs match the live database.
 // Export time is not a new venue-verification date; preserve last_enriched_at.
 export const CATALOG_SNAPSHOT_DATE = '2026-09-08'
 export const SEED_LOCATIONS = [
+  ...NEW_YORK_LOCATIONS,
   {
     "id": 1,
     "slug": "gan-sacher-jerusalem",

@@ -1,3 +1,4 @@
+import { useMarket } from '../lib/MarketContext.jsx'
 import { useEffect, useState } from 'react'
 import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -69,6 +70,7 @@ export default function MapView({
   bottomOffset = 0,
   embedded = false,
 }) {
+  const { market } = useMarket()
   const [selectedCity, setSelectedCity] = useState(null)
   const [flyTarget, setFlyTarget] = useState(null)
   const [userPos, setUserPos] = useState(null)
@@ -88,9 +90,6 @@ export default function MapView({
     }
   }
 
-  useEffect(() => {
-    void loadUserPosition()
-  }, [])
 
   const cityGroups = {}
   for (const location of locations) {
@@ -189,7 +188,7 @@ export default function MapView({
       ) : null}
 
       <div style={mapAreaStyle}>
-        <MapContainer center={[31.8, 35.0]} zoom={8} style={{ width: '100%', height: '100%' }} zoomControl>
+        <MapContainer key={market.id} center={market.center} zoom={8} style={{ width: '100%', height: '100%' }} zoomControl>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© OpenStreetMap" />
           <InvalidateSize />
           <FlyTo target={flyTarget} />

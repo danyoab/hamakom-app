@@ -4,7 +4,7 @@ import { SEED_LOCATIONS } from '../data/locations'
 import { fetchLocationCatalog, normalizeLocation, publicLocation } from '../lib/venueCatalog.js'
 import { enrichCatalog } from '../data/venueDetails.js'
 
-const CACHE_KEY = 'hamakom-catalog-v2'
+const CACHE_KEY = 'hamakom-catalog-v3'
 function initialCatalog() {
   try {
     const cache = JSON.parse(localStorage.getItem(CACHE_KEY))

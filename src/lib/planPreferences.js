@@ -1,3 +1,4 @@
+import { marketOf } from './markets.js'
 import { DIETARY_OPTIONS } from './venuePreferences.js'
 
 export const PLAN_FOCUS_OPTIONS = [
@@ -12,6 +13,7 @@ export const PLAN_FOCUS_OPTIONS = [
 // and recommendation seed intact; it must also clear old menu/focus filters.
 export function getPlanPreferences(answers = {}) {
   return {
+    foodService: answers.foodService || '',
     focus: answers.focus || '',
     length: answers.length || '',
     dietary: answers.dietary || [],
@@ -25,15 +27,17 @@ export function getPlanPreferences(answers = {}) {
 }
 
 export function planPreferenceLabels(answers, lang = 'en') {
+  const symbol = marketOf(answers).symbol
   const p = getPlanPreferences(answers)
   const he = lang === 'he'
   return [
+    ({ meat: he ? 'בשרי' : 'Meat', dairy: he ? 'חלבי' : 'Dairy', pareve: he ? 'פרווה' : 'Pareve' })[p.foodService],
     PLAN_FOCUS_OPTIONS.find(o => o.value && o.value === p.focus)?.[lang],
     ...DIETARY_OPTIONS.filter(o => p.dietary.includes(o.value)).map(o => o[lang]),
     p.kosher === 'verified' ? (he ? 'כשרות מאומתת' : 'Verified kosher') : null,
     p.kosher === 'mehadrin' ? (he ? 'מהדרין מאומת' : 'Verified mehadrin') : null,
-    p.budget === 'budget' ? (he ? 'עד ₪₪' : 'Up to ₪₪') : null,
-    p.budget === 'moderate' ? (he ? 'עד ₪₪₪' : 'Up to ₪₪₪') : null,
+    p.budget === 'budget' ? (he ? `עד ${symbol.repeat(2)}` : `Up to ${symbol.repeat(2)}`) : null,
+    p.budget === 'moderate' ? (he ? `עד ${symbol.repeat(3)}` : `Up to ${symbol.repeat(3)}`) : null,
     ({ short: he ? 'עד שעתיים' : 'Up to 2 hours', medium: he ? 'עד 3 שעות' : 'Up to 3 hours', long: he ? 'ללא הגבלת זמן' : 'No time limit' })[p.length],
     p.travelMode === 'driving' ? (he ? 'נסיעה קצרה' : 'Short drive okay') : null,
     p.date,

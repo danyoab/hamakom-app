@@ -1,3 +1,4 @@
+import { marketOf } from './markets.js'
 import { foodClassOf, isOperational, isRealVenueRow, sameCity, violatesFoodPairing } from './planGates.js'
 import { distanceKm } from './planCoherence.js'
 import { isDiscoverable } from './venueCatalog.js'
@@ -80,6 +81,7 @@ export function validatePlanLocations(rows, answers = {}) {
     const previous = rows[i - 1]
     const travel = previous ? travelMinutes(previous, loc, answers.travelMode) : 0
     if (previous) {
+      if (marketOf(previous).id !== marketOf(loc).id) reasons.push('cross_market')
       if (!sameCity(previous.city, loc.city)) reasons.push('cross_city')
       const distance = distanceKm(previous, loc)
       if (distance == null || distance > maxLegKm(answers.travelMode)) reasons.push('distance')
@@ -109,12 +111,16 @@ export function finalizePlan(plan, rows, answers = {}) {
   const single = rows.length === 1
   const prices = rows.map(r => r.price)
   const priceLabel = prices.every(p => Number.isInteger(p) && p >= 0 && p <= 4)
-    ? ('₪'.repeat(Math.max(...prices)) || (answers.lang === 'he' ? 'ללא תשלום' : 'Free entry')) : null
+    ? (marketOf(rows[0]).symbol.repeat(Math.max(...prices)) || (answers.lang === 'he' ? 'ללא תשלום' : 'Free entry')) : null
   return {
     ...plan,
+    market: marketOf(rows[0]).id,
+    region: rows[0].region,
+    city: rows[0].city,
     city_he: rows[0].city_he || rows[0].city,
     source_location_ids: rows.map(l => l.id),
     stops: plan.stops.map((s, i) => ({ ...s, ...validation.scheduled[i], source_location_id: rows[i].id,
+      city: rows[i].city, region: rows[i].region,
       lat: rows[i].lat, lng: rows[i].lng, name_en: rows[i].name, name_he: rows[i].name_he || rows[i].name,
       maps_query: rows[i].maps_query || `${rows[i].name} ${rows[i].city}` })),
     travel_mode: answers.travelMode || 'walking',

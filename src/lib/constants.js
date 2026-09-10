@@ -116,6 +116,8 @@ export const DATE_STAGE_BADGE = {
 
 
 export const CITY_COORDS = {
+  Westchester: [40.965, -73.858],
+  Manhattan: [40.758, -73.9855], Brooklyn: [40.6782, -73.9442], Queens: [40.7282, -73.7949], 'Five Towns': [40.6229, -73.7243], 'Long Island': [40.728, -73.445], Bronx: [40.8506, -73.8769], 'Hudson Valley': [41.3, -74.0], 'North Jersey': [40.8932, -73.9735],
   'Jerusalem':          [31.7683, 35.2137],
   'Tel Aviv':           [32.0853, 34.7818],
   'Beit Shemesh':       [31.7458, 34.9942],

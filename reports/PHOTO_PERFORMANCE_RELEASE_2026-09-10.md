@@ -8,6 +8,8 @@ Selected originals totaled 21,995,166 bytes. All shipped WebP variants together 
 
 Existing owner-uploaded photos take precedence. Missing or failed photos fall back without a broken-image icon. Source-linked credits appear in venue details.
 
+Production verification found that the existing legacy `routes` configuration bypassed the separate `headers` configuration. Headers were moved into continuing route rules before the filesystem handler, preserving static pages and the SPA fallback while making image caching effective.
+
 ## Loading
 
 - Removed the blocking Google Fonts stylesheet; the interface uses its existing system-font stack.

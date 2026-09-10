@@ -3,13 +3,14 @@ import { useEffect, useRef, useState } from 'react'
 import { CATEGORY_EMOJI, getCategoryColor, getMapsUrl } from '../lib/constants'
 import { shareContent, shareLocationMessage } from '../lib/share'
 import Icon from './Icon.jsx'
+import VenueImage from './VenueImage.jsx'
+import { venuePhoto } from '../lib/venueImages.js'
 import FeedbackModal from './FeedbackModal'
 import FeedbackStrip from './FeedbackStrip'
 import VenueFoodDetails from './VenueFoodDetails.jsx'
 import { certificateExpired, hasVerifiedKashrut, isFoodVenue, safeExternalUrl } from '../lib/venuePreferences.js'
 
 export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, onBack, showSave = true, dateFeedback, setDateFeedback, onMapOpen, onReserve, onPhone, onShare, onClaim, onClaimViewed }) {
-  const [imgFailed, setImgFailed] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const name = lang === 'he' ? loc.name_he || loc.name : loc.name
   const city = lang === 'he' ? loc.city_he || loc.city : loc.city
@@ -17,7 +18,8 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
   const stages = Array.isArray(loc.date_stage) ? loc.date_stage : [loc.date_stage]
   const color = getCategoryColor(loc.category)
   const mapsUrl = getMapsUrl(loc.maps_query)
-  const showImg = loc.image_url && !imgFailed
+  const photo = venuePhoto(loc)
+  const showImg = Boolean(photo)
   const kashrut = getKashrutDisplay(loc, lang)
   const claimViewSent = useRef(false)
   const heading = useRef(null)
@@ -41,7 +43,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
     <div className="ui-detail" dir={tx.dir} style={{ minHeight: '100vh', background: 'var(--ui-bg)', color: 'var(--ui-text)', fontFamily: font }}>
       <div className="ui-detail-photo" style={{ position: 'relative', height: 220, background: showImg ? '#000' : `${color}22`, overflow: 'hidden' }}>
         {showImg ? (
-          <img src={loc.image_url} alt={name} onError={() => setImgFailed(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
+          <VenueImage loc={loc} alt={name} size="detail" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} fallback={<div className="ui-photo-fallback">{CATEGORY_EMOJI[loc.category]}</div>} />
         ) : (
           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 72, opacity: 0.3 }}>
             {CATEGORY_EMOJI[loc.category]}
@@ -70,6 +72,7 @@ export default function DetailView({ loc, lang, tx, font, saved, onToggleSave, o
       </div>
 
       <div className="ui-detail-content">
+        {safeExternalUrl(photo?.source) && <p className="ui-photo-credit"><a href={photo.source} target="_blank" rel="noopener noreferrer">{lang === 'he' ? 'תמונה מאתר המקום' : 'Photo from the venue’s website'} ↗</a></p>}
         <div style={{ marginBottom: 6, fontSize: 11, color, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
           {CATEGORY_EMOJI[loc.category]} {tx.categories[loc.category]}
         </div>

@@ -9,6 +9,8 @@ import PlanPreferences from './PlanPreferences.jsx'
 import VenueFoodDetails from './VenueFoodDetails.jsx'
 import Icon from './Icon.jsx'
 import Sheet from './Sheet.jsx'
+import VenueImage from './VenueImage.jsx'
+import { venuePhoto } from '../lib/venueImages.js'
 
 const PlanRouteMap = lazy(() => import('./PlanRouteMap'))
 const vibes = { outdoors: ['Outdoors', 'בחוץ'], 'food-drink': ['Food & conversation', 'אוכל ושיחה'], atmosphere: ['Somewhere quiet', 'באווירה שקטה'], activity: ['Something to do', 'פעילות יחד'] }
@@ -71,6 +73,7 @@ export default function ResultsPage({ lang, plan, plans = [], locations = [], pl
           <div className="ui-stop-content">
             <div className="ui-stop-meta"><span>{stop.arrival != null ? `≈ ${clock(stop.arrival)}` : he ? i === 0 ? 'מתחילים כאן' : 'ממשיכים לכאן' : i === 0 ? 'Start here' : 'Then, head here'}</span>{stop.duration && <span>{stop.duration} {he ? 'דקות' : 'min'}</span>}</div>
             <h3>{stopName(stop, he)}</h3>
+            {venuePhoto(rows[i]) && <VenueImage loc={rows[i]} size="stop" alt={stopName(stop, he)} className="ui-stop-photo" />}
             <p>{he ? stop.instruction_he : stop.instruction_en}</p>
             {rows[i]?.region === 'New York Metro' && <p className="ui-stop-practical">{he ? rows[i].description_he || rows[i].description : rows[i].description}</p>}
             <div className="ui-stop-links">{rows[i] && onOpenBackupLocation && <button className="ui-text-button" onClick={() => onOpenBackupLocation(rows[i])}>{he ? 'פרטי המקום' : 'Place details'}<Icon name="chevron" size={14} className="ui-direction" /></button>}{getMapsUrl(stop.maps_query) && <a className="ui-text-button" href={getMapsUrl(stop.maps_query)} target="_blank" rel="noopener noreferrer" onClick={onOpenPlanMaps}>{he ? 'הוראות הגעה' : 'Directions'}<Icon name="arrow" size={14} className="ui-direction" /></a>}</div>

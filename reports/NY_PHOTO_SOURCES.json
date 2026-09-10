@@ -1,0 +1,582 @@
+[
+  {
+    "id": 900001,
+    "name": "Libbi",
+    "source": "https://www.libbinyc.com/",
+    "original_url": "https://images.squarespace-cdn.com/content/v1/697b9f560669d2660aa70dd8/58a9ec56-7511-4b6a-996e-21dcff671f38/Screenshot+2026-01-29+at+1.38.30%E2%80%AFPM.png",
+    "checked_at": "2026-09-10",
+    "original_bytes": 3218172,
+    "variant_bytes": {
+      "320": 13088,
+      "640": 32002,
+      "755": 42394
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900002,
+    "name": "Noi Due Gelato",
+    "source": "https://www.noiduegelato.com/",
+    "original_url": "https://images.getbento.com/accounts/5aeebe93b90a5b252980f33ce5f2b2ea/media/images/58019NoiDueGelato_0822_LizClayman_286.jpg?fit=max&w=1800&auto=format,compress",
+    "checked_at": "2026-09-10",
+    "original_bytes": 253751,
+    "variant_bytes": {
+      "320": 12354,
+      "640": 34494,
+      "1200": 87614
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900003,
+    "name": "Noi Due Carne",
+    "source": "https://www.noiduecarne.com/",
+    "original_url": "https://images.getbento.com/accounts/3d9bd157182adcfeb00cf3b6b60f6cdb/media/images/33625_Q2A3911_.jpg?w=1200&fit=max&auto=compress,format&cs=origin",
+    "checked_at": "2026-09-10",
+    "original_bytes": 166622,
+    "variant_bytes": {
+      "320": 15796,
+      "640": 46154,
+      "1200": 125550
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900004,
+    "name": "Noi Due Cafe",
+    "source": "https://www.noiduecafe.com/menus/",
+    "original_url": "https://images.getbento.com/accounts/1e55e66deefa476bbdcd481e7f866de9/media/images/30518NoiDueCarne_030518_LizClayman_0016.jpg?w=1200&fit=crop&auto=compress,format&cs=origin&h=600",
+    "checked_at": "2026-09-10",
+    "original_bytes": 101846,
+    "variant_bytes": {
+      "320": 11282,
+      "640": 30252,
+      "1200": 72358
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900005,
+    "name": "Eighteen Restaurant",
+    "source": "https://www.eighteenrestaurant.com/",
+    "original_url": "https://www.eighteenrestaurant.com/wp-content/uploads/2020/04/restaurant-18-front-dark-green-center-70001.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 371377,
+    "variant_bytes": {
+      "320": 11508,
+      "640": 35484,
+      "1200": 114702
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900006,
+    "name": "Deli Kasbah",
+    "source": "https://www.kasbah-grill.com/",
+    "original_url": "https://images.getbento.com/accounts/fd9d64de292ae20295e7ba4a84bbe5f7/media/images/1198Tomahawk_King_Moshiach.jpg?w=1200&fit=crop&auto=compress,format&cs=origin&crop=focalpoint&fp-x=0.5&fp-y=0.5",
+    "checked_at": "2026-09-10",
+    "original_bytes": 124349,
+    "variant_bytes": {
+      "320": 11436,
+      "640": 33226,
+      "1200": 88652
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900007,
+    "name": "Abaita",
+    "source": "https://www.abaita.com/",
+    "original_url": "https://images.getbento.com/accounts/56998b74484f9b3d2cd72b9f9eabcfc7/media/images/24774IMG_9767.jpg?w=1200&fit=crop&auto=compress,format&cs=origin&crop=focalpoint&fp-x=0.54&fp-y=0.74",
+    "checked_at": "2026-09-10",
+    "original_bytes": 123441,
+    "variant_bytes": {
+      "320": 11066,
+      "640": 29424,
+      "947": 52288
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900009,
+    "name": "Posh Pizza",
+    "source": "https://www.poshcafeny.com/restaurant-menu?menu=classic-pizza",
+    "original_url": "https://static.wixstatic.com/media/46a6e2_be80a910beb849d9ad2fdeb27df4cb84~mv2.webp",
+    "checked_at": "2026-09-10",
+    "original_bytes": 994878,
+    "variant_bytes": {
+      "320": 5794,
+      "640": 20264,
+      "1200": 61636
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900019,
+    "name": "Cork & Slice",
+    "source": "https://www.corkandslice.com/dinner-menu-long-island",
+    "original_url": "https://static.wixstatic.com/media/ea988a_2f817aa998ce4986929c9936f1206f30~mv2.jpeg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 1568009,
+    "variant_bytes": {
+      "320": 17122,
+      "640": 55748,
+      "1200": 174382
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900020,
+    "name": "Sunflower Cafe",
+    "source": "https://sunflowercafe.com/lawrence-menu/",
+    "original_url": "https://sunflowercafe.com/wp-content/uploads/2025/08/571.png",
+    "checked_at": "2026-09-10",
+    "original_bytes": 495737,
+    "variant_bytes": {
+      "320": 9272,
+      "640": 24570,
+      "768": 35358
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900023,
+    "name": "Uncle Mochi",
+    "source": "https://myunclemochi.com/",
+    "original_url": "https://myunclemochi.com/wp-content/uploads/2024/10/about-jpg-1024x1024.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 177684,
+    "variant_bytes": {
+      "320": 16194,
+      "640": 49366,
+      "900": 84788
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900025,
+    "name": "Prime Bistro",
+    "source": "https://prime-bistro.com/",
+    "original_url": "https://prime-bistro.com/wp-content/uploads/2025/12/AngusBurger.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 19348,
+    "variant_bytes": {
+      "320": 7652,
+      "400": 11332
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900026,
+    "name": "Anju",
+    "source": "https://www.anjuliny.com/",
+    "original_url": "https://static.wixstatic.com/media/11062b_99ec9174cec941ef9ad839b631640aba~mv2.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 2128066,
+    "variant_bytes": {
+      "320": 6430,
+      "640": 15758,
+      "1200": 35132
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900028,
+    "name": "Ondas",
+    "source": "https://ondasnyc.com/",
+    "original_url": "https://ondasnyc.com/wp-content/uploads/2024/08/Ondas-Fuego-by-Mana-08-1-1024x683.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 66448,
+    "variant_bytes": {
+      "320": 9656,
+      "640": 26456,
+      "1024": 51604
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900029,
+    "name": "Barnea Bistro",
+    "source": "https://barneabistro.com/",
+    "original_url": "https://barneabistro.com/wp-content/uploads/2026/02/DSC04008-1024x683.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 84394,
+    "variant_bytes": {
+      "320": 5854,
+      "640": 14776,
+      "1024": 29566
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900030,
+    "name": "Reserve Cut â€” Broad Street",
+    "source": "https://www.reservecut.com/location/broad-street/",
+    "original_url": "https://images.getbento.com/accounts/4174b9d176442725bf8e682ba6dfaa0b/media/images/27425DSC05685.jpg?w=1200&fit=crop&auto=compress,format&cs=origin&h=600",
+    "checked_at": "2026-09-10",
+    "original_bytes": 67464,
+    "variant_bytes": {
+      "320": 3952,
+      "640": 11008,
+      "1200": 32320
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900031,
+    "name": "Bison & Bourbon",
+    "source": "https://www.bisonandbourbon.com/",
+    "original_url": "https://images.squarespace-cdn.com/content/v1/5702b5abcf80a1095e5df1b5/1527568087403-2BS3NXBVFCCIHGLRSGOT/IMG-20180429-WA0002.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 96270,
+    "variant_bytes": {
+      "320": 14956,
+      "640": 39246,
+      "900": 63056
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900032,
+    "name": "Pescada",
+    "source": "https://pescadanewyork.com/",
+    "original_url": "https://pescadanewyork.com/wp-content/uploads/2023/08/Restaurant-Main.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 1763550,
+    "variant_bytes": {
+      "320": 15114,
+      "640": 56018,
+      "1200": 205216
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900033,
+    "name": "Modern Bread & Bagel â€” Upper West Side",
+    "source": "https://www.modernbreadandbagel.com/",
+    "original_url": "https://static.wixstatic.com/media/172b16_ee2ce76194054c3589b4044d6bdb38f5~mv2.png/v1/fill/w_485,h_495,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/top-left-img.png",
+    "checked_at": "2026-09-10",
+    "original_bytes": 530745,
+    "variant_bytes": {
+      "320": 19356,
+      "485": 41156
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900034,
+    "name": "The Uncommons",
+    "source": "https://uncommonsnyc.com/",
+    "original_url": "https://uncommonsnyc.com/wp-content/uploads/2015/05/Rampage_Board_Game_PatientRock_DotCom.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 326365,
+    "variant_bytes": {
+      "320": 11260,
+      "640": 26504,
+      "1200": 63658
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900036,
+    "name": "Beat The Bomb â€” Brooklyn",
+    "source": "https://www.beatthebomb.com/locations/brooklyn",
+    "original_url": "https://www.beatthebomb.com/media/wf/65eb3080d0dc67be30dd0790_Brooklyn.avif",
+    "checked_at": "2026-09-10",
+    "original_bytes": 95572,
+    "variant_bytes": {
+      "320": 11560,
+      "640": 33152,
+      "1200": 91154
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900037,
+    "name": "Kick Axe â€” Brooklyn",
+    "source": "https://www.kickaxe.com/brooklyn",
+    "original_url": "https://static.wixstatic.com/media/05f7a9_a2e04ca9a6d74ca3b64c43661142569d~mv2.jpg/v1/fill/w_1080,h_565,al_c/05f7a9_a2e04ca9a6d74ca3b64c43661142569d~mv2.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 197354,
+    "variant_bytes": {
+      "320": 12760,
+      "640": 41654,
+      "1080": 97424
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900039,
+    "name": "Topgolf â€” Holtsville",
+    "source": "https://topgolf.com/us/holtsville/",
+    "original_url": "https://topgolf.com/api/urls/image?fwd=1&path=https%3A%2F%2Fs3.topgolf.com%2Fgallery%2F108228%2F23042_tg-holtsville-interior-teeline-night.jpg%3Fresize.width%3D640%26resize.height%3D310%26resize.method%3Dcover&fit=cover&width=640&height=310&format=png",
+    "checked_at": "2026-09-10",
+    "original_bytes": 321862,
+    "variant_bytes": {
+      "320": 7668,
+      "640": 23836
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900042,
+    "name": "Brooklyn Botanic Garden",
+    "source": "https://www.bbg.org/visit",
+    "original_url": "https://www.bbg.org/img/uploads/hero/_list_thumbnail_retina/lily-pool-terrace-summer_Camilla-Ffrench_54720356792.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 324907,
+    "variant_bytes": {
+      "320": 20716,
+      "640": 73800,
+      "1040": 189494
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900043,
+    "name": "Edge at Hudson Yards",
+    "source": "https://www.edgenyc.com/visit/getting-here/",
+    "original_url": "https://www.edgenyc.com/wp-content/uploads/2026/06/1L2A1745-scaled-1.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 319351,
+    "variant_bytes": {
+      "320": 9446,
+      "640": 22656,
+      "1200": 48600
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900044,
+    "name": "Bryant Park",
+    "source": "https://bryantpark.org/the-park/hours-and-directions",
+    "original_url": "https://bryantpark.org/assets/uploads/images/general/_resize/Allee_2016-05-11_Angelito-Jusay_resize_b75e780a70a3a913790624d10d39c370.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 38506,
+    "variant_bytes": {
+      "320": 22300,
+      "400": 35234
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900045,
+    "name": "Brooklyn Bridge Park â€” Pier 1",
+    "source": "https://brooklynbridgepark.org/places-to-see/pier-1/",
+    "original_url": "https://brooklynbridgepark.org/wp-content/uploads/2020/10/Brooklyn-bridge-park-bridge-pier-1-granite-steps-river-view-EF-1.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 174122,
+    "variant_bytes": {
+      "320": 24124,
+      "640": 73132,
+      "675": 87512
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900046,
+    "name": "Andrew J. Parise Park",
+    "source": "https://www.cedarhurst.gov/andrew-j-parise-park/",
+    "original_url": "https://www.cedarhurst.gov/wp-content/uploads/2016/01/parkEntrance.png",
+    "checked_at": "2026-09-10",
+    "original_bytes": 466951,
+    "variant_bytes": {
+      "320": 15286,
+      "600": 46752
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900047,
+    "name": "Arlo Williamsburg â€” Lobby Bar",
+    "source": "https://arlohotels.com/williamsburg/",
+    "original_url": "https://arlohotels.com/williamsburg/wp-content/uploads/sites/9/2024/08/WEBSRGB_ARLOWBG-849-1024x683.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 214807,
+    "variant_bytes": {
+      "320": 16838,
+      "640": 54038,
+      "1024": 121856
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900048,
+    "name": "The Beekman",
+    "source": "https://www.thebeekman.com/",
+    "original_url": "https://www.thebeekman.com/wp-content/themes/beekman/img/cursor-dining.jpeg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 62567,
+    "variant_bytes": {
+      "320": 20306,
+      "353": 26126
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900050,
+    "name": "Electric Lemon",
+    "source": "https://electriclemonnyc.com/",
+    "original_url": "https://electriclemonnyc.com/wp-content/uploads/2026/04/Electric_Lemon_Hero_Image_Desktop-1.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 2356387,
+    "variant_bytes": {
+      "320": 9528,
+      "640": 28132,
+      "1200": 81018
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900051,
+    "name": "La Brochette",
+    "source": "https://labrochetteny.com/",
+    "original_url": "https://labrochetteny.com/wp-content/uploads/web1-1-780x520.jpeg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 104243,
+    "variant_bytes": {
+      "320": 13020,
+      "640": 32350,
+      "780": 44580
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900054,
+    "name": "Tabernacle Steakhouse",
+    "source": "https://www.tabernaclesteakhouse.com/about/",
+    "original_url": "https://images.getbento.com/accounts/6e74c346389de22e114a9cbf9cd5ad5c/media/BgEZrf6ETPG4QTQ8esIG_TabernacleStk_food07.2.jpg?w=1200&fit=crop&auto=compress,format&cs=origin&h=600",
+    "checked_at": "2026-09-10",
+    "original_bytes": 78408,
+    "variant_bytes": {
+      "320": 8044,
+      "640": 20598,
+      "1200": 47504
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900055,
+    "name": "NomÃ©",
+    "source": "https://nomenewyork.com/",
+    "original_url": "https://nomenewyork.com/wp-content/uploads/2024/06/DSC09317-683x1024.webp",
+    "checked_at": "2026-09-10",
+    "original_bytes": 660136,
+    "variant_bytes": {
+      "320": 12730,
+      "600": 29572
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900057,
+    "name": "Sen Sakana",
+    "source": "https://sensakana.com/",
+    "original_url": "https://sensakana.com/wp-content/uploads/2023/08/Sen_Sakana_Home_Hero_stretch_v3-85480-scaled.webp",
+    "checked_at": "2026-09-10",
+    "original_bytes": 65630,
+    "variant_bytes": {
+      "320": 1826,
+      "640": 4870,
+      "1200": 12616
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900058,
+    "name": "Tiberias",
+    "source": "https://tiberiasnyc.com/",
+    "original_url": "https://tiberiasnyc.com/_next/image?url=%2Frestaurant%2Finterior.webp&w=3840&q=75",
+    "checked_at": "2026-09-10",
+    "original_bytes": 117246,
+    "variant_bytes": {
+      "320": 11968,
+      "640": 34680,
+      "1195": 87598
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900060,
+    "name": "MEAT",
+    "source": "https://www.meatny.com/",
+    "original_url": "https://www.meatny.com/cdn/shop/files/preview_images/567b5a2600bb48079f23366665786a5d.thumbnail.0000000000_900x.jpg?v=1780606212",
+    "checked_at": "2026-09-10",
+    "original_bytes": 151012,
+    "variant_bytes": {
+      "320": 15850,
+      "506": 27984
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900061,
+    "name": "Gotham Archery â€” Brooklyn",
+    "source": "https://www.got-archery.com/contact-us/",
+    "original_url": "https://www.got-archery.com/wp-content/uploads/sites/8581/2026/04/GA-League-Winter-2023-2024-0095-Enhanced-NR-Edit-e1777491229644.jpg?w=700&h=700&zoom=2",
+    "checked_at": "2026-09-10",
+    "original_bytes": 196362,
+    "variant_bytes": {
+      "320": 9882,
+      "640": 28678,
+      "1200": 81042
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900062,
+    "name": "Royal Palms Shuffleboard",
+    "source": "https://www.royalpalmsbrooklyn.com/contact",
+    "original_url": "http://static1.squarespace.com/static/5a6f528a8fd4d2dc09606287/t/5a77e1f28165f51a34579112/1517806074229/Screen+Shot+2018-02-04+at+10.47.27+PM.png?format=1500w",
+    "checked_at": "2026-09-10",
+    "original_bytes": 462861,
+    "variant_bytes": {
+      "320": 10260,
+      "640": 24374,
+      "810": 33880
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900064,
+    "name": "Sky Rink â€” Chelsea Piers",
+    "source": "https://www.chelseapiers.com/skyrink-chelsea/winter-drop-ins",
+    "original_url": "https://cdn.sanity.io/images/2pe8otzv/production/ac1c1adb0498a9cceaf9618e711b8186366282d4-1620x1080.jpg?auto=format&fit=max&q=75&w=810",
+    "checked_at": "2026-09-10",
+    "original_bytes": 51449,
+    "variant_bytes": {
+      "320": 8332,
+      "640": 20976,
+      "810": 31900
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900066,
+    "name": "Dave & Busterâ€™s â€” Times Square",
+    "source": "https://www.daveandbusters.com/us/en/about/locations/new-york-city-times-square",
+    "original_url": "https://www.daveandbusters.com/content/dam/dnb/home-page-compressed/arena.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 2212585,
+    "variant_bytes": {
+      "320": 12068,
+      "640": 33918,
+      "1200": 85568
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  },
+  {
+    "id": 900068,
+    "name": "Bronx Zoo",
+    "source": "https://bronxzoo.com/plan-your-visit/getting-here",
+    "original_url": "https://cdn.wcs.org/2022/05/23/2439zohzq4_76768945_200ee080_6772_11ea_99f1_23346ee95a58.jpg",
+    "checked_at": "2026-09-10",
+    "original_bytes": 644332,
+    "variant_bytes": {
+      "320": 8570,
+      "640": 25364,
+      "1200": 77840
+    },
+    "review": "Visually reviewed; operator-published venue, food or activity photograph. Not evidence of current menu or kashrut."
+  }
+]

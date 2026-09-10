@@ -15,6 +15,15 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/location\//],
         runtimeCaching: [
           {
+            urlPattern: /\/venue-images\/.*\.webp$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'venue-photos-v1',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
             urlPattern: /^https:\/\/.*\.tile\.openstreetmap\.org\/.*/i,
             handler: 'CacheFirst',
             options: {
@@ -34,8 +43,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          if (/\/node_modules\/(react|react-dom|scheduler)\//.test(id.replaceAll('\\', '/'))) return 'react-vendor'
           if (id.replaceAll('\\', '/').endsWith('/src/data/locations.js')) return 'catalog'
-          if (id.includes('leaflet') || id.includes('react-leaflet')) return 'leaflet'
           if (id.includes('@supabase')) return 'supabase'
           if (id.includes('@sentry')) return 'sentry'
         },

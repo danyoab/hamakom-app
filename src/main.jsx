@@ -3,18 +3,13 @@ import './product.css'
 import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
-import * as Sentry from '@sentry/react'
 import App from './App.jsx'
 
-if (import.meta.env.VITE_SENTRY_DSN) {
-  Sentry.init({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
-    environment: import.meta.env.MODE,
-    tracesSampleRate: 0.1,
-  })
-}
+const sentry = import.meta.env.VITE_SENTRY_DSN
+  ? import('./lib/errorReporting.js').catch(() => null) : Promise.resolve(null)
 
-registerSW({ immediate: true })
+// Let the first page finish loading before the offline worker prefetches assets.
+registerSW({ immediate: false })
 // Retire the previous blanket API cache, which could retain authenticated
 // responses. Only the explicitly selected public catalog is cached now.
 if ('caches' in window) void caches.delete('supabase-api').catch(() => {})
@@ -23,7 +18,7 @@ class ErrorBoundary extends Component {
   state = { error: null }
   static getDerivedStateFromError(e) { return { error: e } }
   componentDidCatch(error, info) {
-    Sentry.captureException(error, { extra: info })
+    void sentry.then(client => client?.captureException(error, { extra: info }))
   }
   render() {
     if (this.state.error) return (
